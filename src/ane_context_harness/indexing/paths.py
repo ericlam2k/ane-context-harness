@@ -14,9 +14,17 @@ def normalize_repo_path(repo_root: str | os.PathLike) -> Path:
 
 
 def safe_relpath(path: Path, repo_root: Path) -> str | None:
-    """Return a normalized relative path within repo_root, or None if unsafe."""
+    """Return a normalized relative path within repo_root, or None if unsafe.
+
+    Guards: traversal (`..` that escapes the root), and any symlink (the
+    caller walks with followlinks=False; a symlink entry is refused here as
+    defense-in-depth against `..`-free escapes such as
+    `secret_link -> /etc/passwd`).
+    """
+    if path.is_symlink():
+        return None
     try:
-        resolved = path.resolve()
+        resolved = path.resolve(strict=False)
     except (OSError, RuntimeError):
         return None
     try:
@@ -25,7 +33,6 @@ def safe_relpath(path: Path, repo_root: Path) -> str | None:
         return None
     if rel.parts and (rel.parts[0] == ".." or ".." in rel.parts):
         return None
-    # reject absolute escapes
     if resolved.is_symlink():
         return None
     return str(rel).replace("\\", "/")
