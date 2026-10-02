@@ -1,0 +1,41 @@
+{
+ "task_id": "hard-doc-concession-001",
+ "task": "What caps apply to the customer's price concession at checkout?",
+ "repository_id": "synthetic_hard_project",
+ "task_language": "markdown",
+ "token_budget": 750,
+ "required_chunks": [
+  {
+   "path": "docs/pricing-rules.md"
+  },
+  {
+   "path": "src/discounts/apply.ts",
+   "symbol": "tierRate"
+  }
+ ],
+ "helpful_chunks": [],
+ "irrelevant_chunks": [
+  {
+   "path": "docs/glossary.md"
+  },
+  {
+   "path": "README.md"
+  },
+  {
+   "path": "src/inventory/stock.ts"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "alias-vocabulary",
+  "doc+code",
+  "typescript"
+ ],
+ "difficulty": "typical",
+ "category": "alias-vocabulary-doc-and-code",
+ "challenge": "The task uses the alias 'price concession'; code says loyalty/discount; the glossary floods the same words.",
+ "expected_retrieval_behavior": "pricing-rules.md (cap paragraph) and apply.ts tierRate rank first.",
+ "expected_final_package": "The 25% cap from the rules + tierRate table.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

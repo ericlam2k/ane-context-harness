@@ -1,0 +1,38 @@
+{
+ "task_id": "py-analytics-001",
+ "task": "Fix outlier detection in the analytics module",
+ "repository_id": "synthetic_py_project",
+ "task_language": "python",
+ "token_budget": 650,
+ "required_chunks": [
+  {
+   "path": "src/analytics.py",
+   "symbol": "detect_outliers"
+  }
+ ],
+ "helpful_chunks": [],
+ "irrelevant_chunks": [
+  {
+   "path": "src/reporting.py"
+  },
+  {
+   "path": "src/inventory.py"
+  },
+  {
+   "path": "src/calculator.py"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "buried-symbol",
+  "python",
+  "analytics"
+ ],
+ "difficulty": "typical",
+ "category": "single-module-with-near-name-distractor",
+ "challenge": "analytics.py spans two chunks and the target sits in the second; reporting.summary_stats shares statistics vocabulary.",
+ "expected_retrieval_behavior": "The analytics.py chunk carrying detect_outliers is selected.",
+ "expected_final_package": "detect_outliers from src/analytics.py.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

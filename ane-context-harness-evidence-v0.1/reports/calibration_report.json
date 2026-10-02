@@ -1,0 +1,149 @@
+{
+  "generated_by": "scripts/calibrate_phase3.py",
+  "fingerprint": "phase0123",
+  "measurements": {
+    "reranker": {
+      "backend": "coreml_all",
+      "enabled": true,
+      "measured_speedup_percent": 643.2461873638343,
+      "warm_p50_ms": 3.34,
+      "warm_p95_ms": 3.672,
+      "peak_memory_mb": 0.0,
+      "failure_rate_percent": 0.0,
+      "numerical_validation": "passed",
+      "reason": "benchmark_qualified",
+      "quality": {
+        "n": 3,
+        "recall_at_1": 0.3611,
+        "recall_at_10": 0.8056,
+        "ndcg_at_10": 0.847,
+        "mrr": 1.0,
+        "scores_by": "coreml_all raw sigmoid scores over all indexed chunks"
+      }
+    },
+    "secret_classifier": {
+      "backend": "cpu_deterministic",
+      "enabled": true,
+      "measured_speedup_percent": 0.0,
+      "warm_p50_ms": 1.0,
+      "warm_p95_ms": 2.0,
+      "peak_memory_mb": 4.0,
+      "failure_rate_percent": 0.0,
+      "numerical_validation": "passed",
+      "reason": "phase2_cpu_model"
+    }
+  },
+  "quality": {
+    "n": 3,
+    "recall_at_1": 0.3611,
+    "recall_at_10": 0.8056,
+    "ndcg_at_10": 0.847,
+    "mrr": 1.0,
+    "scores_by": "coreml_all raw sigmoid scores over all indexed chunks"
+  },
+  "agreement": {
+    "passed": true,
+    "n_pairs": 1000,
+    "seq_len": 128,
+    "model_id": "cross-encoder/ms-marco-MiniLM-L6-v2",
+    "revision": "233902d25c440f23af6f7d6e94d2946bac0bee0a",
+    "compute_unit": "all",
+    "min_cosine": 1.0,
+    "mean_cosine": 1.0,
+    "max_abs_logit": 0.044115,
+    "worst_pair": {
+      "pair_index": 188,
+      "max_abs_logit": 0.044115
+    },
+    "thresholds": {
+      "min_cosine": 0.999,
+      "max_abs_logit": 0.05
+    },
+    "pair_source": "deterministic local corpus (tasks + source files), seed=20261002"
+  },
+  "p36_gates": {
+    "python_version": "3.13",
+    "build_python_le_313": true,
+    "agreement_n_pairs": 1000,
+    "agreement_pairs_ge_1000": true,
+    "agreement_passed": true,
+    "warm_p50_gate_ms": 500.0,
+    "compute_units": {
+      "coreml_cpu_only@128tok": {
+        "available": true,
+        "warm_p50_ms": 3.661,
+        "warm_p95_ms": 5.634,
+        "le_500ms": true,
+        "failure_rate_percent": 0.0
+      },
+      "coreml_cpu_gpu@128tok": {
+        "available": true,
+        "warm_p50_ms": 5.436,
+        "warm_p95_ms": 7.202,
+        "le_500ms": true,
+        "failure_rate_percent": 0.0
+      },
+      "coreml_all@128tok": {
+        "available": true,
+        "warm_p50_ms": 1.834,
+        "warm_p95_ms": 2.949,
+        "le_500ms": true,
+        "failure_rate_percent": 0.0
+      },
+      "coreml_cpu_only@256tok": {
+        "available": true,
+        "warm_p50_ms": 5.942,
+        "warm_p95_ms": 7.339,
+        "le_500ms": true,
+        "failure_rate_percent": 0.0
+      },
+      "coreml_cpu_gpu@256tok": {
+        "available": true,
+        "warm_p50_ms": 8.289,
+        "warm_p95_ms": 8.877,
+        "le_500ms": true,
+        "failure_rate_percent": 0.0
+      },
+      "coreml_all@256tok": {
+        "available": true,
+        "warm_p50_ms": 3.34,
+        "warm_p95_ms": 3.672,
+        "le_500ms": true,
+        "failure_rate_percent": 0.0
+      }
+    },
+    "all_units_le_500ms": true,
+    "qualified_backend": "coreml_all",
+    "release_gate_pass": true
+  },
+  "measured_on_platform": {
+    "platform": {
+      "machine_id": "118220b9187d11d2cb6f2f8146bce4d6",
+      "hardware": {
+        "architecture": "arm64",
+        "is_apple_silicon": true,
+        "processor": "arm",
+        "unified_memory_bytes": 8589934592,
+        "total_physical_memory_bytes": 8589934592,
+        "process_peak_rss_bytes": 356433920,
+        "memory_pressure": "unknown"
+      },
+      "software": {
+        "platform": "macOS-26.5-arm64-arm-64bit-Mach-O",
+        "macos_version": "26.5",
+        "macos_build": "arm64",
+        "python_version": "3.13.15"
+      },
+      "devices": {
+        "coreml_available": true,
+        "coreml_available_tri": "true",
+        "neural_engine_observed": false,
+        "neural_engine_observed_tri": "unknown"
+      },
+      "runtime": {
+        "compute_mode": "deterministic_only"
+      }
+    },
+    "artifact": "cross-encoder/ms-marco-MiniLM-L6-v2"
+  }
+}

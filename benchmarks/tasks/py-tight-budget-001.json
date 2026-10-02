@@ -1,0 +1,42 @@
+{
+ "task_id": "py-tight-budget-001",
+ "task": "Fix the mean calculation edge case and its regression test",
+ "repository_id": "synthetic_py_project",
+ "task_language": "python",
+ "token_budget": 300,
+ "required_chunks": [
+  {
+   "path": "src/calculator.py",
+   "symbol": "mean"
+  },
+  {
+   "path": "tests/test_calculator.py",
+   "symbol": "test_mean"
+  }
+ ],
+ "helpful_chunks": [],
+ "irrelevant_chunks": [
+  {
+   "path": "src/analytics.py"
+  },
+  {
+   "path": "src/reporting.py"
+  },
+  {
+   "path": "docs/design.md"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "compact-budget",
+  "python",
+  "mean"
+ ],
+ "difficulty": "difficult",
+ "category": "compact-budget-multi-symbol",
+ "challenge": "Budget 300 < calculator+test+any context; distractor modules share statistics vocabulary (average/mean).",
+ "expected_retrieval_behavior": "Both mean chunks fit under 300 tokens; distractors are dropped.",
+ "expected_final_package": "mean implementation + test_mean block.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

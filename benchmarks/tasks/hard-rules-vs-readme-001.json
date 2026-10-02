@@ -1,0 +1,37 @@
+{
+ "task_id": "hard-rules-vs-readme-001",
+ "task": "What is the authoritative rounding rule and the order in which charges are applied?",
+ "repository_id": "synthetic_hard_project",
+ "task_language": "markdown",
+ "token_budget": 450,
+ "required_chunks": [
+  {
+   "path": "docs/pricing-rules.md"
+  }
+ ],
+ "helpful_chunks": [],
+ "irrelevant_chunks": [
+  {
+   "path": "README.md"
+  },
+  {
+   "path": "docs/glossary.md"
+  },
+  {
+   "path": "src/pricing.ts"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "doc-priority",
+  "stale-doc",
+  "compact-budget"
+ ],
+ "difficulty": "difficult",
+ "category": "doc-priority-under-restatement",
+ "challenge": "README restates rounding/order history (stale) with nearly the same vocabulary; budget fits only one of the two documents plus slack.",
+ "expected_retrieval_behavior": "docs/pricing-rules.md is selected over the README restatement.",
+ "expected_final_package": "Rounding + charge-ordering paragraphs from pricing-rules.md.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

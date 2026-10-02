@@ -1,0 +1,38 @@
+{
+ "task_id": "hard-types-line-001",
+ "task": "Where is the CartLine shape defined for cart lines?",
+ "repository_id": "synthetic_hard_project",
+ "task_language": "typescript",
+ "token_budget": 400,
+ "required_chunks": [
+  {
+   "path": "src/types.ts"
+  }
+ ],
+ "helpful_chunks": [
+  {
+   "path": "src/discounts/apply.ts"
+  }
+ ],
+ "irrelevant_chunks": [
+  {
+   "path": "docs/glossary.md"
+  },
+  {
+   "path": "README.md"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "type-split",
+  "typescript",
+  "structure"
+ ],
+ "difficulty": "small",
+ "category": "structure-lookup",
+ "challenge": "Type definitions carry no extractable function symbol; evidence is a type-only module adjacent to code that imports it.",
+ "expected_retrieval_behavior": "src/types.ts is selected even though it defines no functions.",
+ "expected_final_package": "The CartLine interface from src/types.ts.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

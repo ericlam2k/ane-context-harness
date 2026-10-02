@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ane-context-harness"
+version = "0.1.0a1"
+description = "Generation-neutral local context-intelligence harness for coding agents (Phase 0/1: deterministic baseline)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+  "PyYAML>=6.0",
+  "tiktoken>=0.7; platform_machine != 'arm64'",
+]
+
+[project.optional-dependencies]
+tiktoken = ["tiktoken>=0.7"]
+test = ["pytest>=7.4"]
+# Build-time-only: used solely to convert + package a Core ML reranker artifact.
+# NOT a runtime dependency — the runtime path is pure stdlib (coreml/tokenizer.py).
+# Build env requirement: Python 3.13 on macOS/arm64 (coremltools ships no cp314
+# wheels). These pins are known to resolve on cp313/macos-arm64.
+build = [
+  "torch==2.9.1",
+  "transformers==4.49.0",
+  "coremltools==9.0",
+  "huggingface-hub==0.30.0",
+  "numpy==2.2.4",
+]
+
+[project.scripts]
+ane-harness = "ane_context_harness.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ane_context_harness"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"

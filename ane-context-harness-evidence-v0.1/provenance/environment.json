@@ -1,0 +1,9 @@
+{
+  "python_version": "3.14.5",
+  "macos_version": "26.5",
+  "machine_architecture": "arm64",
+  "platform": "macOS-26.5-arm64-arm-64bit-Mach-O",
+  "coremltools_version": "not_installed",
+  "pytorch_version": "not_installed",
+  "transformers_version": "not_installed"
+}

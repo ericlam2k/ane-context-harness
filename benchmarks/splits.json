@@ -1,0 +1,50 @@
+{
+ "counts": {
+  "dev": 12,
+  "eval": 18,
+  "total": 30
+ },
+ "dev": [
+  "hard-buried-totals-001",
+  "hard-cart-checkout-001",
+  "hard-doc-rounding-001",
+  "hard-round-to-cents-001",
+  "hard-secrets-decoy-001",
+  "hard-vat-profile-001",
+  "py-analytics-001",
+  "py-discount-doc-001",
+  "py-discount-full-002",
+  "py-tight-budget-001",
+  "ts-analytics-moving-001",
+  "ts-math-discount-001"
+ ],
+ "eval": [
+  "hard-apply-discount-001",
+  "hard-buried-quote-001",
+  "hard-cart-apply-001",
+  "hard-doc-concession-001",
+  "hard-rules-vs-readme-001",
+  "hard-settings-001",
+  "hard-similarnames-001",
+  "hard-stock-clearance-001",
+  "hard-types-line-001",
+  "hard-vat-apply-001",
+  "py-calculator-001",
+  "py-discount-001",
+  "py-discount-report-001",
+  "py-inventory-sku-001",
+  "ts-discount-001",
+  "ts-inventory-reconcile-001",
+  "ts-math-total-001",
+  "ts-reporting-stats-001"
+ ],
+ "method": "task-level, stratified by difficulty, 40% dev / remainder eval, seeded shuffle within difficulty band",
+ "pinned": {
+  "py-discount-001": "eval",
+  "py-discount-full-002": "dev",
+  "ts-discount-001": "eval"
+ },
+ "schema_version": "split-1",
+ "seed": 20261002,
+ "task_set_hash": "16b6a2ba74d437a79832b37049aea7e8db8208c28b62dc7bc2c23068d5f821f1"
+}

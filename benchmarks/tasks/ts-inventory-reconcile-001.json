@@ -1,0 +1,42 @@
+{
+ "task_id": "ts-inventory-reconcile-001",
+ "task": "Fix inventory reconciliation so missing SKUs report zero on both sides",
+ "repository_id": "synthetic_ts_project",
+ "task_language": "typescript",
+ "token_budget": 450,
+ "required_chunks": [
+  {
+   "path": "src/inventory.ts",
+   "symbol": "reconcile"
+  },
+  {
+   "path": "src/inventory.ts",
+   "symbol": "bulkImport"
+  }
+ ],
+ "helpful_chunks": [],
+ "irrelevant_chunks": [
+  {
+   "path": "src/reporting.ts"
+  },
+  {
+   "path": "src/analytics.ts"
+  },
+  {
+   "path": "src/math.ts"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "multi-symbol",
+  "typescript",
+  "inventory"
+ ],
+ "difficulty": "typical",
+ "category": "multi-symbol-single-file",
+ "challenge": "Two required symbols live in one file while reporting/analytics share vocabulary (reconcile vs diff helpers).",
+ "expected_retrieval_behavior": "src/inventory.ts is selected (both symbols in its single chunk).",
+ "expected_final_package": "reconcile + bulkImport from src/inventory.ts.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

@@ -1,0 +1,38 @@
+{
+ "task_id": "py-discount-report-001",
+ "task": "Fix grouping of report rows when a row is missing the grouping key",
+ "repository_id": "synthetic_py_project",
+ "task_language": "python",
+ "token_budget": 650,
+ "required_chunks": [
+  {
+   "path": "src/reporting.py",
+   "symbol": "group_by"
+  }
+ ],
+ "helpful_chunks": [],
+ "irrelevant_chunks": [
+  {
+   "path": "src/analytics.py"
+  },
+  {
+   "path": "src/inventory.py"
+  },
+  {
+   "path": "docs/design.md"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "similar-names",
+  "python",
+  "reporting"
+ ],
+ "difficulty": "typical",
+ "category": "similar-function-names",
+ "challenge": "reporting/analytics/inventory all expose grouping/table-like helpers; design.md restates module purposes.",
+ "expected_retrieval_behavior": "src/reporting.py group_by ranks first.",
+ "expected_final_package": "group_by from src/reporting.py.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

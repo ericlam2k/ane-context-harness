@@ -1,0 +1,13 @@
+{
+  "app": "hard-fixture-storefront",
+  "environment": "bench",
+  "feature_flags": {
+    "express_checkout": false,
+    "loyalty_program": true,
+    "clearance_mode": false
+  },
+  "tax_defaults": {
+    "country": "DE",
+    "rate": 0.19
+  }
+}

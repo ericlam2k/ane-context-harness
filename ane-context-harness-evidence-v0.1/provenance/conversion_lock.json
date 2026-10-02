@@ -1,0 +1,11 @@
+{
+  "conversion_dependency_lock": {
+    "python": "3.14.5",
+    "coremltools": "not_installed",
+    "torch": "not_installed",
+    "transformers": "not_installed",
+    "numpy": "2.5.2",
+    "huggingface_hub": "not_installed",
+    "lock_kind": "exact installed versions at bundle creation"
+  }
+}

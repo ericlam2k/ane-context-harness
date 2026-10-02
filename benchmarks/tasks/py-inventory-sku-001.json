@@ -1,0 +1,38 @@
+{
+ "task_id": "py-inventory-sku-001",
+ "task": "How does the inventory module generate the next SKU identifier?",
+ "repository_id": "synthetic_py_project",
+ "task_language": "python",
+ "token_budget": 700,
+ "required_chunks": [
+  {
+   "path": "src/inventory.py",
+   "symbol": "next_sku"
+  }
+ ],
+ "helpful_chunks": [],
+ "irrelevant_chunks": [
+  {
+   "path": "src/reporting.py"
+  },
+  {
+   "path": "src/analytics.py"
+  },
+  {
+   "path": "docs/design.md"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "lookup",
+  "python",
+  "inventory"
+ ],
+ "difficulty": "small",
+ "category": "single-module-lookup",
+ "challenge": "inventory.py spans two chunks; next_sku sits in the first while discount vocabulary distracts from an inventory question.",
+ "expected_retrieval_behavior": "The first inventory.py chunk (next_sku) is selected.",
+ "expected_final_package": "next_sku from src/inventory.py.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

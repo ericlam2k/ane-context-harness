@@ -1,0 +1,9 @@
+{
+  "app_name": "synthetic-py",
+  "version": "0.1.0",
+  "feature_flags": {
+    "reporting": false,
+    "analytics": false,
+    "discount": true
+  }
+}

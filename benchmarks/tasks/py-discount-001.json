@@ -1,0 +1,54 @@
+{
+  "task_id": "py-discount-001",
+  "task": "Fix the incorrect discount calculation and update its tests",
+  "repository_id": "synthetic_py_project",
+  "task_language": "python",
+  "token_budget": 1200,
+  "required_chunks": [
+    {
+      "path": "src/discount.py",
+      "symbol": "calculate_discount",
+      "lines": [
+        7,
+        12
+      ]
+    },
+    {
+      "path": "tests/test_discount.py",
+      "symbol": "test_calculate_discount"
+    }
+  ],
+  "helpful_chunks": [
+    {
+      "path": "src/calculator.py"
+    },
+    {
+      "path": "docs/design.md"
+    }
+  ],
+  "irrelevant_chunks": [
+    {
+      "path": "src/inventory.py"
+    },
+    {
+      "path": "src/reporting.py"
+    }
+  ],
+  "sensitive_fixtures": [
+    {
+      "path": ".env"
+    }
+  ],
+  "tags": [
+    "bug-fix",
+    "python",
+    "discount"
+  ],
+  "difficulty": "typical",
+  "category": "bug-fix-source-and-test",
+  "challenge": "Task text names no symbols or paths; required symbols must be found via lexical+structural match against distractor modules.",
+  "expected_retrieval_behavior": "src/discount.py and tests/test_discount.py rank in the top candidates without explicit path hints; inventory/reporting stay out under the 1200-token budget.",
+  "expected_final_package": "discount implementation + its test; calculator/docs optional; inventory/reporting excluded.",
+  "ground_truth_provenance": "hand-labelled by fixture author; verified against repository tree at P3.6 evidence freeze",
+  "use_explicit_path_hints": false
+}

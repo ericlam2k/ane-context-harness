@@ -1,0 +1,45 @@
+{
+ "task_id": "hard-apply-discount-001",
+ "task": "Fix per-line discount rounding and keep the policy tests green",
+ "repository_id": "synthetic_hard_project",
+ "task_language": "typescript",
+ "token_budget": 800,
+ "required_chunks": [
+  {
+   "path": "src/discounts/apply.ts",
+   "symbol": "computeDiscount"
+  },
+  {
+   "path": "tests/discounts.test.ts"
+  }
+ ],
+ "helpful_chunks": [
+  {
+   "path": "docs/pricing-rules.md"
+  }
+ ],
+ "irrelevant_chunks": [
+  {
+   "path": "src/legacy/compute.ts"
+  },
+  {
+   "path": "src/inventory/stock.ts"
+  },
+  {
+   "path": "README.md"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "bug-fix",
+  "symbol-collision",
+  "typescript"
+ ],
+ "difficulty": "typical",
+ "category": "bug-fix-with-symbol-collision",
+ "challenge": "computeDiscount is defined in BOTH src/discounts/apply.ts (correct) and src/legacy/compute.ts (wrong); tests use snake_case mirroring.",
+ "expected_retrieval_behavior": "apply.ts computeDiscount + tests/discounts.test.ts rank first; legacy/compute.ts must not be required.",
+ "expected_final_package": "apply.ts computeDiscount + discount policy tests.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

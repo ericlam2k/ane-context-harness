@@ -1,0 +1,45 @@
+{
+ "task_id": "ts-math-discount-001",
+ "task": "Fix discount application and coupon rate lookup, then update the tests",
+ "repository_id": "synthetic_ts_project",
+ "task_language": "typescript",
+ "token_budget": 650,
+ "required_chunks": [
+  {
+   "path": "src/math.ts",
+   "symbol": "calculateDiscount"
+  },
+  {
+   "path": "src/math.ts",
+   "symbol": "applyCoupon"
+  },
+  {
+   "path": "tests/math.test.ts"
+  }
+ ],
+ "helpful_chunks": [],
+ "irrelevant_chunks": [
+  {
+   "path": "src/inventory.ts"
+  },
+  {
+   "path": "src/reporting.ts"
+  },
+  {
+   "path": "src/analytics.ts"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "multi-symbol",
+  "naming-mismatch",
+  "typescript"
+ ],
+ "difficulty": "difficult",
+ "category": "multi-symbol-source-test-mismatch",
+ "challenge": "Two source symbols plus the test file; snake_case test names vs camelCase source vs prose task wording.",
+ "expected_retrieval_behavior": "math.ts chunk(s) + math.test.ts retained under budget.",
+ "expected_final_package": "calculateDiscount + applyCoupon + their test block.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

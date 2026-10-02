@@ -1,0 +1,51 @@
+server:
+  host: 127.0.0.1
+  port: 8765
+
+index:
+  storage: sqlite
+  storage_path: "~/.ane_context_harness"
+  max_file_bytes: 1000000
+  chunk_target_tokens: 350
+  chunk_overlap_tokens: 40
+  incremental: true
+
+retrieval:
+  max_initial_candidates: 500
+  lexical_weight: 0.35
+  symbol_weight: 0.25
+  path_weight: 0.15
+  dependency_weight: 0.10
+  test_pair_weight: 0.10
+  git_recency_weight: 0.05
+  diversity_lambda: 0.25
+  top_k_for_diversity: 60
+
+runtime:
+  compute_mode: deterministic_only
+  coreml_enabled: false
+  fail_closed: false
+
+privacy:
+  redact_secrets: false
+  fail_closed_for_cloud: false
+  never_read:
+    - "**/.git/**"
+    - "**/.env*"
+    - "**/.EnvLocal"
+    - "**/.aws/**"
+    - "**/.ssh/**"
+    - "**/*.pem"
+
+limits:
+  request_body_bytes: 10000000
+  candidate_token_limit: 100000
+  default_output_token_budget: 12000
+  max_output_token_budget: 30000
+  # Live provider calls disabled until deliberately raised
+  # (docs/provider-evaluation-stages.md).
+  max_provider_spend_usd: 0.0
+
+telemetry:
+  enabled: true
+  include_source_text: false

@@ -1,0 +1,42 @@
+{
+ "task_id": "py-calculator-001",
+ "task": "Fix division-by-zero handling in the calculator and update its tests",
+ "repository_id": "synthetic_py_project",
+ "task_language": "python",
+ "token_budget": 700,
+ "required_chunks": [
+  {
+   "path": "src/calculator.py",
+   "symbol": "divide"
+  },
+  {
+   "path": "tests/test_calculator.py",
+   "symbol": "test_divide"
+  }
+ ],
+ "helpful_chunks": [],
+ "irrelevant_chunks": [
+  {
+   "path": "src/inventory.py"
+  },
+  {
+   "path": "src/reporting.py"
+  },
+  {
+   "path": "docs/design.md"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "bug-fix",
+  "python",
+  "calculator"
+ ],
+ "difficulty": "small",
+ "category": "bug-fix-source-and-test",
+ "challenge": "Source and test use matching snake_case names; inventory/reporting share math vocabulary.",
+ "expected_retrieval_behavior": "src/calculator.py divide and tests/test_calculator.py test_divide rank first without hints.",
+ "expected_final_package": "divide implementation + test_divide block.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

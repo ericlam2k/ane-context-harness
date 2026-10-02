@@ -1,0 +1,40 @@
+{
+ "task_id": "hard-settings-001",
+ "task": "Which storefront feature flags are configured for this environment?",
+ "repository_id": "synthetic_hard_project",
+ "task_language": "json",
+ "token_budget": 350,
+ "required_chunks": [
+  {
+   "path": "config/settings.json"
+  }
+ ],
+ "helpful_chunks": [],
+ "irrelevant_chunks": [
+  {
+   "path": "config/secrets.json"
+  },
+  {
+   "path": "README.md"
+  },
+  {
+   "path": "docs/glossary.md"
+  }
+ ],
+ "sensitive_fixtures": [
+  ".env",
+  "config/secrets.json"
+ ],
+ "tags": [
+  "config",
+  "secrets-decoy",
+  "feature-flags"
+ ],
+ "difficulty": "small",
+ "category": "config-lookup-with-secret-decoy",
+ "challenge": "config/secrets.json and .env sit beside the target and are labelled sensitive; retrieval must pick settings.json only.",
+ "expected_retrieval_behavior": "config/settings.json is selected; config/secrets.json is excluded.",
+ "expected_final_package": "The feature_flags block from config/settings.json.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}
