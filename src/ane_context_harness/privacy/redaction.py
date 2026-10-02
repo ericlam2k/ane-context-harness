@@ -2,7 +2,8 @@
 
 Each unique secret value maps to a stable placeholder within a request, e.g.
 `<REDACTED_API_KEY_1>`. The raw secret value is never logged; only the
-placeholder and counts are emitted to telemetry/events.
+placeholder and aggregate counts are surfaced, via the package
+`redaction_summary` (API/CLI/evaluation reports).
 """
 from __future__ import annotations
 
