@@ -1,0 +1,38 @@
+{
+  "task_id": "ts-discount-001",
+  "task": "Fix the discount calculation bug in math.ts and verify its tests",
+  "repository_id": "synthetic_ts_project",
+  "task_language": "typescript",
+  "token_budget": 500,
+  "required_chunks": [
+    {
+      "path": "src/math.ts",
+      "symbol": "calculateDiscount"
+    },
+    {
+      "path": "tests/math.test.ts",
+      "symbol": "calculate_discount"
+    }
+  ],
+  "helpful_chunks": [],
+  "irrelevant_chunks": [
+    {
+      "path": "src/inventory.ts"
+    },
+    {
+      "path": "src/reporting.ts"
+    }
+  ],
+  "tags": [
+    "bug-fix",
+    "typescript",
+    "discount"
+  ],
+  "difficulty": "small",
+  "category": "bug-fix-source-and-test",
+  "challenge": "TypeScript file with camelCase symbols; test names mirror symbols closely but inventory/reporting share discount vocabulary.",
+  "expected_retrieval_behavior": "src/math.ts and tests/math.test.ts rank first without path hints.",
+  "expected_final_package": "calculateDiscount code + its test block.",
+  "ground_truth_provenance": "hand-labelled by fixture author; verified against repository tree at P3.6 evidence freeze",
+  "use_explicit_path_hints": false
+}

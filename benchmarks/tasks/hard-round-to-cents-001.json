@@ -1,0 +1,38 @@
+{
+ "task_id": "hard-round-to-cents-001",
+ "task": "Fix the cents rounding helper so negative amounts round away from zero",
+ "repository_id": "synthetic_hard_project",
+ "task_language": "typescript",
+ "token_budget": 400,
+ "required_chunks": [
+  {
+   "path": "src/utils/pricing.ts",
+   "symbol": "roundToCents"
+  }
+ ],
+ "helpful_chunks": [],
+ "irrelevant_chunks": [
+  {
+   "path": "src/pricing.ts"
+  },
+  {
+   "path": "docs/glossary.md"
+  },
+  {
+   "path": "src/discounts/apply.ts"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "path-collision",
+  "typescript",
+  "rounding"
+ ],
+ "difficulty": "small",
+ "category": "path-ambiguity-same-basename",
+ "challenge": "roundToCents exists in both src/pricing.ts and src/utils/pricing.ts (same basename, same symbol) and the task names no file.",
+ "expected_retrieval_behavior": "src/utils/pricing.ts ranks first; src/pricing.ts is not required.",
+ "expected_final_package": "utils/pricing.ts roundToCents implementation.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

@@ -1,0 +1,52 @@
+{
+ "task_id": "hard-cart-apply-001",
+ "task": "Make cart checkout honor the documented concession policy end to end across cart lines and loyalty tiers",
+ "repository_id": "synthetic_hard_project",
+ "task_language": "typescript",
+ "token_budget": 1200,
+ "required_chunks": [
+  {
+   "path": "src/cart.ts",
+   "symbol": "checkoutCart"
+  },
+  {
+   "path": "src/discounts/apply.ts",
+   "symbol": "applyDiscount"
+  },
+  {
+   "path": "src/types.ts"
+  }
+ ],
+ "helpful_chunks": [
+  {
+   "path": "docs/pricing-rules.md"
+  }
+ ],
+ "irrelevant_chunks": [
+  {
+   "path": "src/legacy/compute.ts"
+  },
+  {
+   "path": "src/utils/pricing.ts"
+  },
+  {
+   "path": "docs/glossary.md"
+  },
+  {
+   "path": "src/inventory/stock.ts"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "multi-file",
+  "policy",
+  "typescript"
+ ],
+ "difficulty": "difficult",
+ "category": "multi-file-required-set",
+ "challenge": "Three required chunks across cart/policy/types; legacy computeDiscount collides by name; utils/pricing.ts collides by basename; glossary saturates the vocabulary. Budget 1200 (< repo total 3272) must absorb all three required chunks plus the policy docs that outrank them.",
+ "expected_retrieval_behavior": "cart.ts + apply.ts + types.ts are all retained under budget; naming the cart-line and loyalty-tier concepts must pull the file-level types.ts even though it has no single symbol span.",
+ "expected_final_package": "checkoutCart, applyDiscount, and the CartLine/LoyaltyTier types.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

@@ -1,0 +1,145 @@
+{
+  "bundle_name": "ane-context-harness-evidence-v0.1",
+  "bundle_schema_version": "evidence-1",
+  "created_at_utc": "2026-10-02T08:25:01Z",
+  "files": {
+    "METRICS.md": {
+      "bytes": 1261,
+      "category": "metrics-classification",
+      "sha256": "09028dce1765433aeaa1be8c18e7121df7353a4b7b85aac0993949da1881eace"
+    },
+    "provenance/conversion_lock.json": {
+      "bytes": 293,
+      "category": "provenance",
+      "sha256": "577ab7e90a6a4e079c2dd8a71e469429c9553ffdebd895cd6905a2cf83f389d9"
+    },
+    "provenance/environment.json": {
+      "bytes": 268,
+      "category": "provenance",
+      "sha256": "32c93efa6910752cb3573b0606b68c8c5145ec8164b5438cb65bf7c20940559b"
+    },
+    "provenance/fingerprints.json": {
+      "bytes": 1472,
+      "category": "provenance",
+      "sha256": "32ecf16c78ca2b4cefa7be720588e2f90091e0e879a290859ef9a7279ba7a5ca"
+    },
+    "provenance/model_manifest.json": {
+      "bytes": 1995,
+      "category": "provenance",
+      "sha256": "6975a7aa7e5cf1ac242a275951a7058087d233533c7fb259875675c00df7f554"
+    },
+    "provenance/numeric_validation.json": {
+      "bytes": 1257,
+      "category": "provenance",
+      "sha256": "01f3e33d91578b4b0bd503eb71f37d3316db1496317d29a40ab184dd358b1980"
+    },
+    "provenance/tokenizer_validation.json": {
+      "bytes": 57,
+      "category": "provenance",
+      "sha256": "024740988bcbd11af5d56ff34a7376bbbf6587f1b5f21ac323ca23962ec261ae"
+    },
+    "reports/calibration_report.json": {
+      "bytes": 4150,
+      "category": "report",
+      "sha256": "c3956a6bd30c9c1975beb429e91e6d47848ce6012cd9ef59e6ae1355fd055fa6"
+    },
+    "reports/phase5-ab-evaluation.json": {
+      "bytes": 27056,
+      "category": "report",
+      "sha256": "af11f0bd60acd17f5e0f06b6ca36e128a686b36f429ff1de1e26e5a66612a02d"
+    },
+    "reports/phase5-ab-evaluation.md": {
+      "bytes": 7718,
+      "category": "report",
+      "sha256": "ec1e9caf656d032838a81334ca42636cbe8d1139921cba57a3862f5e224f3f33"
+    }
+  },
+  "metadata": {
+    "benchmark_schema_version": "2",
+    "benchmark_task_set_hash": "16b6a2ba74d437a79832b37049aea7e8db8208c28b62dc7bc2c23068d5f821f1",
+    "calibration_report": "reports/calibration_report.json",
+    "capability_profile_fingerprint": "84514ea62a491bc5f93b392708e04954895e426e24d9bf9d0d6966c77ef52f56",
+    "compiled_artifact_checksums": {
+      "128tok": {},
+      "256tok": {}
+    },
+    "compute_units_requested": [
+      "coreml_all@128tok",
+      "coreml_all@256tok",
+      "coreml_cpu_gpu@128tok",
+      "coreml_cpu_gpu@256tok",
+      "coreml_cpu_only@128tok",
+      "coreml_cpu_only@256tok"
+    ],
+    "conversion_dependency_lock": {
+      "coremltools": "not_installed",
+      "huggingface_hub": "not_installed",
+      "lock_kind": "exact installed versions at bundle creation",
+      "numpy": "2.5.2",
+      "python": "3.14.5",
+      "torch": "not_installed",
+      "transformers": "not_installed"
+    },
+    "coremltools_version": "not_installed",
+    "evidence_classification": {
+      "calculated": [
+        "token-reduction percentages and all aggregation statistics",
+        "checksums and fingerprints",
+        "task-set and configuration hashes",
+        "derived cost figures (from counts under a stated price)"
+      ],
+      "estimated": [
+        "cost_usd figures (price assumption stated in the report)",
+        "TTFT sensitivity values (token delta at illustrative prefill rates)"
+      ],
+      "measured": [
+        "agreement cosines and raw-logit differences",
+        "warm p50/p95 latency per compute unit",
+        "benchmark failure rates",
+        "phase5 selection latency (p50/p95) and peak RSS",
+        "arm A/B/C token counts and required-evidence recall",
+        "gate-B quality metrics (recall@k, nDCG@10, MRR)",
+        "cold model-load latency"
+      ],
+      "unmeasured": [
+        "energy consumption",
+        "time-to-first-token on any real provider/model",
+        "provider-reported tokens, cost or tool-call behavior",
+        "Neural Engine execution share (coreml_all does not attribute units)",
+        "performance on machines other than the tested configuration"
+      ]
+    },
+    "git_commit": null,
+    "git_dirty": null,
+    "git_status": "not_a_git_repository",
+    "harness_configuration_hash": "490e0309ccf75055e21056269e0907fa423105c2dfb1a9ba2b43db28f598fe8e",
+    "index_condition": "local evaluation \u2014 no provider prompt cache involved; index built once into a fresh temp store (cold index), OS page cache not flushed",
+    "machine_architecture": "arm64",
+    "macos_version": "26.5",
+    "measured_repetitions": 5,
+    "model_id": "cross-encoder/ms-marco-MiniLM-L6-v2",
+    "model_revision": "233902d25c440f23af6f7d6e94d2946bac0bee0a",
+    "phase3_qualification_report": "reports/calibration_report.json",
+    "phase5_reports": [
+      "reports/phase5-ab-evaluation.json",
+      "reports/phase5-ab-evaluation.md"
+    ],
+    "prompt_cache_state": "local evaluation \u2014 no provider prompt cache involved; index built once into a fresh temp store (cold index), OS page cache not flushed",
+    "provider_state": "none invoked (local evaluation; no network)",
+    "python_version": "3.14.5",
+    "pytorch_version": "not_installed",
+    "source_artifact_checksums": {
+      "reason": "huggingface_hub cache not found; revision recorded instead of a content hash",
+      "status": "not_available_locally"
+    },
+    "token_estimator": "regex-heuristic",
+    "token_estimator_version": "2",
+    "tokenizer_revision": {
+      "source": "content hashes of the tokenizer files shipped in the artifact",
+      "tokenizer_config_sha256": null,
+      "vocab_sha256": null
+    },
+    "transformers_version": "not_installed",
+    "warmup_runs": 1
+  }
+}

@@ -1,0 +1,42 @@
+{
+ "task_id": "hard-buried-totals-001",
+ "task": "Fix how the final total applies tax and shipping in the pricing module",
+ "repository_id": "synthetic_hard_project",
+ "task_language": "typescript",
+ "token_budget": 850,
+ "required_chunks": [
+  {
+   "path": "src/pricing.ts",
+   "symbol": "calculateTotals"
+  }
+ ],
+ "helpful_chunks": [
+  {
+   "path": "src/types.ts"
+  }
+ ],
+ "irrelevant_chunks": [
+  {
+   "path": "src/utils/pricing.ts"
+  },
+  {
+   "path": "docs/glossary.md"
+  },
+  {
+   "path": "src/legacy/compute.ts"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "buried-symbol",
+  "large-file",
+  "typescript"
+ ],
+ "difficulty": "typical",
+ "category": "buried-symbol-large-file",
+ "challenge": "pricing.ts is the largest file (3 chunks, 12 functions); src/utils/pricing.ts shares its basename; symbol sits mid-file.",
+ "expected_retrieval_behavior": "A chunk of src/pricing.ts carrying calculateTotals is selected despite the same-basename utility file.",
+ "expected_final_package": "calculateTotals from src/pricing.ts.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

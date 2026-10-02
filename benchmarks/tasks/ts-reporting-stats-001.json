@@ -1,0 +1,47 @@
+{
+ "task_id": "ts-reporting-stats-001",
+ "task": "Fix the summary statistics computation so empty inputs behave",
+ "repository_id": "synthetic_ts_project",
+ "task_language": "typescript",
+ "token_budget": 500,
+ "required_chunks": [
+  {
+   "path": "src/reporting.ts",
+   "symbol": "summaryStats"
+  },
+  {
+   "path": "src/reporting.ts",
+   "symbol": "frequencyTable"
+  }
+ ],
+ "helpful_chunks": [
+  {
+   "path": "src/reporting.ts",
+   "symbol": "buildReport"
+  }
+ ],
+ "irrelevant_chunks": [
+  {
+   "path": "src/analytics.ts"
+  },
+  {
+   "path": "src/inventory.ts"
+  },
+  {
+   "path": "src/math.ts"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "similar-names",
+  "typescript",
+  "reporting"
+ ],
+ "difficulty": "difficult",
+ "category": "similar-function-names",
+ "challenge": "reporting.ts vs analytics.ts share summary/average vocabulary; budget fits only one module plus slack.",
+ "expected_retrieval_behavior": "src/reporting.ts is selected; analytics.ts must not displace it.",
+ "expected_final_package": "summaryStats + frequencyTable from reporting.ts.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

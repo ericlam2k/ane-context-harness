@@ -1,0 +1,45 @@
+{
+ "task_id": "hard-similarnames-001",
+ "task": "Fix the promotional concession path so it stops applying the loyalty rate twice",
+ "repository_id": "synthetic_hard_project",
+ "task_language": "typescript",
+ "token_budget": 750,
+ "required_chunks": [
+  {
+   "path": "src/discounts/apply.ts",
+   "symbol": "applyPromo"
+  }
+ ],
+ "helpful_chunks": [
+  {
+   "path": "docs/pricing-rules.md"
+  }
+ ],
+ "irrelevant_chunks": [
+  {
+   "path": "src/inventory/stock.ts"
+  },
+  {
+   "path": "src/legacy/compute.ts"
+  },
+  {
+   "path": "src/pricing.ts"
+  },
+  {
+   "path": "docs/glossary.md"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "similar-names",
+  "ambiguity",
+  "typescript"
+ ],
+ "difficulty": "difficult",
+ "category": "similar-function-names-path-ambiguity",
+ "challenge": "applyDiscount/applyPromo/applyLoyalty sit side by side; stock.ts and legacy/compute.ts add near-name decoys; task names no file.",
+ "expected_retrieval_behavior": "apply.ts applyPromo chunk is selected over loyalty/clearance decoys.",
+ "expected_final_package": "applyPromo from src/discounts/apply.ts.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

@@ -1,0 +1,38 @@
+{
+  "description": "ANE Context Harness model metadata. Phase 1 ships NO Core ML model; this is the schema for future qualified backends.",
+  "phase": "0-1 (deterministic only)",
+  "default_reranker_backend": "cpu_deterministic",
+  "default_behavioral_profile": "DETERMINISTIC_ONLY",
+  "models": {
+    "reranker": {
+      "name": "not_packaged",
+      "available": false,
+      "why": "Core ML conversion is deferred to Phase 3; no model weights bundled.",
+      "backends": ["cpu_deterministic", "coreml_all", "coreml_cpu_gpu", "local_gpu"],
+      "activation": "benchmark-qualified only (Phase 3)"
+    },
+    "embedding": {
+      "name": "not_packaged",
+      "available": false,
+      "why": "Deferred; embeddings disabled until calibrated.",
+      "backends": ["cpu", "coreml_all", "coreml_cpu_gpu"],
+      "activation": "benchmark-qualified only (Phase 3+)"
+    },
+    "secret_classifier": {
+      "name": "rule_based",
+      "available": false,
+      "why": "Rule-based secret detection is deferred to Phase 2; Core ML classifier deferred.",
+      "backends": ["cpu", "coreml_all"],
+      "activation": "Phase 2+ (rules first)"
+    }
+  },
+  "calibration": {
+    "required": true,
+    "minimum_speedup_percent": 15.0,
+    "max_warm_p95_ms": 1500,
+    "max_failure_rate_percent": 0.1,
+    "require_numerical_validation": true,
+    "recalibrate_on": ["macos_version_change", "model_version_change",
+                       "runtime_version_change", "capability_profile_schema_change", "user_request"]
+  }
+}

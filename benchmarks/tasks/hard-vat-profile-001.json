@@ -1,0 +1,38 @@
+{
+ "task_id": "hard-vat-profile-001",
+ "task": "Where are EU VAT profiles constructed for a country?",
+ "repository_id": "synthetic_hard_project",
+ "task_language": "typescript",
+ "token_budget": 450,
+ "required_chunks": [
+  {
+   "path": "src/services/legacy/region/eu/vat.ts",
+   "symbol": "profileFor"
+  }
+ ],
+ "helpful_chunks": [],
+ "irrelevant_chunks": [
+  {
+   "path": "docs/glossary.md"
+  },
+  {
+   "path": "src/pricing.ts"
+  },
+  {
+   "path": "src/utils/pricing.ts"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "deep-nesting",
+  "typescript",
+  "vat"
+ ],
+ "difficulty": "small",
+ "category": "deep-nesting-lookup",
+ "challenge": "Evidence sits six directories deep under src/services/legacy/region/eu/; pricing vocabulary is shared with several shallower files.",
+ "expected_retrieval_behavior": "The deeply nested vat.ts chunk is selected despite no path in the query.",
+ "expected_final_package": "profileFor from the nested EU VAT module.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

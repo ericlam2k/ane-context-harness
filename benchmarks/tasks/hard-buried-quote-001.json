@@ -1,0 +1,46 @@
+{
+ "task_id": "hard-buried-quote-001",
+ "task": "Fix the customer quote so EU countries use the right VAT profile",
+ "repository_id": "synthetic_hard_project",
+ "task_language": "typescript",
+ "token_budget": 850,
+ "required_chunks": [
+  {
+   "path": "src/pricing.ts"
+  },
+  {
+   "path": "src/services/legacy/region/eu/vat.ts",
+   "symbol": "profileFor"
+  }
+ ],
+ "helpful_chunks": [
+  {
+   "path": "src/pricing.ts",
+   "symbol": "zoneForCountry"
+  }
+ ],
+ "irrelevant_chunks": [
+  {
+   "path": "src/utils/pricing.ts"
+  },
+  {
+   "path": "docs/glossary.md"
+  },
+  {
+   "path": "src/legacy/compute.ts"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "buried-symbol",
+  "deep-nesting",
+  "typescript"
+ ],
+ "difficulty": "difficult",
+ "category": "buried-symbol-plus-deep-nesting",
+ "challenge": "The quote entry point sits at the tail of the largest file; VAT evidence is six directories deep; utils/pricing.ts shares the basename.",
+ "expected_retrieval_behavior": "A pricing.ts chunk and the nested vat.ts chunk are both selected.",
+ "expected_final_package": "priceQuote from pricing.ts + profileFor from nested vat.ts.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

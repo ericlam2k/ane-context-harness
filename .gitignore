@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+build/
+dist/
+
+# Test/tool caches
+.pytest_cache/
+
+# macOS
+.DS_Store
+
+# NOTE: tests/fixtures contains INTENTIONAL fake secrets (.env, .EnvLocal,
+# secrets.json) used by redaction tests — never add rules that would ignore
+# tests/fixtures/**.

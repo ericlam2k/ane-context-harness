@@ -1,0 +1,50 @@
+{
+  "max_abs_logit": 0.033631,
+  "min_cosine": 1.0,
+  "compared_raw_logits": true,
+  "passed": true,
+  "order_preservation": {
+    "n_samples": 6,
+    "p50_abs_logit_diff": 0.009823,
+    "p95_abs_logit_diff": 0.033184,
+    "p99_abs_logit_diff": 0.033542,
+    "max_abs_logit_diff": 0.033631,
+    "cosine_similarity": 0.999997,
+    "spearman": 1.0,
+    "top5_overlap": 1.0,
+    "top10_overlap": 1.0,
+    "pairwise_inversion_rate": 0.0,
+    "sign_flip_count": 0,
+    "worst_case_fixture_ids": [
+      "probe_4",
+      "probe_2",
+      "probe_5",
+      "probe_0",
+      "probe_3"
+    ],
+    "compared_raw_logits": true
+  },
+  "gate_a_thresholds": {
+    "min_cosine": 0.999,
+    "max_abs_logit": 0.05
+  },
+  "future_order_gates": {
+    "configured": {
+      "min_cosine": 0.999,
+      "min_spearman": 0.99,
+      "min_top10_overlap": 0.98,
+      "max_pairwise_inversion_rate": 0.01,
+      "max_abs_logit": 0.05
+    },
+    "results": {
+      "min_cosine": true,
+      "min_spearman": true,
+      "min_top10_overlap": true,
+      "max_pairwise_inversion_rate": true,
+      "max_abs_logit": true
+    },
+    "passed": true,
+    "enforced": false,
+    "note": "suggested future-release gates; recorded, not enforced against this build (Gate A governs `passed`)"
+  }
+}

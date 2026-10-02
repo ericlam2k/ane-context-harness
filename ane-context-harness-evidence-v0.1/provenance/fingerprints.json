@@ -1,0 +1,39 @@
+{
+  "capability_profile_fingerprint": "84514ea62a491bc5f93b392708e04954895e426e24d9bf9d0d6966c77ef52f56",
+  "harness_configuration_hash": "490e0309ccf75055e21056269e0907fa423105c2dfb1a9ba2b43db28f598fe8e",
+  "benchmark_task_set_hash": "16b6a2ba74d437a79832b37049aea7e8db8208c28b62dc7bc2c23068d5f821f1",
+  "benchmark_schema_version": "2",
+  "git": {
+    "commit": null,
+    "dirty": null,
+    "status": "not_a_git_repository"
+  },
+  "token_estimator": {
+    "backend": "regex-heuristic",
+    "version": "2"
+  },
+  "index_condition": "local evaluation \u2014 no provider prompt cache involved; index built once into a fresh temp store (cold index), OS page cache not flushed",
+  "provider_state": "none invoked (local evaluation; no network)",
+  "prompt_cache_state": "local evaluation \u2014 no provider prompt cache involved; index built once into a fresh temp store (cold index), OS page cache not flushed",
+  "warmup_runs": 1,
+  "measured_repetitions": 5,
+  "compute_units_requested": [
+    "coreml_all@128tok",
+    "coreml_all@256tok",
+    "coreml_cpu_gpu@128tok",
+    "coreml_cpu_gpu@256tok",
+    "coreml_cpu_only@128tok",
+    "coreml_cpu_only@256tok"
+  ],
+  "agreement": {
+    "n_pairs": 1000,
+    "min_cosine": 1.0,
+    "max_abs_logit": 0.044115,
+    "thresholds": {
+      "min_cosine": 0.999,
+      "max_abs_logit": 0.05
+    }
+  },
+  "arm_c_backend": "coreml_all",
+  "arm_c_artifact": "cross-encoder/ms-marco-MiniLM-L6-v2@233902d25c440f23af6f7d6e94d2946bac0bee0a"
+}

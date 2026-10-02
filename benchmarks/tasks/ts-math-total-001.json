@@ -1,0 +1,42 @@
+{
+ "task_id": "ts-math-total-001",
+ "task": "Fix summation of items and update its test",
+ "repository_id": "synthetic_ts_project",
+ "task_language": "typescript",
+ "token_budget": 700,
+ "required_chunks": [
+  {
+   "path": "src/math.ts",
+   "symbol": "calculateTotal"
+  },
+  {
+   "path": "tests/math.test.ts",
+   "symbol": "calculate_total"
+  }
+ ],
+ "helpful_chunks": [],
+ "irrelevant_chunks": [
+  {
+   "path": "src/inventory.ts"
+  },
+  {
+   "path": "src/reporting.ts"
+  },
+  {
+   "path": "src/analytics.ts"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "naming-mismatch",
+  "typescript",
+  "sum"
+ ],
+ "difficulty": "small",
+ "category": "naming-mismatch-source-test",
+ "challenge": "Task prose says 'summation of items', source is camelCase calculateTotal, test name is snake_case calculate_total; budget 700 (< repo total 1236) must absorb both required chunks while an irrelevant 'items'-heavy file competes for the same budget.",
+ "expected_retrieval_behavior": "src/math.ts calculateTotal and tests/math.test.ts both rank first.",
+ "expected_final_package": "calculateTotal + its snake_case test block.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

@@ -1,0 +1,38 @@
+{
+ "task_id": "ts-analytics-moving-001",
+ "task": "Fix the moving-average window calculation",
+ "repository_id": "synthetic_ts_project",
+ "task_language": "typescript",
+ "token_budget": 450,
+ "required_chunks": [
+  {
+   "path": "src/analytics.ts",
+   "symbol": "movingAverage"
+  }
+ ],
+ "helpful_chunks": [],
+ "irrelevant_chunks": [
+  {
+   "path": "src/reporting.ts"
+  },
+  {
+   "path": "src/inventory.ts"
+  },
+  {
+   "path": "src/math.ts"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "lookup",
+  "typescript",
+  "analytics"
+ ],
+ "difficulty": "small",
+ "category": "single-module-lookup",
+ "challenge": "reporting.ts exposes a similarly named rolling_average-style helper vocabulary; analytics.ts also carries unrelated metric helpers.",
+ "expected_retrieval_behavior": "src/analytics.ts movingAverage ranks first.",
+ "expected_final_package": "movingAverage from src/analytics.ts.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

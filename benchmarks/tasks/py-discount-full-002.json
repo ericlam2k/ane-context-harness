@@ -1,0 +1,52 @@
+{
+  "task_id": "py-discount-full-002",
+  "task": "Fix the discount calculation, complete the missing coupon handling, and update its tests",
+  "repository_id": "synthetic_py_project",
+  "task_language": "python",
+  "token_budget": 300,
+  "required_chunks": [
+    {
+      "path": "src/discount.py",
+      "symbol": "calculate_discount"
+    },
+    {
+      "path": "src/discount.py",
+      "symbol": "apply_coupon"
+    },
+    {
+      "path": "tests/test_discount.py",
+      "symbol": "test_apply_coupon"
+    }
+  ],
+  "helpful_chunks": [
+    {
+      "path": "src/calculator.py"
+    }
+  ],
+  "irrelevant_chunks": [
+    {
+      "path": "src/inventory.py"
+    },
+    {
+      "path": "src/reporting.py"
+    },
+    {
+      "path": "docs/design.md"
+    },
+    {
+      "path": "README.md"
+    }
+  ],
+  "tags": [
+    "bug-fix",
+    "python",
+    "compact-budget"
+  ],
+  "difficulty": "typical",
+  "category": "compact-budget-multi-symbol",
+  "challenge": "Three required symbol scopes inside one file plus a test, under a 300-token budget that forces aggressive dropping of distractors.",
+  "expected_retrieval_behavior": "both required symbols of src/discount.py and the coupon test are mandatory-selected; README/docs/reporting excluded.",
+  "expected_final_package": "calculate_discount + apply_coupon code and test_apply_coupon; nothing else essential.",
+  "ground_truth_provenance": "hand-labelled by fixture author; verified against repository tree at P3.6 evidence freeze",
+  "use_explicit_path_hints": false
+}

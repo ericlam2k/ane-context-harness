@@ -1,0 +1,184 @@
+{
+  "label": "phase1-deterministic",
+  "generated_by": "scripts/measure_phase1.py",
+  "summary": {
+    "label": "phase1-deterministic",
+    "n": 3,
+    "median_reduction_percent": 69.15,
+    "mean_reduction_percent": 73.16,
+    "min_reduction_percent": 63.83,
+    "median_recall": 1.0,
+    "min_recall": 1.0,
+    "p50_latency_ms": 2.09,
+    "p95_latency_ms": 2.09,
+    "peak_rss_mb_min": 72.84375,
+    "peak_rss_mb_max": 72.84375,
+    "measured_on_platform": {
+      "platform": "macOS-26.5-arm64-arm-64bit-Mach-O",
+      "python_version": "3.14.5",
+      "machine": "arm64",
+      "discovery": {
+        "machine_id": "118220b9187d11d2cb6f2f8146bce4d6",
+        "hardware": {
+          "architecture": "arm64",
+          "is_apple_silicon": true,
+          "processor": "arm",
+          "unified_memory_bytes": 8589934592,
+          "total_physical_memory_bytes": 8589934592,
+          "process_peak_rss_bytes": 73400320,
+          "memory_pressure": "unknown"
+        },
+        "software": {
+          "platform": "macOS-26.5-arm64-arm-64bit-Mach-O",
+          "macos_version": "26.5",
+          "macos_build": "arm64",
+          "python_version": "3.14.5"
+        },
+        "devices": {
+          "coreml_available": false,
+          "coreml_available_tri": "unknown",
+          "neural_engine_observed": false,
+          "neural_engine_observed_tri": "unknown"
+        },
+        "runtime": {
+          "compute_mode": "deterministic_only"
+        }
+      }
+    }
+  },
+  "items": [
+    {
+      "task_id": "py-discount-001",
+      "candidate_tokens": 3135,
+      "selected_tokens": 1134,
+      "tokens_removed": 2001,
+      "reduction_percent": 63.83,
+      "recall": 1.0,
+      "total_latency_ms": 3.39,
+      "stage_ms": {
+        "candidate_generation_ms": 0.23,
+        "reranking_ms": 0.37,
+        "packing_ms": 0.23
+      },
+      "peak_rss_mb": 72.84375,
+      "measured_on": {
+        "hardware": {
+          "machine_id": "118220b9187d11d2cb6f2f8146bce4d6",
+          "hardware": {
+            "architecture": "arm64",
+            "is_apple_silicon": true,
+            "processor": "arm",
+            "unified_memory_bytes": 8589934592,
+            "total_physical_memory_bytes": 8589934592,
+            "process_peak_rss_bytes": 73400320,
+            "memory_pressure": "unknown"
+          },
+          "software": {
+            "platform": "macOS-26.5-arm64-arm-64bit-Mach-O",
+            "macos_version": "26.5",
+            "macos_build": "arm64",
+            "python_version": "3.14.5"
+          },
+          "devices": {
+            "coreml_available": false,
+            "coreml_available_tri": "unknown",
+            "neural_engine_observed": false,
+            "neural_engine_observed_tri": "unknown"
+          },
+          "runtime": {
+            "compute_mode": "deterministic_only"
+          }
+        }
+      }
+    },
+    {
+      "task_id": "py-discount-full-002",
+      "candidate_tokens": 3135,
+      "selected_tokens": 423,
+      "tokens_removed": 2712,
+      "reduction_percent": 86.51,
+      "recall": 1.0,
+      "total_latency_ms": 1.37,
+      "stage_ms": {
+        "candidate_generation_ms": 0.2,
+        "reranking_ms": 0.32,
+        "packing_ms": 0.04
+      },
+      "peak_rss_mb": 72.84375,
+      "measured_on": {
+        "hardware": {
+          "machine_id": "118220b9187d11d2cb6f2f8146bce4d6",
+          "hardware": {
+            "architecture": "arm64",
+            "is_apple_silicon": true,
+            "processor": "arm",
+            "unified_memory_bytes": 8589934592,
+            "total_physical_memory_bytes": 8589934592,
+            "process_peak_rss_bytes": 73400320,
+            "memory_pressure": "unknown"
+          },
+          "software": {
+            "platform": "macOS-26.5-arm64-arm-64bit-Mach-O",
+            "macos_version": "26.5",
+            "macos_build": "arm64",
+            "python_version": "3.14.5"
+          },
+          "devices": {
+            "coreml_available": false,
+            "coreml_available_tri": "unknown",
+            "neural_engine_observed": false,
+            "neural_engine_observed_tri": "unknown"
+          },
+          "runtime": {
+            "compute_mode": "deterministic_only"
+          }
+        }
+      }
+    },
+    {
+      "task_id": "ts-discount-001",
+      "candidate_tokens": 1073,
+      "selected_tokens": 331,
+      "tokens_removed": 742,
+      "reduction_percent": 69.15,
+      "recall": 1.0,
+      "total_latency_ms": 2.09,
+      "stage_ms": {
+        "candidate_generation_ms": 0.14,
+        "reranking_ms": 0.13,
+        "packing_ms": 0.03
+      },
+      "peak_rss_mb": 72.84375,
+      "measured_on": {
+        "hardware": {
+          "machine_id": "118220b9187d11d2cb6f2f8146bce4d6",
+          "hardware": {
+            "architecture": "arm64",
+            "is_apple_silicon": true,
+            "processor": "arm",
+            "unified_memory_bytes": 8589934592,
+            "total_physical_memory_bytes": 8589934592,
+            "process_peak_rss_bytes": 73400320,
+            "memory_pressure": "unknown"
+          },
+          "software": {
+            "platform": "macOS-26.5-arm64-arm-64bit-Mach-O",
+            "macos_version": "26.5",
+            "macos_build": "arm64",
+            "python_version": "3.14.5"
+          },
+          "devices": {
+            "coreml_available": false,
+            "coreml_available_tri": "unknown",
+            "neural_engine_observed": false,
+            "neural_engine_observed_tri": "unknown"
+          },
+          "runtime": {
+            "compute_mode": "deterministic_only"
+          }
+        }
+      }
+    }
+  ],
+  "note": "Measured on host hardware (see summary.measured_on_platform). Synthetic fixtures; tight token budgets. ANE not claimed."
+}

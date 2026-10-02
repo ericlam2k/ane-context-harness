@@ -1,0 +1,2 @@
+# Sensitive fixture (policy-denied). Must not be indexed.
+SECRET_TOKEN=ts_local_secret_value_12345

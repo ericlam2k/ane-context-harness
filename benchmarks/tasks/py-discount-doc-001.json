@@ -1,0 +1,45 @@
+{
+ "task_id": "py-discount-doc-001",
+ "task": "Fix the discount calculation bug and point me at the design note that documents it",
+ "repository_id": "synthetic_py_project",
+ "task_language": "python",
+ "token_budget": 750,
+ "required_chunks": [
+  {
+   "path": "src/discount.py",
+   "symbol": "calculate_discount"
+  },
+  {
+   "path": "tests/test_discount.py",
+   "symbol": "test_calculate_discount"
+  },
+  {
+   "path": "docs/design.md"
+  }
+ ],
+ "helpful_chunks": [],
+ "irrelevant_chunks": [
+  {
+   "path": "src/reporting.py"
+  },
+  {
+   "path": "src/inventory.py"
+  },
+  {
+   "path": "README.md"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "multi-file",
+  "doc",
+  "python"
+ ],
+ "difficulty": "difficult",
+ "category": "multi-file-with-doc-evidence",
+ "challenge": "Three required chunks across code/test/docs; discount vocabulary saturates README/design/reporting; compact budget forces packing.",
+ "expected_retrieval_behavior": "discount.py + test_discount.py + design.md are all retained.",
+ "expected_final_package": "calculate_discount + its test + the design note paragraph.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

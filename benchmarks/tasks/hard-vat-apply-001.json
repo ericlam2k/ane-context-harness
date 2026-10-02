@@ -1,0 +1,43 @@
+{
+ "task_id": "hard-vat-apply-001",
+ "task": "Fix VAT application for customers in countries that already include VAT in prices",
+ "repository_id": "synthetic_hard_project",
+ "task_language": "typescript",
+ "token_budget": 750,
+ "required_chunks": [
+  {
+   "path": "src/services/legacy/region/eu/vat.ts",
+   "symbol": "applyVat"
+  }
+ ],
+ "helpful_chunks": [
+  {
+   "path": "docs/pricing-rules.md"
+  }
+ ],
+ "irrelevant_chunks": [
+  {
+   "path": "src/pricing.ts"
+  },
+  {
+   "path": "docs/glossary.md"
+  },
+  {
+   "path": "README.md"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "deep-nesting",
+  "vat",
+  "doc",
+  "typescript"
+ ],
+ "difficulty": "typical",
+ "category": "deep-nesting-plus-doc-dependency",
+ "challenge": "Evidence sits six directories deep while README/glossary flood the query vocabulary with pricing words; the ordering doc is helpful context, not the answer.",
+ "expected_retrieval_behavior": "vat.ts applyVat ranks first despite the deep path; docs must not displace it.",
+ "expected_final_package": "applyVat implementation from the nested EU module.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

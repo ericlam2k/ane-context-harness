@@ -1,0 +1,45 @@
+{
+ "task_id": "hard-stock-clearance-001",
+ "task": "Fix clearance markdown so stock cost is only reduced once \u2014 it reuses the shared discount helper",
+ "repository_id": "synthetic_hard_project",
+ "task_language": "typescript",
+ "token_budget": 800,
+ "required_chunks": [
+  {
+   "path": "src/inventory/stock.ts",
+   "symbol": "clearanceMarkdown"
+  },
+  {
+   "path": "src/discounts/apply.ts",
+   "symbol": "computeDiscount"
+  }
+ ],
+ "helpful_chunks": [],
+ "irrelevant_chunks": [
+  {
+   "path": "docs/pricing-rules.md"
+  },
+  {
+   "path": "src/pricing.ts"
+  },
+  {
+   "path": "docs/glossary.md"
+  },
+  {
+   "path": "README.md"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "domain-adjacent",
+  "cross-file",
+  "typescript"
+ ],
+ "difficulty": "difficult",
+ "category": "domain-adjacent-distractor-plus-dependency",
+ "challenge": "clearance/markdown vocabulary saturates the docs and glossary (domain-adjacent distractors); stock.ts imports computeDiscount from the policy module (whose legacy twin shares the symbol).",
+ "expected_retrieval_behavior": "stock.ts clearanceMarkdown + apply.ts computeDiscount rank first; docs/glossary must not displace them.",
+ "expected_final_package": "clearanceMarkdown + computeDiscount it depends on.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

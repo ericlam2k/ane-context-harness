@@ -1,0 +1,37 @@
+{
+ "task_id": "hard-doc-rounding-001",
+ "task": "According to the authoritative rules, how are price concessions rounded?",
+ "repository_id": "synthetic_hard_project",
+ "task_language": "markdown",
+ "token_budget": 500,
+ "required_chunks": [
+  {
+   "path": "docs/pricing-rules.md"
+  }
+ ],
+ "helpful_chunks": [],
+ "irrelevant_chunks": [
+  {
+   "path": "README.md"
+  },
+  {
+   "path": "docs/glossary.md"
+  },
+  {
+   "path": "src/pricing.ts"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "doc-only",
+  "stale-doc",
+  "rounding"
+ ],
+ "difficulty": "small",
+ "category": "doc-only-evidence-with-stale-restatement",
+ "challenge": "The README restates (stale) rounding history and the glossary floods the query vocabulary; only docs/pricing-rules.md is authoritative.",
+ "expected_retrieval_behavior": "docs/pricing-rules.md is selected; README.md restatement must not displace it.",
+ "expected_final_package": "The rounding paragraph from docs/pricing-rules.md.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}

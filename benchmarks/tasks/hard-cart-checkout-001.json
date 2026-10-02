@@ -1,0 +1,46 @@
+{
+ "task_id": "hard-cart-checkout-001",
+ "task": "Fix the cart checkout total so promotions and loyalty do not stack incorrectly",
+ "repository_id": "synthetic_hard_project",
+ "task_language": "typescript",
+ "token_budget": 750,
+ "required_chunks": [
+  {
+   "path": "src/cart.ts",
+   "symbol": "checkoutCart"
+  },
+  {
+   "path": "src/discounts/apply.ts",
+   "symbol": "applyPromo"
+  }
+ ],
+ "helpful_chunks": [
+  {
+   "path": "src/types.ts"
+  }
+ ],
+ "irrelevant_chunks": [
+  {
+   "path": "src/legacy/compute.ts"
+  },
+  {
+   "path": "src/inventory/stock.ts"
+  },
+  {
+   "path": "docs/glossary.md"
+  }
+ ],
+ "sensitive_fixtures": [],
+ "tags": [
+  "cross-file",
+  "cart",
+  "typescript"
+ ],
+ "difficulty": "typical",
+ "category": "cross-file-dependency",
+ "challenge": "cart.ts depends on the discount policy module; apply* trio (applyDiscount/applyPromo/applyLoyalty) shares vocabulary.",
+ "expected_retrieval_behavior": "cart.ts checkoutCart and apply.ts applyPromo rank first.",
+ "expected_final_package": "checkoutCart + applyPromo implementations.",
+ "ground_truth_provenance": "hand-labelled by fixture author; symbols/lines verified against the fixture tree; budgets validated against estimate_repo_totals()",
+ "use_explicit_path_hints": false
+}
