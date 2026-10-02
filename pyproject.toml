@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "ane-context-harness"
 version = "0.1.0a1"
-description = "Generation-neutral local context-intelligence harness for coding agents (Phase 0/1: deterministic baseline)."
+description = "Generation-neutral local context-intelligence harness for coding agents"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }

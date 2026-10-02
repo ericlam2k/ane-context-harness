@@ -1,4 +1,4 @@
-# ⚡ ANE Context Harness
+# ⚡ ane-context-harness
 
 > **Cut your coding agent's token bills by 60%+, keep 100% code accuracy, and select context in under 4ms — running completely offline on your local machine.**
 
@@ -17,7 +17,9 @@ When you vibe-code or run AI agents (Cursor, Claude Code, OpenCode, Cline, Winds
 - **Lost in the middle:** Models hallucinate or miss bugs when buried under irrelevant boilerplate.
 - **Secret leaks:** Unwittingly sending `.env` secrets or AWS credentials to third-party model providers.
 
-**ANE Context Harness** is a lightweight, local-first context engine that sits between your codebase and your coding agent. In **~3 milliseconds**, it indexes your repo, extracts symbol hierarchies (functions, interfaces, types), strips the noise, redacts secrets, and packs only the high-value code evidence your agent actually needs to complete the task.
+**ane-context-harness** is a lightweight, local-first context engine that sits between your codebase and your coding agent. In **~3 milliseconds**, it indexes your repo, extracts symbol hierarchies (functions, interfaces, types), strips the noise, redacts secrets, and packs only the high-value code evidence your agent actually needs to complete the task.
+
+> The name `ane` is historical (for Apple Neural Engine, the intended acceleration substrate); it is **not** a dependency. The shipped path is pure CPU and runs on macOS Apple Silicon, macOS Intel, and Linux. Specialized-silicon acceleration is an *optional*, **disabled-by-default** Core ML reranker path (Arm C) — see the honest note under "Technical Specifications".
 
 Zero external network calls. 100% private and offline.
 
@@ -146,7 +148,7 @@ Endpoints available:
 
 ## Using in Python
 
-You can also use ANE Context Harness directly inside your own AI agent workflows:
+You can also use the harness directly inside your own AI agent workflows:
 
 ```python
 from ane_context_harness.config import build_config
@@ -209,6 +211,27 @@ User Prompt  ──────►   BM25 Lexical Search
 3. **Score-First Budget Packing:** Context is greedily packed to fit strictly within your specified token budget (e.g., 1,200 tokens), guaranteeing mandatory evidence is never truncated.
 4. **Secret Detection & Privacy Fence:** Canonical exclusion patterns (`.env*`, `.aws/**`, `*.pem`, etc.) are never read, and regex + entropy classifiers replace sensitive tokens with stable placeholders.
 5. **Noise Compression:** Verbose tool outputs (test traces, terminal logs) are collapsed into compact signal-preserving digests.
+
+### Hardware acceleration: optional, not required (and not adopted by default)
+
+The name contains `ane`, but **no specialized silicon is required or claimed** to
+run the harness. The shipped default (Arm B) is pure deterministic CPU (Python +
+SQLite) and runs identically on macOS Apple Silicon, macOS Intel, and Linux.
+
+- **Never required:** CPU deterministic path — no Core ML, no Neural Engine.
+- **Measured, optional, disabled by default:** Where an Apple Neural Engine is
+  available on Apple Silicon, the *optional* Core ML backend (`coreml_all`,
+  `computeUnits = .all`) can schedule the reranker model onto CPU+GPU+**ANE**,
+  measured at warm p50 1.7–8.2 ms (P3.6). It is gated off
+  (`coreml_enabled: false`) and **not adopted as the default** because, end-to-end
+  on the frozen eval split, it failed the recall gate on one task and was slower
+  than the deterministic path (~31 ms vs ~3.83 ms).
+- **Honest claim policy:** `coreml_all` is a qualified backend *on this host*;
+  the harness does **not** claim ANE execution from `computeUnits = all`.
+  Selecting it is a deliberate, opt-in choice for the reranker only; it does not
+  accelerate indexing, packing, redaction, or compression (those are
+  non-neural by design).
+- See `docs/adr-003-arm-c-adoption.md` and `docs/adr-001-capability-based-runtime.md`.
 
 ---
 
