@@ -10,6 +10,7 @@ dist/
 .pytest_cache/
 benchmarks/logs/run-*
 benchmarks/logs/LAST_RUN
+benchmarks/logs/update_*.jsonl
 
 # macOS
 .DS_Store
