@@ -8,6 +8,8 @@ dist/
 
 # Test/tool caches
 .pytest_cache/
+benchmarks/logs/run-*
+benchmarks/logs/LAST_RUN
 
 # macOS
 .DS_Store
