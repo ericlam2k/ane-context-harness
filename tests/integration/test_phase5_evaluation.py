@@ -225,3 +225,34 @@ def test_arm_c_not_run_without_pipeline():
     c = s["arms"]["C_harness_coreml"]
     assert c["measured"] is False and "P3.6" in c["blocked_by"]
     assert "gates_vs_thesis_reference_arm_c" not in s
+
+
+def test_main_cleans_up_temp_storage(monkeypatch, capsys):
+    """main() must remove its mkdtemp index storage on exit (no $TMPDIR leaks)."""
+    import os
+    import tempfile as _tf
+    from types import SimpleNamespace
+
+    import src.ane_context_harness.evaluation as ev
+
+    created = []
+    real_mkdtemp = _tf.mkdtemp
+
+    def spy(*args, **kwargs):
+        path = real_mkdtemp(*args, **kwargs)
+        created.append(path)
+        return path
+
+    monkeypatch.setattr(_tf, "mkdtemp", spy)  # ev.tempfile is this module
+    fake = SimpleNamespace(summary={"n": 0}, recommendation={})
+    monkeypatch.setattr(ev, "run_evaluation", lambda *a, **k: fake)
+    monkeypatch.setattr(ev, "write_report", lambda *a, **k: {"json": "j", "markdown": "m"})
+    monkeypatch.setattr(ev, "_build_coreml_pipeline", lambda: None)
+
+    out = ev.main()
+    capsys.readouterr()
+
+    assert out == {"n": 0}
+    assert created, "main() should create temp index storage"
+    for path in created:
+        assert not os.path.exists(path), f"leaked temp dir: {path}"

@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import os
 import platform as _pf
+import shutil
 import statistics as st
 import tempfile
 import time
@@ -727,28 +728,43 @@ def _build_coreml_pipeline():
 
 
 def main() -> dict:
-    """Entry point used by scripts/run_phase5.py (frozen eval split)."""
+    """Entry point used by scripts/run_phase5.py (frozen eval split).
+
+    Temp index storage (this pipeline and the arm C pipeline) is removed on
+    exit, success or failure — runs must not leak directories into $TMPDIR.
+    """
     from .config import build_config
     from .pipeline import Pipeline
 
     repo_paths = dict(FIXTURE_REPO_PATHS)
+    storage = tempfile.mkdtemp(prefix="aneh-index-")
     cfg = build_config({
-        "index": {"storage_path": tempfile.mkdtemp()},
+        "index": {"storage_path": storage},
         "privacy": {"never_read": list(DEFAULT_NEVER_READ)},
     })
     pipeline = Pipeline(cfg)
-    # Reports run on the FROZEN eval split only; dev exists for tuning and
-    # must never appear in reported figures.
-    from .benchmark import load_task_split
-    tasks = load_task_split("eval")
-    coreml_pipeline = _build_coreml_pipeline()
-    report = run_evaluation(tasks, pipeline, repo_paths, repeats=5, warmup=1,
-                            coreml_pipeline=coreml_pipeline)
-    paths = write_report(report, "benchmarks/reports")
-    print(f"split: eval ({len(tasks)} tasks, benchmarks/splits.json)")
-    print(json.dumps(report.summary, indent=2, default=str))
-    print(json.dumps(report.recommendation, indent=2, default=str))
-    print(f"\nReports written: {paths}")
-    if coreml_pipeline is None:
-        print("arm C: not run (no qualified calibration report/artifact)")
-    return report.summary
+    coreml_pipeline = None
+    try:
+        # Reports run on the FROZEN eval split only; dev exists for tuning and
+        # must never appear in reported figures.
+        from .benchmark import load_task_split
+        tasks = load_task_split("eval")
+        coreml_pipeline = _build_coreml_pipeline()
+        report = run_evaluation(tasks, pipeline, repo_paths, repeats=5, warmup=1,
+                                coreml_pipeline=coreml_pipeline)
+        paths = write_report(report, "benchmarks/reports")
+        print(f"split: eval ({len(tasks)} tasks, benchmarks/splits.json)")
+        print(json.dumps(report.summary, indent=2, default=str))
+        print(json.dumps(report.recommendation, indent=2, default=str))
+        print(f"\nReports written: {paths}")
+        if coreml_pipeline is None:
+            print("arm C: not run (no qualified calibration report/artifact)")
+        return report.summary
+    finally:
+        if coreml_pipeline is not None:
+            coreml_pipeline.close()
+            armc_storage = getattr(coreml_pipeline, "storage_base", None)
+            if armc_storage:
+                shutil.rmtree(armc_storage, ignore_errors=True)
+        pipeline.close()
+        shutil.rmtree(storage, ignore_errors=True)

@@ -63,7 +63,8 @@ DEFAULT_CONFIG = {
 
 def _search_config_paths() -> list:
     paths = []
-    here = Path(__file__).resolve().parent.parent.parent.parent
+    # src/ane_context_harness/config.py -> repo root is three parents up.
+    here = Path(__file__).resolve().parent.parent.parent
     paths.append(here / "config" / "default.yaml")
     env = os.environ.get("ANE_HARNESS_CONFIG")
     if env:

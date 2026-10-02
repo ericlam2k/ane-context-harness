@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -205,33 +206,37 @@ def _pipeline_quality(tasks_dir: str, artifacts_dir: str) -> dict:
         "privacy": {"never_read": ["**/.env*", "**/.aws/**", "**/.ssh/**",
                                    "**/*.pem", "**/.EnvLocal"]},
     })
+    storage = cfg["index"]["storage_path"]
     pipeline = Pipeline(cfg)
-    per_task = []
-    for t in load_benchmark_tasks(tasks_dir):
-        repo_path = FIXTURE_REPO_PATHS.get(t.repository_id)
-        if not repo_path or not os.path.isdir(repo_path):
-            continue
-        pipeline.register_repository(repo_path, t.repository_id, False)
-        chunks = pipeline._storage_for(t.repository_id).load_chunks()
-        if not chunks:
-            continue
-        scores = rt.predict(t.task, chunks)
-        per_task.append(evaluate_rerank(chunks, scores, t))
-    if not per_task:
-        return {}
+    try:
+        per_task = []
+        for t in load_benchmark_tasks(tasks_dir):
+            repo_path = FIXTURE_REPO_PATHS.get(t.repository_id)
+            if not repo_path or not os.path.isdir(repo_path):
+                continue
+            pipeline.register_repository(repo_path, t.repository_id, False)
+            chunks = pipeline._storage_for(t.repository_id).load_chunks()
+            if not chunks:
+                continue
+            scores = rt.predict(t.task, chunks)
+            per_task.append(evaluate_rerank(chunks, scores, t))
+        if not per_task:
+            return {}
 
-    def mean(key):
-        vals = [d[key] for d in per_task if key in d]
-        return round(sum(vals) / len(vals), 4) if vals else 0.0
+        def mean(key):
+            vals = [d[key] for d in per_task if key in d]
+            return round(sum(vals) / len(vals), 4) if vals else 0.0
 
-    return {
-        "n": len(per_task),
-        "recall_at_1": mean("recall_at_1"),
-        "recall_at_10": mean("recall_at_10"),
-        "ndcg_at_10": mean("ndcg_at_10"),
-        "mrr": mean("mrr"),
-        "scores_by": "coreml_all raw sigmoid scores over all indexed chunks",
-    }
+        return {
+            "n": len(per_task),
+            "recall_at_1": mean("recall_at_1"),
+            "recall_at_10": mean("recall_at_10"),
+            "ndcg_at_10": mean("ndcg_at_10"),
+            "mrr": mean("mrr"),
+            "scores_by": "coreml_all raw sigmoid scores over all indexed chunks",
+        }
+    finally:
+        shutil.rmtree(storage, ignore_errors=True)
 
 
 def _find_artifact(artifacts_dir: str, seq_len: int):
