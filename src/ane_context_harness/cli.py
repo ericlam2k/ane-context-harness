@@ -4,6 +4,8 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time as _time
+from pathlib import Path
 
 from . import schemas
 from .config import build_config
@@ -36,6 +38,17 @@ def main(argv: list | None = None) -> int:
     p_evi_build.add_argument("--force", action="store_true")
     p_evi_verify = evi_sub.add_parser("verify", help="Verify bundle checksums")
     p_evi_verify.add_argument("bundle", help="Bundle directory")
+
+    p_update = sub.add_parser(
+        "update", help="Select context for a batch of tasks and log "
+                       "before/after token budgets (local; no network).")
+    p_update.add_argument("--repo-id", required=True)
+    p_update.add_argument("--budget", type=int, default=12000)
+    p_update.add_argument("--tasks-file", default=None,
+                          help="JSONL file (one {\"task\": \"...\"} or task string per line); "
+                               "defaults to stdin")
+    p_update.add_argument("--log", default=None,
+                          help="Optional path to append per-task JSONL log to")
 
     args = parser.parse_args(argv)
     cfg = build_config()
@@ -93,6 +106,61 @@ def main(argv: list | None = None) -> int:
     if args.command == "serve":
         from .api import serve
         serve(args.host, args.port)
+        return 0
+    if args.command == "update":
+        if args.tasks_file:
+            raw_tasks = Path(args.tasks_file).read_text(encoding="utf-8").splitlines()
+        else:
+            raw_tasks = sys.stdin.read().splitlines()
+        tasks = []
+        for line in raw_tasks:
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith("{"):
+                try:
+                    tasks.append(json.loads(line)["task"])
+                except (json.JSONDecodeError, KeyError):
+                    tasks.append(line)
+            else:
+                tasks.append(line)
+        per_task = []
+        for task in tasks:
+            req = schemas.SelectRequest(
+                repository_id=args.repo_id,
+                task=task,
+                token_budget=args.budget,
+            )
+            pkg = pipe.select_context(req)
+            m = pkg.metrics
+            per_task.append({
+                "task": task,
+                "candidate_tokens": m["candidate_tokens"],
+                "selected_tokens": m["selected_tokens"],
+                "tokens_removed": m["tokens_removed"],
+                "reduction_percent": m["reduction_percent"],
+            })
+        if args.log:
+            stamp = _time.strftime("%Y%m%d-%H%M%S")
+            log_path = Path(args.log)
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(log_path, "a", encoding="utf-8") as f:
+                for row in per_task:
+                    f.write(json.dumps(row) + "\n")
+        reductions = [r["reduction_percent"] for r in per_task]
+        summary = {
+            "repo_id": args.repo_id,
+            "budget": args.budget,
+            "tasks": len(per_task),
+            "before_tokens_total": sum(r["candidate_tokens"] for r in per_task),
+            "after_tokens_total": sum(r["selected_tokens"] for r in per_task),
+            "tokens_removed_total": sum(r["tokens_removed"] for r in per_task),
+            "reduction_percent_median": round(sorted(reductions)[len(reductions) // 2], 2) if reductions else 0.0,
+            "per_task": per_task,
+        }
+        print(json.dumps(summary, indent=2))
+        print("# Note: local measurements over the given repo; redaction does not "
+              "guarantee all secrets are caught.", file=sys.stderr)
         return 0
     if args.command == "evidence":
         from .evidence import EvidenceError, build_bundle, verify_bundle

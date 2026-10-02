@@ -97,6 +97,37 @@ ane-harness select \
   --budget 1200
 ```
 
+### 3b. Log before/after token savings across many prompts (`update`)
+
+Run selection over a batch of tasks (a JSONL file or stdin) and print + log
+before/after token budgets. Local, no network:
+
+```bash
+# from a JSONL file (one {"task": "..."} or bare task per line)
+ane-harness update \
+  --repo-id my-project \
+  --budget 2000 \
+  --tasks-file prompts.jsonl \
+  --log benchmarks/logs/update_session.jsonl
+```
+
+Sample output:
+
+```
+repo_id: my-project | tasks: 3 | budget: 2000
+
+  task                              before  after   removed  reduction
+  Fix the discount calculation      3189    1952    1237     38.79%
+  debug the inventory loader        3189    1758    1431     44.87%
+  review reporting stats output     3189    1261    1928     60.46%
+
+  TOTAL: before 9567 → after 4971 tokens (4596 removed, median reduction 44.87%)
+```
+
+Per-task rows are also appended as JSONL to `--log` (gitignored).
+**Honest caveat** printed to stderr on every run: *"local measurements over the
+given repo; redaction does not guarantee all secrets are caught."*
+
 ### 4. Or Run as a Local Background Server
 
 Start the local HTTP API (ready to be hooked up to your agent or tools):
