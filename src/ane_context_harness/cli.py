@@ -31,14 +31,6 @@ def main(argv: list | None = None) -> int:
     p_serve = sub.add_parser("serve", help="Run local HTTP server")
     p_serve.add_argument("--host", default="127.0.0.1")
     p_serve.add_argument("--port", type=int, default=8765)
-    p_evidence = sub.add_parser("evidence", help="Build/verify release evidence bundle")
-    evi_sub = p_evidence.add_subparsers(dest="evidence_command")
-    p_evi_build = evi_sub.add_parser("build", help="Freeze an evidence bundle")
-    p_evi_build.add_argument("--out", required=True, help="Bundle output directory")
-    p_evi_build.add_argument("--force", action="store_true")
-    p_evi_verify = evi_sub.add_parser("verify", help="Verify bundle checksums")
-    p_evi_verify.add_argument("bundle", help="Bundle directory")
-
     p_update = sub.add_parser(
         "update", help="Select context for a batch of tasks and log "
                        "before/after token budgets (local; no network).")
@@ -49,6 +41,13 @@ def main(argv: list | None = None) -> int:
                                "defaults to stdin")
     p_update.add_argument("--log", default=None,
                           help="Optional path to append per-task JSONL log to")
+    p_evidence = sub.add_parser("evidence", help="Build/verify release evidence bundle")
+    evi_sub = p_evidence.add_subparsers(dest="evidence_command")
+    p_evi_build = evi_sub.add_parser("build", help="Freeze an evidence bundle")
+    p_evi_build.add_argument("--out", required=True, help="Bundle output directory")
+    p_evi_build.add_argument("--force", action="store_true")
+    p_evi_verify = evi_sub.add_parser("verify", help="Verify bundle checksums")
+    p_evi_verify.add_argument("bundle", help="Bundle directory")
 
     args = parser.parse_args(argv)
     cfg = build_config()
