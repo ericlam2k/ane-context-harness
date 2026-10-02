@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-13]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        exclude:
+          # coremltools has no cp314 wheels; the Core ML build matrix below
+          # covers the cp313+Mac build path. Non-coreml tests run everywhere.
+          - os: ubuntu-22.04
+            python-version: "3.14"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install (deps only on 3.13/3.14; tiktoken skipped on arm64)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[test]"
+      - name: Run tests
+        run: python -m pytest -q
+
+  build-coreml:
+    name: Core ML artifact build (macOS, py3.13)
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install build extras
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[build,test]"
+      - name: Build 128 + 256 token MiniLM artifacts
+        run: python scripts/convert_model.py --seq-len 128 256
+      - name: Calibrate & validate (P3.6 gate)
+        run: python scripts/calibrate_phase3.py
