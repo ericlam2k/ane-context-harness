@@ -70,6 +70,17 @@ def test_default_config_disables_live_provider_calls():
     assert cfg["limits"]["max_provider_spend_usd"] == 0.0
 
 
+def test_default_config_cap_wired_into_dry_run():
+    """Config `limits.max_provider_spend_usd` (default 0.0) disables live calls
+    when passed into dry_run — the wiring between default config and the
+    stage-1 gate."""
+    cfg = build_config({})
+    out = dry_run("openai_compat", _package(),
+                  max_provider_spend_usd=cfg["limits"]["max_provider_spend_usd"])
+    assert out["max_provider_spend_usd"] == 0.0
+    assert out["live_run_allowed"] is False
+
+
 def test_dry_run_survives_socket_removed(monkeypatch):
     import socket
     def _blocked(*a, **k):

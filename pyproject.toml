@@ -17,6 +17,7 @@ dependencies = [
 [project.optional-dependencies]
 tiktoken = ["tiktoken>=0.7"]
 test = ["pytest>=7.4"]
+mcp = ["mcp[cli]>=1.0,<2"]
 # Build-time-only: used solely to convert + package a Core ML reranker artifact.
 # NOT a runtime dependency — the runtime path is pure stdlib (coreml/tokenizer.py).
 # Build env requirement: Python 3.13 on macOS/arm64 (coremltools ships no cp314

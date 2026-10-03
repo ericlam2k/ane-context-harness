@@ -11,6 +11,7 @@ from . import schemas
 from .config import build_config
 from .pipeline import Pipeline, SERVICE_VERSION
 from .providers.markdown import render_markdown
+from .summary import select_footer, update_footer
 
 
 def main(argv: list | None = None) -> int:
@@ -28,17 +29,11 @@ def main(argv: list | None = None) -> int:
     p_select.add_argument("--budget", type=int, default=12000)
     p_select.add_argument("--explicit-path", action="append", default=[])
     p_select.add_argument("--out", default=None)
+    p_select.add_argument("--quiet", action="store_true",
+                          help="Suppress the human-readable stderr summary footer")
     p_serve = sub.add_parser("serve", help="Run local HTTP server")
     p_serve.add_argument("--host", default="127.0.0.1")
     p_serve.add_argument("--port", type=int, default=8765)
-    p_evidence = sub.add_parser("evidence", help="Build/verify release evidence bundle")
-    evi_sub = p_evidence.add_subparsers(dest="evidence_command")
-    p_evi_build = evi_sub.add_parser("build", help="Freeze an evidence bundle")
-    p_evi_build.add_argument("--out", required=True, help="Bundle output directory")
-    p_evi_build.add_argument("--force", action="store_true")
-    p_evi_verify = evi_sub.add_parser("verify", help="Verify bundle checksums")
-    p_evi_verify.add_argument("bundle", help="Bundle directory")
-
     p_update = sub.add_parser(
         "update", help="Select context for a batch of tasks and log "
                        "before/after token budgets (local; no network).")
@@ -49,8 +44,35 @@ def main(argv: list | None = None) -> int:
                                "defaults to stdin")
     p_update.add_argument("--log", default=None,
                           help="Optional path to append per-task JSONL log to")
+    p_update.add_argument("--quiet", action="store_true",
+                          help="Suppress the human-readable stderr summary footer")
+    p_evidence = sub.add_parser("evidence", help="Build/verify release evidence bundle")
+    evi_sub = p_evidence.add_subparsers(dest="evidence_command")
+    p_evi_build = evi_sub.add_parser("build", help="Freeze an evidence bundle")
+    p_evi_build.add_argument("--out", required=True, help="Bundle output directory")
+    p_evi_build.add_argument("--force", action="store_true")
+    p_evi_verify = evi_sub.add_parser("verify", help="Verify bundle checksums")
+    p_evi_verify.add_argument("bundle", help="Bundle directory")
+    p_mcp = sub.add_parser(
+        "mcp", help="Serve ane-harness over MCP (optional; requires "
+                    "the 'mcp' extra: pip install 'ane-context-harness[mcp]')")
+    p_mcp.add_argument("--transport", default="stdio",
+                       choices=["stdio", "sse"], help="MCP transport")
 
     args = parser.parse_args(argv)
+    if args.command == "mcp":
+        try:
+            import mcp  # noqa: F401
+            from .mcp_server import build_server
+        except ImportError:
+            print(json.dumps({"ok": False, "error": (
+                "mcp extra not installed; run: pip install 'ane-context-harness[mcp]'")}),
+                file=sys.stderr)
+            return 1
+        server = build_server()
+        server.run(args.transport)
+        return 0
+
     cfg = build_config()
     pipe = Pipeline(cfg)
 
@@ -102,6 +124,10 @@ def main(argv: list | None = None) -> int:
             print(json.dumps({"markdown_written": args.out, "metrics": pkg.metrics}, indent=2))
         else:
             print(text)
+        if not args.quiet:
+            print(select_footer(pkg.metrics, pkg.execution, len(pkg.evidence),
+                                args.budget),
+                  file=sys.stderr)
         return 0
     if args.command == "serve":
         from .api import serve
@@ -139,6 +165,8 @@ def main(argv: list | None = None) -> int:
                 "selected_tokens": m["selected_tokens"],
                 "tokens_removed": m["tokens_removed"],
                 "reduction_percent": m["reduction_percent"],
+                "required_tokens": m.get("required_tokens", 0),
+                "discretionary_tokens": m.get("discretionary_tokens", 0),
             })
         if args.log:
             stamp = _time.strftime("%Y%m%d-%H%M%S")
@@ -155,12 +183,21 @@ def main(argv: list | None = None) -> int:
             "before_tokens_total": sum(r["candidate_tokens"] for r in per_task),
             "after_tokens_total": sum(r["selected_tokens"] for r in per_task),
             "tokens_removed_total": sum(r["tokens_removed"] for r in per_task),
+            "required_tokens_total": sum(r["required_tokens"] for r in per_task),
+            "discretionary_tokens_total": sum(r["discretionary_tokens"] for r in per_task),
             "reduction_percent_median": round(sorted(reductions)[len(reductions) // 2], 2) if reductions else 0.0,
             "per_task": per_task,
         }
         print(json.dumps(summary, indent=2))
         print("# Note: local measurements over the given repo; redaction does not "
               "guarantee all secrets are caught.", file=sys.stderr)
+        if not args.quiet:
+            print(update_footer(summary["before_tokens_total"],
+                                summary["after_tokens_total"],
+                                summary["reduction_percent_median"],
+                                summary["tasks"], args.budget,
+                                summary["required_tokens_total"]),
+                  file=sys.stderr)
         return 0
     if args.command == "evidence":
         from .evidence import EvidenceError, build_bundle, verify_bundle
