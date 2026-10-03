@@ -1,0 +1,157 @@
+{
+ "aggregate": {
+  "n_tasks": 18,
+  "mean_selected": 4.2,
+  "mean_free_pass": 2.3,
+  "mean_earned": 1.9,
+  "mean_free_token_share": 0.497,
+  "tasks_all_free": 2,
+  "tasks_no_free": 3
+ },
+ "per_task": [
+  {
+   "task_id": "hard-apply-discount-001",
+   "selected": 7,
+   "free_pass": 5,
+   "earned": 2,
+   "free_token_share": 0.666,
+   "reduction_percent": 51.31
+  },
+  {
+   "task_id": "hard-buried-quote-001",
+   "selected": 5,
+   "free_pass": 3,
+   "earned": 2,
+   "free_token_share": 0.58,
+   "reduction_percent": 64.56
+  },
+  {
+   "task_id": "hard-cart-apply-001",
+   "selected": 8,
+   "free_pass": 6,
+   "earned": 2,
+   "free_token_share": 0.755,
+   "reduction_percent": 42.93
+  },
+  {
+   "task_id": "hard-doc-concession-001",
+   "selected": 7,
+   "free_pass": 5,
+   "earned": 2,
+   "free_token_share": 0.709,
+   "reduction_percent": 51.87
+  },
+  {
+   "task_id": "hard-rules-vs-readme-001",
+   "selected": 2,
+   "free_pass": 0,
+   "earned": 2,
+   "free_token_share": 0.0,
+   "reduction_percent": 85.99
+  },
+  {
+   "task_id": "hard-settings-001",
+   "selected": 2,
+   "free_pass": 0,
+   "earned": 2,
+   "free_token_share": 0.0,
+   "reduction_percent": 90.21
+  },
+  {
+   "task_id": "hard-similarnames-001",
+   "selected": 5,
+   "free_pass": 3,
+   "earned": 2,
+   "free_token_share": 0.63,
+   "reduction_percent": 62.17
+  },
+  {
+   "task_id": "hard-stock-clearance-001",
+   "selected": 6,
+   "free_pass": 3,
+   "earned": 3,
+   "free_token_share": 0.555,
+   "reduction_percent": 60.62
+  },
+  {
+   "task_id": "hard-types-line-001",
+   "selected": 4,
+   "free_pass": 4,
+   "earned": 0,
+   "free_token_share": 1.0,
+   "reduction_percent": 77.34
+  },
+  {
+   "task_id": "hard-vat-apply-001",
+   "selected": 5,
+   "free_pass": 3,
+   "earned": 2,
+   "free_token_share": 0.553,
+   "reduction_percent": 66.67
+  },
+  {
+   "task_id": "py-calculator-001",
+   "selected": 4,
+   "free_pass": 1,
+   "earned": 3,
+   "free_token_share": 0.191,
+   "reduction_percent": 72.05
+  },
+  {
+   "task_id": "py-discount-001",
+   "selected": 6,
+   "free_pass": 2,
+   "earned": 4,
+   "free_token_share": 0.371,
+   "reduction_percent": 63.18
+  },
+  {
+   "task_id": "py-discount-report-001",
+   "selected": 3,
+   "free_pass": 1,
+   "earned": 2,
+   "free_token_share": 0.501,
+   "reduction_percent": 79.97
+  },
+  {
+   "task_id": "py-inventory-sku-001",
+   "selected": 3,
+   "free_pass": 1,
+   "earned": 2,
+   "free_token_share": 0.304,
+   "reduction_percent": 78.01
+  },
+  {
+   "task_id": "ts-discount-001",
+   "selected": 2,
+   "free_pass": 1,
+   "earned": 1,
+   "free_token_share": 0.507,
+   "reduction_percent": 70.15
+  },
+  {
+   "task_id": "ts-inventory-reconcile-001",
+   "selected": 2,
+   "free_pass": 2,
+   "earned": 0,
+   "free_token_share": 1.0,
+   "reduction_percent": 52.83
+  },
+  {
+   "task_id": "ts-math-total-001",
+   "selected": 3,
+   "free_pass": 0,
+   "earned": 3,
+   "free_token_share": 0.0,
+   "reduction_percent": 47.98
+  },
+  {
+   "task_id": "ts-reporting-stats-001",
+   "selected": 2,
+   "free_pass": 1,
+   "earned": 1,
+   "free_token_share": 0.623,
+   "reduction_percent": 59.87
+  }
+ ]
+}
