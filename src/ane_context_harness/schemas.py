@@ -141,7 +141,7 @@ class IndexResponse:
     files_skipped: int
     duration_ms: float
     incremental: bool = False
-    index_version: str = "1"
+    index_version: str = "2"
 
 
 def evidence_to_dict(item: EvidenceItem) -> dict:

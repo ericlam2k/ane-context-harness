@@ -181,7 +181,7 @@ class Pipeline:
             import hashlib
             repo_id = hashlib.sha256(root.encode()).hexdigest()[:12]
         storage = self._storage_for(repo_id)
-        storage.set_index_version("1")
+        storage.set_index_version("2")
         if force_rebuild:
             # wipe chunks/files for this repo
             storage._conn.execute("DELETE FROM chunks WHERE repo_id=?", (repo_id,))
@@ -240,7 +240,7 @@ class Pipeline:
             files_skipped=res["files_skipped"],
             duration_ms=round(duration_ms, 2),
             incremental=not force_rebuild,
-            index_version="1",
+            index_version="2",
         )
 
     def select_context(self, request: schemas.SelectRequest) -> schemas.EvidencePackage:
@@ -388,7 +388,7 @@ class Pipeline:
             platform="apple-silicon" if disc["hardware"]["is_apple_silicon"] else "non-apple-silicon",
             coreml_model_loaded=False,
             compute_mode="deterministic_only",
-            index_version="1",
+            index_version="2",
             service_version=SERVICE_VERSION,
             behavioral_profile=prof.behavioral_profile,
             coreml_compute_units_requested=None,

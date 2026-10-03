@@ -182,7 +182,8 @@ def build_chunks(repo_root: str | Path, repo_id: str, max_file_bytes: int,
     chunks = []
     for fi in plan.files:
         symbol_spans = symbols_mod.extract_symbols(fi.language, fi.content)
-        pieces = chunking_mod.chunk_file(fi.content, chunk_target_tokens, chunk_overlap_tokens)
+        pieces = chunking_mod.chunk_symbols(
+            fi.content, fi.language, chunk_target_tokens, chunk_overlap_tokens)
         for piece in pieces:
             terms = chunking_mod.lex_terms(piece.content)
             sym = _nearest_symbol(piece.start_line, symbol_spans)

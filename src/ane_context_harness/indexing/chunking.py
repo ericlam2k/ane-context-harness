@@ -1,5 +1,10 @@
 """Deterministic chunking by token target with overlap and line provenance.
 
+Two strategies (same guarantees): `chunk_file` cuts blind token windows;
+`chunk_symbols` packs whole symbols greedily so a chunk boundary never splits
+a function — symbols own their chunks, small symbols share. Oversized single
+symbols fall back to window splits with overlap.
+
 Guarantees: start_line/end_line are 1-based and strictly monotonic across
 chunks of the same file (no two chunks share a start_line), so chunk
 identifiers keyed on (repo, path, start_line) remain unique.
@@ -75,6 +80,102 @@ def chunk_file(text: str, target_tokens: int, overlap_tokens: int,
         if next_start <= start_idx:
             next_start = start_idx + 1
         start_idx = next_start
+    return pieces
+
+
+def _top_level_spans(language: str, text: str) -> list:
+    """Whole-file symbol spans that contain no other span (top level only).
+
+    Nested defs stay inside their parent's chunk; the parent owns them.
+    """
+    from .symbols import extract_symbols
+    spans = extract_symbols(language, text)
+    tops = []
+    for s in spans:
+        contained = any(
+            o is not s and o[1] <= s[1] and s[2] <= o[2]
+            and (o[1], o[2]) != (s[1], s[2])
+            for o in spans)
+        if not contained:
+            tops.append(s)
+    return sorted(tops, key=lambda s: (s[1], s[2]))
+
+
+def chunk_symbols(text: str, language: str, target_tokens: int,
+                  overlap_tokens: int, max_lines_per_chunk: int = 400) -> list:
+    """Greedy symbol-aligned packing: whole symbols, never split.
+
+    The file is partitioned into gap segments (imports, module text between
+    symbols) and one segment per top-level symbol span. Segments accumulate
+    into chunks up to target_tokens; a lone segment over target is split by
+    token windows with overlap. Files with no symbols fall back to
+    `chunk_file`. Economic: small symbols share chunks instead of each
+    burning a full ~400-token card.
+    """
+    if target_tokens < 1:
+        target_tokens = 1
+    lines = _split_lines(text)
+    n = len(lines)
+    if n == 0:
+        return []
+    spans = _top_level_spans(language, text)
+    if not spans:
+        return chunk_file(text, target_tokens, overlap_tokens,
+                          max_lines_per_chunk)
+    # partition into (start, end) 1-based inclusive segments
+    segments = []
+    cursor = 1
+    for _name, s, e in spans:
+        s = max(1, min(s, n))
+        e = max(s, min(e, n))
+        # pull decorators (@...) above a def into its segment
+        while s > cursor and lines[s - 2].lstrip().startswith("@"):
+            s -= 1
+        if s > cursor:
+            segments.append((cursor, s - 1))
+        segments.append((s, e))
+        cursor = e + 1
+    if cursor <= n:
+        segments.append((cursor, n))
+    # drop blank-only gap segments
+    kept = []
+    for s, e in segments:
+        body = "".join(lines[s - 1:e])
+        if body.strip():
+            kept.append((s, e, tokens_mod.count(body)))
+    pieces = []
+    cur: list = []
+    cur_tokens = 0
+
+    def _flush() -> None:
+        if not cur:
+            return
+        s = cur[0][0]
+        e = cur[-1][1]
+        content = "".join(lines[s - 1:e])
+        pieces.append(ChunkPiece(content=content, start_line=s, end_line=e,
+                                 tokens=tokens_mod.count(content)))
+        cur.clear()
+
+    for s, e, tok in kept:
+        if cur and cur_tokens + tok > target_tokens:
+            _flush()
+            cur_tokens = 0
+        if tok > target_tokens:
+            # oversized lone symbol (cur is empty here): window-split with
+            # overlap, shifted back to file line numbers
+            sub = "".join(lines[s - 1:e])
+            for pc in chunk_file(sub, target_tokens, overlap_tokens,
+                                 max_lines_per_chunk):
+                pieces.append(ChunkPiece(
+                    content=pc.content,
+                    start_line=pc.start_line + s - 1,
+                    end_line=pc.end_line + s - 1, tokens=pc.tokens))
+            continue
+        cur.append((s, e))
+        cur_tokens += tok
+    _flush()
+    # guarantee strictly monotonic starts (adjacent segments always advance)
     return pieces
 
 

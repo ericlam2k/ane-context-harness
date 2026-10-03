@@ -14,7 +14,7 @@ import threading
 from pathlib import Path
 
 from .. import tokens as tokens_mod
-from ..indexing.chunking import ChunkPiece, chunk_file, lex_terms
+from ..indexing.chunking import chunk_symbols, lex_terms
 from ..indexing.symbols import extract_symbols
 
 
@@ -170,8 +170,8 @@ class Storage:
             for name, s, e in spans:
                 self.upsert_symbol(fi.rel_path, name, s, e)
                 symbols_extracted += 1
-            # chunks
-            pieces = chunk_file(fi.content, chunk_target_tokens, chunk_overlap_tokens)
+            # chunks (symbol-aligned greedy packing; blind windows only as fallback)
+            pieces = chunk_symbols(fi.content, fi.language, chunk_target_tokens, chunk_overlap_tokens)
             chunk_objs = []
             for pc in pieces:
                 chunk_objs.append({
