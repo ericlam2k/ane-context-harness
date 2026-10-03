@@ -101,6 +101,23 @@ class Pipeline:
             self._profile_cache = derive_profile(disc, measurements=measurements).to_dict()
         return self._profile_cache
 
+    def coreml_concurrency_eligible(self, concurrent_agents: int = 1) -> dict:
+        """Judge Arm C eligibility by fan-out (pipeline owns this decision).
+
+        Returns {"eligible", "threshold", "agents"}. Arm C is eligible at
+        N >= runtime.max_concurrent_agents (default 5, Phase 6 crossover).
+        Eligibility never enables Arm C by itself — artifact presence, ANE
+        availability, and the per-task benefit check still apply downstream.
+        """
+        threshold = (self.config.get("runtime", {}) or {}).get(
+            "max_concurrent_agents", 5)
+        try:
+            agents = int(concurrent_agents)
+        except (TypeError, ValueError):
+            agents = 1
+        return {"eligible": agents >= threshold, "threshold": threshold,
+                "agents": agents}
+
     def _classifier_artifact_path(self) -> str | None:
         p = (self.config.get("privacy", {}) or {}).get("classifier_model_path")
         if p:

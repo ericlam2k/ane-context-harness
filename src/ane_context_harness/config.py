@@ -40,6 +40,10 @@ DEFAULT_CONFIG = {
         "compute_mode": "deterministic_only",
         "coreml_enabled": False,
         "fail_closed": False,
+        # Arm C (ANE reranker) becomes eligible at this concurrency (Phase 6:
+        # ANE wins from N>=5 on the measured host). Single prompts stay on
+        # arm B; scripts pass their fan-out N through for the pipeline to judge.
+        "max_concurrent_agents": 5,
     },
     "privacy": {
         "redact_secrets": False,
