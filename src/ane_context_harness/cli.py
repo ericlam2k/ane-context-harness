@@ -127,11 +127,14 @@ def main(argv: list | None = None) -> int:
         )
         pkg = pipe.select_context(req)
         pkg.markdown = render_markdown(pkg)
+        foot = select_footer(pkg.metrics, pkg.execution, len(pkg.evidence),
+                             args.budget)
         out = {
             "request_id": pkg.request_id,
             "metrics": pkg.metrics,
             "execution": pkg.execution,
             "redactions": pkg.redaction_summary,
+            "summary": foot,
             "evidence": [{"path": e["path"], "start_line": e["start_line"],
                           "end_line": e["end_line"], "symbol": e.get("symbol"),
                           "score": e.get("score"), "selection_reasons": e.get("selection_reasons"),
@@ -142,13 +145,12 @@ def main(argv: list | None = None) -> int:
         if args.out:
             with open(args.out, "w", encoding="utf-8") as f:
                 f.write(pkg.markdown)
-            print(json.dumps({"markdown_written": args.out, "metrics": pkg.metrics}, indent=2))
+            print(json.dumps({"markdown_written": args.out, "metrics": pkg.metrics,
+                              "summary": foot}, indent=2))
         else:
             print(text)
         if not args.quiet:
-            print(select_footer(pkg.metrics, pkg.execution, len(pkg.evidence),
-                                args.budget),
-                  file=sys.stderr)
+            print(foot, file=sys.stderr)
         if usage_log.log_enabled():
             usage_log.record("select", pkg.metrics["candidate_tokens"],
                              pkg.metrics["selected_tokens"],
@@ -213,16 +215,15 @@ def main(argv: list | None = None) -> int:
             "reduction_percent_median": round(sorted(reductions)[len(reductions) // 2], 2) if reductions else 0.0,
             "per_task": per_task,
         }
+        summary["summary"] = update_footer(
+            summary["before_tokens_total"], summary["after_tokens_total"],
+            summary["reduction_percent_median"], summary["tasks"],
+            args.budget, summary["required_tokens_total"])
         print(json.dumps(summary, indent=2))
         print("# Note: local measurements over the given repo; redaction does not "
               "guarantee all secrets are caught.", file=sys.stderr)
         if not args.quiet:
-            print(update_footer(summary["before_tokens_total"],
-                                summary["after_tokens_total"],
-                                summary["reduction_percent_median"],
-                                summary["tasks"], args.budget,
-                                summary["required_tokens_total"]),
-                  file=sys.stderr)
+            print(summary["summary"], file=sys.stderr)
         if usage_log.log_enabled():
             usage_log.record("update", summary["before_tokens_total"],
                              summary["after_tokens_total"],
