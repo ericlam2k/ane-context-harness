@@ -72,3 +72,10 @@ source editing, shell execution.
 `python3 -m pytest -q` (config in `pyproject.toml`; `pythonpath=["src"]`).
 Schema/split guards: `tests/test_task_schema.py`; eval-split gates:
 `tests/performance/test_benchmark.py`, `tests/integration/test_phase5_evaluation.py`.
+
+## Dogfood: show savings after each task
+
+After every task in this repo, run one
+`ane-harness select --repo-id <repo> --task "<task>" --budget 2000`, read the
+top-level `summary` line from its stdout JSON, and show that single line to
+the user. Never paste full JSON. At session end, run `ane-harness daily`.
