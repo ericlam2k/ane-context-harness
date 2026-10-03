@@ -16,6 +16,7 @@ from .config import build_config
 from .evidence import verify_bundle as _verify_bundle
 from .pipeline import Pipeline
 from .summary import select_footer, update_footer
+from . import usage as usage_log
 
 
 def _select_summary(pkg: schemas.EvidencePackage) -> dict[str, Any]:
@@ -47,6 +48,10 @@ async def select_context_tool(repo_id: str, task: str, budget: int = 12000) -> s
     pkg = pipe.select_context(req)
     out = _select_summary(pkg)
     out["summary"] = _select_human(pkg, budget)
+    if usage_log.log_enabled():
+        usage_log.record("select", pkg.metrics["candidate_tokens"],
+                         pkg.metrics["selected_tokens"],
+                         pkg.metrics.get("total_latency_ms"))
     return json.dumps(out, indent=2)
 
 
@@ -85,6 +90,10 @@ async def update_tool(repo_id: str, budget: int, tasks: list[str]) -> str:
         summary["before_tokens_total"], summary["after_tokens_total"],
         summary["reduction_percent_median"], summary["tasks"], budget,
         summary["required_tokens_total"])
+    if usage_log.log_enabled():
+        usage_log.record("update", summary["before_tokens_total"],
+                         summary["after_tokens_total"],
+                         tasks=summary["tasks"])
     return json.dumps(summary, indent=2)
 
 
