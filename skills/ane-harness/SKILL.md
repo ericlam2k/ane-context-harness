@@ -20,6 +20,9 @@ description: Show context-token savings after each coding task and daily totals 
 
 ## Guidelines
 - Never paste the full JSON output; the `summary` line is the whole report.
+- For with/without comparison, `select --full` packs the whole repo — it
+  bypasses selection AND redaction, so treat its output as secret-bearing
+  and never paste it into chats; compare its token count only.
 - The budget governs discretionary context only; required evidence is always
   kept. You never need to set or explain it.
 - No other skills, configs, or network access required: the `ane-harness`
