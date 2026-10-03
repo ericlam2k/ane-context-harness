@@ -1,0 +1,47 @@
+{
+ "n_dev_tasks": 12,
+ "variants": {
+  "baseline_minlen4_pair_on": {
+   "median_reduction": 71.62,
+   "min_reduction": 52.66,
+   "mean_recall": 1.0,
+   "min_recall": 1.0,
+   "min_recall_tasks": []
+  },
+  "minlen5_pair_on": {
+   "median_reduction": 71.62,
+   "min_reduction": 52.66,
+   "mean_recall": 0.9583,
+   "min_recall": 0.5,
+   "min_recall_tasks": [
+    "py-tight-budget-001"
+   ]
+  },
+  "minlen6_pair_on": {
+   "median_reduction": 77.63,
+   "min_reduction": 46.41,
+   "mean_recall": 0.875,
+   "min_recall": 0.0,
+   "min_recall_tasks": [
+    "hard-round-to-cents-001",
+    "py-tight-budget-001"
+   ]
+  },
+  "minlen4_pair_off": {
+   "median_reduction": 71.62,
+   "min_reduction": 52.66,
+   "mean_recall": 1.0,
+   "min_recall": 1.0,
+   "min_recall_tasks": []
+  },
+  "minlen5_pair_off": {
+   "median_reduction": 71.62,
+   "min_reduction": 52.66,
+   "mean_recall": 0.9583,
+   "min_recall": 0.5,
+   "min_recall_tasks": [
+    "py-tight-budget-001"
+   ]
+  }
+ }
+}
