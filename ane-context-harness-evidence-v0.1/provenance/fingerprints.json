@@ -1,10 +1,10 @@
 {
-  "capability_profile_fingerprint": "1f72aae92ca3af1663608189bb13db1fce94b94e48ea6a975f4531271cd2705c",
+  "capability_profile_fingerprint": "73817dc2fb4983114c5671154ae3ea65bc17ac219ea816190cf6679a2de21fda",
   "harness_configuration_hash": "50da1671bf3d2781a8d88bb502d23c99aec6245a733fc32559e709daeace5262",
   "benchmark_task_set_hash": "16b6a2ba74d437a79832b37049aea7e8db8208c28b62dc7bc2c23068d5f821f1",
   "benchmark_schema_version": "2",
   "git": {
-    "commit": "cc03a507ddde64897f55e8adb75def05a1599c14",
+    "commit": "48ad91c8607f8fe10981311dd3d43304efefcfc7",
     "dirty": true,
     "status": "dirty"
   },

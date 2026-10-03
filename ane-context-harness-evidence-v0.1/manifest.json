@@ -1,7 +1,7 @@
 {
   "bundle_name": "ane-context-harness-evidence-v0.1",
   "bundle_schema_version": "evidence-1",
-  "created_at_utc": "2026-10-03T01:26:32Z",
+  "created_at_utc": "2026-10-03T01:27:33Z",
   "files": {
     "METRICS.md": {
       "bytes": 1261,
@@ -21,7 +21,7 @@
     "provenance/fingerprints.json": {
       "bytes": 1495,
       "category": "provenance",
-      "sha256": "050b33f174e8e2cef521f7a827bd1bf904b96b52bf615c0065dc1ac471264bc8"
+      "sha256": "d5264f0fe486d42ce3893afebe67443ee9405349795d5e20e5b45a588915ebbd"
     },
     "provenance/model_manifest.json": {
       "bytes": 1993,
@@ -58,7 +58,7 @@
     "benchmark_schema_version": "2",
     "benchmark_task_set_hash": "16b6a2ba74d437a79832b37049aea7e8db8208c28b62dc7bc2c23068d5f821f1",
     "calibration_report": "reports/calibration_report.json",
-    "capability_profile_fingerprint": "1f72aae92ca3af1663608189bb13db1fce94b94e48ea6a975f4531271cd2705c",
+    "capability_profile_fingerprint": "73817dc2fb4983114c5671154ae3ea65bc17ac219ea816190cf6679a2de21fda",
     "compiled_artifact_checksums": {
       "128tok": {
         "model.mlpackage": "41224a7c9a8a59de5267bbf680b6743b5915392f02a105fd7c4c1d353e84a4c0",
@@ -112,7 +112,7 @@
         "performance on machines other than the tested configuration"
       ]
     },
-    "git_commit": "cc03a507ddde64897f55e8adb75def05a1599c14",
+    "git_commit": "48ad91c8607f8fe10981311dd3d43304efefcfc7",
     "git_dirty": true,
     "git_status": "dirty",
     "harness_configuration_hash": "50da1671bf3d2781a8d88bb502d23c99aec6245a733fc32559e709daeace5262",
