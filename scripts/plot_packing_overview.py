@@ -158,7 +158,7 @@ def _panel_d(ax) -> None:
 
 def _panel_e(ax) -> None:
     _header(ax, "E", "Packing rule limits", "maximum values")
-    specs = [("Chunk size", 400, 400, "tokens"),
+    specs = [("Chunk size", 350, 400, "tokens"),
              ("Card overlap", 40, 400, "tokens"),
              ("Budget (soft)", 12000, 20000, "tokens"),
              ("Diversity window", 60, 100, "cards"),
