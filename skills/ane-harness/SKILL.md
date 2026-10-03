@@ -15,7 +15,7 @@ description: Show context-token savings after each coding task and daily totals 
    `ane-harness select --repo-id <repo> --task "<task>" --budget 2000`
 3. Read the top-level `summary` line from its stdout JSON and show that
    single line to the user. Example:
-   `# ane-harness: 96.6% saved (7.1k of 211.2k) · 61 chunks · 165 ms`
+   `ane-harness: saved 96.6% (7.1k of 211.2k) in 165 ms`
 4. At session end, run `ane-harness daily` and show both lines.
 
 ## Guidelines

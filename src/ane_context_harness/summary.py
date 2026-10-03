@@ -44,31 +44,27 @@ def tokens_line(metrics: dict[str, Any]) -> str:
 
 def select_footer(metrics: dict[str, Any], execution: dict[str, Any] | None,
                   n_chunks: int, budget: int) -> str:
-    """One-line footer for a single select run."""
+    """One-line footer for a single select run.
+
+    User lens only: percent saved, totals, time. No `#` prefix (it renders
+    as a giant heading in chat UIs), no jargon (required/discretionary,
+    chunks, backend names) — those stay in the JSON for machines.
+    """
     cand = metrics.get("candidate_tokens", 0)
     sel = metrics.get("selected_tokens", 0)
     red = metrics.get("reduction_percent", 0.0)
     lat = metrics.get("total_latency_ms", 0.0)
-    req = metrics.get("required_tokens", sel)
     disc = metrics.get("discretionary_tokens", 0)
-    over = disc - budget
-    if over > 0:
-        budget_bit = (f"discretionary {fmt_tokens(disc)} over budget "
-                      f"{budget} (+{fmt_tokens(over)}) — narrow the task")
-    else:
-        budget_bit = f"discretionary {fmt_tokens(disc)} of {budget} budget ok"
-    backend = (execution or {}).get("reranker", "unknown")
-    return (f"# ane-harness: {red}% saved ({fmt_tokens(sel)} of "
-            f"{fmt_tokens(cand)}) · {fmt_tokens(req)} required kept + "
-            f"{budget_bit} · {n_chunks} chunks · {lat} ms · {backend}")
+    line = (f"ane-harness: saved {red}% ({fmt_tokens(sel)} of "
+            f"{fmt_tokens(cand)}) in {round(lat)} ms")
+    if disc - budget > 0:
+        line += " — too big, narrow the task"
+    return line
 
 
 def update_footer(before_total: int, after_total: int,
                   reduction_median: float, n_tasks: int,
                   budget: int, required_total: int = 0) -> str:
-    """One-line footer for a batch update run."""
-    disc = after_total - required_total
-    return (f"# ane-harness: {n_tasks} tasks · {reduction_median}% saved "
-            f"median ({fmt_tokens(after_total)} of {fmt_tokens(before_total)} "
-            f"· {fmt_tokens(required_total)} required kept + "
-            f"{fmt_tokens(disc)} discretionary) · budget {budget}")
+    """One-line footer for a batch update run (user lens: tasks + savings)."""
+    return (f"ane-harness: {n_tasks} tasks, saved {reduction_median}% "
+            f"median ({fmt_tokens(after_total)} of {fmt_tokens(before_total)})")

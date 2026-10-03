@@ -65,7 +65,7 @@ def test_update_logs_before_after_tokens(tmp_path, monkeypatch):
     data = json.loads(proc.stdout)
     assert data["tasks"] == 2
     # human summary travels in stdout JSON too (agents never see stderr)
-    assert data["summary"].startswith("# ane-harness: 2 tasks")
+    assert data["summary"].startswith("ane-harness: 2 tasks")
     assert data["before_tokens_total"] > data["after_tokens_total"] > 0
     assert data["tokens_removed_total"] > 0
     assert 0.0 < data["reduction_percent_median"] <= 100.0
@@ -79,8 +79,8 @@ def test_update_logs_before_after_tokens(tmp_path, monkeypatch):
     assert first["selected_tokens"] <= first["candidate_tokens"]
     assert "redaction does not guarantee" in proc.stderr
     # human summary footer: stdout stays pure JSON, footer on stderr
-    assert "# ane-harness: 2 tasks" in proc.stderr
-    assert "saved median" in proc.stderr
+    assert "ane-harness: 2 tasks, saved " in proc.stderr
+    assert "median" in proc.stderr
 
 
 def test_update_accepts_jsonl_tasks(tmp_path, monkeypatch):
