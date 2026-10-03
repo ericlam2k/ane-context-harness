@@ -1,12 +1,12 @@
 {
-  "capability_profile_fingerprint": "84514ea62a491bc5f93b392708e04954895e426e24d9bf9d0d6966c77ef52f56",
-  "harness_configuration_hash": "490e0309ccf75055e21056269e0907fa423105c2dfb1a9ba2b43db28f598fe8e",
+  "capability_profile_fingerprint": "1f72aae92ca3af1663608189bb13db1fce94b94e48ea6a975f4531271cd2705c",
+  "harness_configuration_hash": "50da1671bf3d2781a8d88bb502d23c99aec6245a733fc32559e709daeace5262",
   "benchmark_task_set_hash": "16b6a2ba74d437a79832b37049aea7e8db8208c28b62dc7bc2c23068d5f821f1",
   "benchmark_schema_version": "2",
   "git": {
-    "commit": null,
-    "dirty": null,
-    "status": "not_a_git_repository"
+    "commit": "cc03a507ddde64897f55e8adb75def05a1599c14",
+    "dirty": true,
+    "status": "dirty"
   },
   "token_estimator": {
     "backend": "regex-heuristic",
