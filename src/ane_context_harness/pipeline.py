@@ -199,10 +199,20 @@ class Pipeline:
 
         with Timer("packing") as t_pack:
             max_budget = min(request.token_budget, self.limits.get("max_output_token_budget", 30000))
-            selected, diag = select_evidence(
-                chunks, scores, request.task, max_budget, request.explicit_paths,
-                use_ml=use_ml, ml_scores=ml_scores, weights=self.retrieval,
-            )
+            if request.options.get("full_context"):
+                # Baseline mode for with/without comparison: everything, in
+                # stable path order. No budget, no trimming, no ranking.
+                selected = sorted(chunks, key=lambda c: (c.path, c.start_line))
+                diag = {"mandatory_count": 0,
+                        "selected_count": len(selected),
+                        "used_tokens": sum(c.estimated_tokens for c in selected),
+                        "budget": max_budget, "budget_exceeded": False,
+                        "full_context": True, "per_file_tokens": {}}
+            else:
+                selected, diag = select_evidence(
+                    chunks, scores, request.task, max_budget, request.explicit_paths,
+                    use_ml=use_ml, ml_scores=ml_scores, weights=self.retrieval,
+                )
         stage_ms["packing_ms"] = round(t_pack.elapsed_ms, 2)
 
         cand_tokens = sum(c.estimated_tokens for c in chunks)

@@ -49,6 +49,25 @@ def test_select_context_recall_and_reduction(pipeline, py_repo):
     assert "start_line" in ev0 and "end_line" in ev0
 
 
+def test_full_context_baseline_packs_everything(pipeline, py_repo):
+    """--full baseline for with/without comparison: no trimming, reduction 0."""
+    pipeline.register_repository(py_repo, "synthetic_py_project", True)
+    chunks = pipeline._storage_for("synthetic_py_project").load_chunks()
+    req = SelectRequest(
+        repository_id="synthetic_py_project",
+        task="Fix the incorrect discount calculation and update its tests",
+        token_budget=1200,
+        options={"full_context": True},
+    )
+    pkg = pipeline.select_context(req)
+    assert len(pkg.evidence) == len(chunks)
+    assert pkg.metrics["selected_tokens"] == pkg.metrics["candidate_tokens"]
+    assert pkg.metrics["reduction_percent"] == 0.0
+    # stable path order, not score order
+    locs = [(e["path"], e["start_line"]) for e in pkg.evidence]
+    assert locs == sorted(locs)
+
+
 def test_select_returns_stable_request_id_length(pipeline, py_repo):
     pipeline.register_repository(py_repo, "synthetic_py_project", True)
     req = SelectRequest(repository_id="synthetic_py_project", task="discount bug", token_budget=4000)

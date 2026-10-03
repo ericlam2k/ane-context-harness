@@ -38,7 +38,7 @@ def test_format_session_leads_with_savings(tmp_path):
     usage.record("select", 10000, 1000, path=ledger)
     line = usage.format_session(usage.summarize(path=ledger))
     assert line.startswith("ane-harness daily")
-    assert "saved 90.0%" in line
+    assert "saved 90.0% context" in line
     assert "#" not in line
 
 

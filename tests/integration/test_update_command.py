@@ -65,7 +65,7 @@ def test_update_logs_before_after_tokens(tmp_path, monkeypatch):
     data = json.loads(proc.stdout)
     assert data["tasks"] == 2
     # human summary travels in stdout JSON too (agents never see stderr)
-    assert data["summary"].startswith("ane-harness: 2 tasks")
+    assert data["summary"].startswith("ane-harness: 2 tasks, saved ")
     assert data["before_tokens_total"] > data["after_tokens_total"] > 0
     assert data["tokens_removed_total"] > 0
     assert 0.0 < data["reduction_percent_median"] <= 100.0

@@ -132,7 +132,7 @@ given repo; redaction does not guarantee all secrets are caught."*
 
 Every run also prints a one-line savings footer to stderr (and the same
 line as the `summary` key in stdout JSON), e.g.
-`ane-harness: saved 96.6% (7.1k of 211.2k) in 165 ms`. Plain words only —
+`ane-harness: saved 96.6% context (7.1k of 211.2k) in 165 ms`. Plain words only —
 no jargon, no `#` heading markup. Totals accumulate locally (counts only, no
 task text) — see them
 anytime with `ane-harness daily`, or on every shell exit with

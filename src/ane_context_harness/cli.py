@@ -11,7 +11,7 @@ from . import schemas
 from .config import build_config
 from .pipeline import Pipeline, SERVICE_VERSION
 from .providers.markdown import render_markdown
-from .summary import select_footer, update_footer
+from .summary import fmt_tokens, select_footer, update_footer
 from . import usage as usage_log
 
 
@@ -30,6 +30,9 @@ def main(argv: list | None = None) -> int:
     p_select.add_argument("--budget", type=int, default=12000)
     p_select.add_argument("--explicit-path", action="append", default=[])
     p_select.add_argument("--out", default=None)
+    p_select.add_argument("--full", action="store_true",
+                          help="Baseline mode: pack the whole repo, no trimming; "
+                               "for with/without comparison of results")
     p_select.add_argument("--quiet", action="store_true",
                           help="Suppress the human-readable stderr summary footer")
     p_serve = sub.add_parser("serve", help="Run local HTTP server")
@@ -121,11 +124,17 @@ def main(argv: list | None = None) -> int:
             task=args.task,
             token_budget=args.budget,
             explicit_paths=args.explicit_path,
+            options={"full_context": True} if args.full else {},
         )
         pkg = pipe.select_context(req)
         pkg.markdown = render_markdown(pkg)
-        foot = select_footer(pkg.metrics, pkg.execution, len(pkg.evidence),
-                             args.budget)
+        if args.full:
+            foot = (f"ane-harness: full context "
+                    f"({fmt_tokens(pkg.metrics['selected_tokens'])}) "
+                    f"in {round(pkg.metrics.get('total_latency_ms', 0.0))} ms")
+        else:
+            foot = select_footer(pkg.metrics, pkg.execution, len(pkg.evidence),
+                                 args.budget)
         out = {
             "request_id": pkg.request_id,
             "metrics": pkg.metrics,

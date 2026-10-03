@@ -55,7 +55,7 @@ def select_footer(metrics: dict[str, Any], execution: dict[str, Any] | None,
     red = metrics.get("reduction_percent", 0.0)
     lat = metrics.get("total_latency_ms", 0.0)
     disc = metrics.get("discretionary_tokens", 0)
-    line = (f"ane-harness: saved {red}% ({fmt_tokens(sel)} of "
+    line = (f"ane-harness: saved {red}% context ({fmt_tokens(sel)} of "
             f"{fmt_tokens(cand)}) in {round(lat)} ms")
     if disc - budget > 0:
         line += " — too big, narrow the task"
@@ -67,4 +67,4 @@ def update_footer(before_total: int, after_total: int,
                   budget: int, required_total: int = 0) -> str:
     """One-line footer for a batch update run (user lens: tasks + savings)."""
     return (f"ane-harness: {n_tasks} tasks, saved {reduction_median}% "
-            f"median ({fmt_tokens(after_total)} of {fmt_tokens(before_total)})")
+            f"context median ({fmt_tokens(after_total)} of {fmt_tokens(before_total)})")
