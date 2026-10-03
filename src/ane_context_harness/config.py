@@ -35,6 +35,12 @@ DEFAULT_CONFIG = {
         "git_recency_weight": 0.05,
         "diversity_lambda": 0.25,
         "top_k_for_diversity": 60,
+        # Multi-pass query expansion for ranking only ("off" | "max" | "sum").
+        # Pins, reasons, and budgets always use the original task. "max"
+        # (fused best-pass score) won the frozen-eval comparison over "sum"
+        # on robustness grounds at equal metrics; see
+        # benchmarks/reports/eval_expansion.json.
+        "query_expansion": "max",
     },
     "runtime": {
         "compute_mode": "deterministic_only",

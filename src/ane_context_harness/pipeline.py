@@ -291,6 +291,22 @@ class Pipeline:
             lex = lexical_scores(bm25, request.task)
             scores = aggregate_scores(chunks, request.task, request.explicit_paths,
                                       self.retrieval, lex)
+            # optional query expansion: normalize + identifier passes, fused by
+            # max/sum over initial_scores only. Pinning, reasons, and budgets
+            # always use the original task (recall floor untouched).
+            fusion = (self.retrieval.get("query_expansion", "off") or "off")
+            if fusion in ("max", "sum"):
+                from .retrieval.queries import expand_queries, fuse_scores
+                queries = expand_queries(request.task)
+                per_query = [[s.initial_score for s in scores]]
+                for q in queries[1:]:
+                    lex_q = lexical_scores(bm25, q)
+                    sq = aggregate_scores(chunks, q, request.explicit_paths,
+                                          self.retrieval, lex_q)
+                    per_query.append([s.initial_score for s in sq])
+                fused = fuse_scores(per_query, fusion)
+                for s, v in zip(scores, fused):
+                    s.initial_score = v
             # Phase 3 reranker (profile-driven). No bundled model => cpu_deterministic.
             # The keyed cache guarantees ONE runtime/model load per stable
             # (artifact, calibration, profile, runtime, config) state; every
