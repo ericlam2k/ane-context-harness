@@ -138,6 +138,10 @@ touch it. Totals accumulate locally (counts only, no task text) — see them
 anytime with `ane-harness daily`, or on every shell exit with
 `eval "$(ane-harness shell-init)"` in your `.zshrc`/`.bashrc`.
 
+Agents get the same behavior dependency-free via the bundled skill:
+`skills/ane-harness/SKILL.md` — copy it into your agent's skills directory
+and savings surface automatically after each task, no other setup.
+
 ### 4. Or Run as a Local Background Server
 
 Start the local HTTP API (ready to be hooked up to your agent or tools):
