@@ -140,7 +140,10 @@ anytime with `ane-harness daily`, or on every shell exit with
 
 Agents get the same behavior dependency-free via the bundled skill:
 `skills/ane-harness/SKILL.md` — copy it into your agent's skills directory
-and savings surface automatically after each task, no other setup.
+and savings surface automatically after each task, no other setup. For
+OpenCode/Claude/agent-compatible hosts it also works globally, no per-project
+install: `~/.config/opencode/skills/`, `~/.claude/skills/`, or
+`~/.agents/skills/` (new sessions pick it up).
 
 ### 4. Or Run as a Local Background Server
 
