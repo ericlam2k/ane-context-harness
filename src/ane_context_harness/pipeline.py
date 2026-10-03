@@ -102,21 +102,37 @@ class Pipeline:
         return self._profile_cache
 
     def coreml_concurrency_eligible(self, concurrent_agents: int = 1) -> dict:
-        """Judge Arm C eligibility by fan-out (pipeline owns this decision).
+        """Judge Arm C eligibility by fan-out OR machine contention.
 
-        Returns {"eligible", "threshold", "agents"}. Arm C is eligible at
-        N >= runtime.max_concurrent_agents (default 5, Phase 6 crossover).
+        Returns {"eligible", "threshold", "agents", "contended",
+        "load_per_core"}. Eligible when N >= runtime.max_concurrent_agents
+        (default 5, Phase 6 crossover) or the 1-min loadavg per core >=
+        runtime.load_threshold (default 0.75) — the latter covers simultaneous
+        projects whose fan-outs never meet in one counter. Set
+        ANE_HARNESS_NO_LOAD_SENSE=1 to judge N only (tests do this).
         Eligibility never enables Arm C by itself — artifact presence, ANE
         availability, and the per-task benefit check still apply downstream.
         """
-        threshold = (self.config.get("runtime", {}) or {}).get(
-            "max_concurrent_agents", 5)
+        runtime = self.config.get("runtime", {}) or {}
+        threshold = runtime.get("max_concurrent_agents", 5)
+        load_threshold = runtime.get("load_threshold", 0.75)
         try:
             agents = int(concurrent_agents)
         except (TypeError, ValueError):
             agents = 1
-        return {"eligible": agents >= threshold, "threshold": threshold,
-                "agents": agents}
+        contended: bool = False
+        load_per_core: float | None = None
+        if (load_threshold and load_threshold > 0
+                and not os.environ.get("ANE_HARNESS_NO_LOAD_SENSE")):
+            try:
+                cores = os.cpu_count() or 1
+                load_per_core = round(os.getloadavg()[0] / cores, 3)
+                contended = load_per_core >= load_threshold
+            except OSError:
+                pass
+        return {"eligible": bool(agents >= threshold or contended),
+                "threshold": threshold, "agents": agents,
+                "contended": contended, "load_per_core": load_per_core}
 
     def _classifier_artifact_path(self) -> str | None:
         p = (self.config.get("privacy", {}) or {}).get("classifier_model_path")

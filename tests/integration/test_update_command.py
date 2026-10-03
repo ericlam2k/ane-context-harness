@@ -26,6 +26,9 @@ def _repo_env(extra: dict | None = None) -> dict:
     prepending this repo's src to PYTHONPATH keeps CLI subprocesses hermetic.
     """
     env = dict(os.environ)
+    # Pin load sensing off: subprocess gates must judge N only, never the
+    # ambient CI machine load (deterministic threshold tests).
+    env["ANE_HARNESS_NO_LOAD_SENSE"] = "1"
     src = str(ROOT / "src")
     prev = env.get("PYTHONPATH")
     env["PYTHONPATH"] = f"{src}{os.pathsep}{prev}" if prev else src

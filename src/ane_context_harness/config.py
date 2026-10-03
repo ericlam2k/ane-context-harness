@@ -44,6 +44,10 @@ DEFAULT_CONFIG = {
         # ANE wins from N>=5 on the measured host). Single prompts stay on
         # arm B; scripts pass their fan-out N through for the pipeline to judge.
         "max_concurrent_agents": 5,
+        # ...or whenever the machine itself is contended (1-min loadavg per
+        # core >= this). Covers simultaneous projects: four shells x 1 agent
+        # saturate the CPU while each reports N=1. 0.0 disables the load rule.
+        "load_threshold": 0.75,
     },
     "privacy": {
         "redact_secrets": False,
