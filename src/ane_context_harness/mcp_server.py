@@ -15,6 +15,7 @@ from . import schemas, tokens
 from .config import build_config
 from .evidence import verify_bundle as _verify_bundle
 from .pipeline import Pipeline
+from .summary import select_footer, update_footer
 
 
 def _select_summary(pkg: schemas.EvidencePackage) -> dict[str, Any]:
@@ -30,6 +31,11 @@ def _select_summary(pkg: schemas.EvidencePackage) -> dict[str, Any]:
     }
 
 
+def _select_human(pkg: schemas.EvidencePackage, budget: int) -> str:
+    return select_footer(pkg.metrics, pkg.execution, len(pkg.evidence),
+                         budget)
+
+
 async def select_context_tool(repo_id: str, task: str, budget: int = 12000) -> str:
     """MCP tool: select context for a single task (Arm B deterministic)."""
     cfg = build_config()
@@ -37,7 +43,9 @@ async def select_context_tool(repo_id: str, task: str, budget: int = 12000) -> s
     req = schemas.SelectRequest(repository_id=repo_id, task=task,
                                 token_budget=budget, explicit_paths=[])
     pkg = pipe.select_context(req)
-    return json.dumps(_select_summary(pkg), indent=2)
+    out = _select_summary(pkg)
+    out["summary"] = _select_human(pkg, budget)
+    return json.dumps(out, indent=2)
 
 
 async def update_tool(repo_id: str, budget: int, tasks: list[str]) -> str:
@@ -69,6 +77,9 @@ async def update_tool(repo_id: str, budget: int, tasks: list[str]) -> str:
             if reductions else 0.0),
         "per_task": per_task,
     }
+    summary["summary"] = update_footer(
+        summary["before_tokens_total"], summary["after_tokens_total"],
+        summary["reduction_percent_median"], summary["tasks"], budget)
     return json.dumps(summary, indent=2)
 
 

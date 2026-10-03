@@ -11,6 +11,7 @@ from . import schemas
 from .config import build_config
 from .pipeline import Pipeline, SERVICE_VERSION
 from .providers.markdown import render_markdown
+from .summary import select_footer, update_footer
 
 
 def main(argv: list | None = None) -> int:
@@ -28,6 +29,8 @@ def main(argv: list | None = None) -> int:
     p_select.add_argument("--budget", type=int, default=12000)
     p_select.add_argument("--explicit-path", action="append", default=[])
     p_select.add_argument("--out", default=None)
+    p_select.add_argument("--quiet", action="store_true",
+                          help="Suppress the human-readable stderr summary footer")
     p_serve = sub.add_parser("serve", help="Run local HTTP server")
     p_serve.add_argument("--host", default="127.0.0.1")
     p_serve.add_argument("--port", type=int, default=8765)
@@ -41,6 +44,8 @@ def main(argv: list | None = None) -> int:
                                "defaults to stdin")
     p_update.add_argument("--log", default=None,
                           help="Optional path to append per-task JSONL log to")
+    p_update.add_argument("--quiet", action="store_true",
+                          help="Suppress the human-readable stderr summary footer")
     p_evidence = sub.add_parser("evidence", help="Build/verify release evidence bundle")
     evi_sub = p_evidence.add_subparsers(dest="evidence_command")
     p_evi_build = evi_sub.add_parser("build", help="Freeze an evidence bundle")
@@ -119,6 +124,10 @@ def main(argv: list | None = None) -> int:
             print(json.dumps({"markdown_written": args.out, "metrics": pkg.metrics}, indent=2))
         else:
             print(text)
+        if not args.quiet:
+            print(select_footer(pkg.metrics, pkg.execution, len(pkg.evidence),
+                                args.budget),
+                  file=sys.stderr)
         return 0
     if args.command == "serve":
         from .api import serve
@@ -178,6 +187,12 @@ def main(argv: list | None = None) -> int:
         print(json.dumps(summary, indent=2))
         print("# Note: local measurements over the given repo; redaction does not "
               "guarantee all secrets are caught.", file=sys.stderr)
+        if not args.quiet:
+            print(update_footer(summary["before_tokens_total"],
+                                summary["after_tokens_total"],
+                                summary["reduction_percent_median"],
+                                summary["tasks"], args.budget),
+                  file=sys.stderr)
         return 0
     if args.command == "evidence":
         from .evidence import EvidenceError, build_bundle, verify_bundle

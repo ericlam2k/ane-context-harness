@@ -73,6 +73,9 @@ def test_update_logs_before_after_tokens(tmp_path, monkeypatch):
     first = json.loads(lines[0])
     assert first["selected_tokens"] <= first["candidate_tokens"]
     assert "redaction does not guarantee" in proc.stderr
+    # human summary footer: stdout stays pure JSON, footer on stderr
+    assert "# ane-harness: 2 tasks" in proc.stderr
+    assert "saved median" in proc.stderr
 
 
 def test_update_accepts_jsonl_tasks(tmp_path, monkeypatch):
