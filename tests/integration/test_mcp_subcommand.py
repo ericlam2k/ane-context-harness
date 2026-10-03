@@ -9,11 +9,29 @@ package is present in the environment).
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+
+# Repo root derived from this file: CLI subprocesses must run against the
+# checkout under test, never a hardcoded developer path.
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def _repo_env() -> dict:
+    """Subprocess env forcing import of this checkout's src.
+
+    The harness may be pip-installed editable from a different checkout;
+    prepending this repo's src to PYTHONPATH keeps CLI subprocesses hermetic.
+    """
+    env = dict(os.environ)
+    src = str(ROOT / "src")
+    prev = env.get("PYTHONPATH")
+    env["PYTHONPATH"] = f"{src}{os.pathsep}{prev}" if prev else src
+    return env
 
 
 def _have_mcp() -> bool:
@@ -30,7 +48,8 @@ def test_mcp_subcommand_graceful_when_missing():
     proc = subprocess.run(
         [sys.executable, "-m", "ane_context_harness.cli", "mcp"],
         capture_output=True, text=True, timeout=30,
-        cwd="/Users/quanglam/Documents/ANEharness",
+        cwd=str(ROOT),
+        env=_repo_env(),
     )
     assert proc.returncode == 1
     assert not proc.stdout  # error goes to stderr only
@@ -43,7 +62,8 @@ def test_mcp_subcommand_help_works():
     proc = subprocess.run(
         [sys.executable, "-m", "ane_context_harness.cli", "mcp", "--help"],
         capture_output=True, text=True, timeout=30,
-        cwd="/Users/quanglam/Documents/ANEharness",
+        cwd=str(ROOT),
+        env=_repo_env(),
     )
     assert proc.returncode == 0
     assert "--transport" in proc.stdout
