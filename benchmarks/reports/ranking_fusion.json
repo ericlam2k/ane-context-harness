@@ -1,0 +1,466 @@
+{
+ "n_eval_tasks": 18,
+ "modes": {
+  "off": {
+   "recall_at_1": 0.4954,
+   "recall_at_5": 0.8981,
+   "recall_at_10": 0.9306,
+   "ndcg_at_10": 0.8491,
+   "mrr": 0.9074
+  },
+  "max": {
+   "recall_at_1": 0.5231,
+   "recall_at_5": 0.8935,
+   "recall_at_10": 0.912,
+   "ndcg_at_10": 0.8532,
+   "mrr": 0.9074
+  },
+  "sum": {
+   "recall_at_1": 0.5231,
+   "recall_at_5": 0.8935,
+   "recall_at_10": 0.912,
+   "ndcg_at_10": 0.8499,
+   "mrr": 0.9074
+  }
+ },
+ "per_task": {
+  "off": [
+   {
+    "task_id": "hard-apply-discount-001",
+    "recall_at_1": 0.3333,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.906,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-buried-quote-001",
+    "recall_at_1": 0.3333,
+    "recall_at_5": 0.6667,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.818,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-cart-apply-001",
+    "recall_at_1": 0.0,
+    "recall_at_5": 0.75,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.7487,
+    "mrr": 0.5
+   },
+   {
+    "task_id": "hard-doc-concession-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.8772,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-rules-vs-readme-001",
+    "recall_at_1": 1.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-settings-001",
+    "recall_at_1": 1.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-similarnames-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.8772,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-stock-clearance-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.8503,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-types-line-001",
+    "recall_at_1": 0.0,
+    "recall_at_5": 0.5,
+    "recall_at_10": 0.5,
+    "ndcg_at_10": 0.3066,
+    "mrr": 0.3333
+   },
+   {
+    "task_id": "hard-vat-apply-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 0.5,
+    "recall_at_10": 0.5,
+    "ndcg_at_10": 0.6131,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "py-calculator-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "py-discount-001",
+    "recall_at_1": 0.25,
+    "recall_at_5": 0.75,
+    "recall_at_10": 0.75,
+    "ndcg_at_10": 0.7366,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "py-discount-report-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "py-inventory-sku-001",
+    "recall_at_1": 1.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "ts-discount-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "ts-inventory-reconcile-001",
+    "recall_at_1": 1.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "ts-math-total-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.9197,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "ts-reporting-stats-001",
+    "recall_at_1": 0.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.6309,
+    "mrr": 0.5
+   }
+  ],
+  "max": [
+   {
+    "task_id": "hard-apply-discount-001",
+    "recall_at_1": 0.3333,
+    "recall_at_5": 0.6667,
+    "recall_at_10": 0.6667,
+    "ndcg_at_10": 0.7654,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-buried-quote-001",
+    "recall_at_1": 0.3333,
+    "recall_at_5": 0.6667,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.818,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-cart-apply-001",
+    "recall_at_1": 0.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.7606,
+    "mrr": 0.5
+   },
+   {
+    "task_id": "hard-doc-concession-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.9197,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-rules-vs-readme-001",
+    "recall_at_1": 1.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-settings-001",
+    "recall_at_1": 1.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-similarnames-001",
+    "recall_at_1": 0.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.6509,
+    "mrr": 0.5
+   },
+   {
+    "task_id": "hard-stock-clearance-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.8503,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-types-line-001",
+    "recall_at_1": 0.0,
+    "recall_at_5": 0.5,
+    "recall_at_10": 0.5,
+    "ndcg_at_10": 0.3066,
+    "mrr": 0.3333
+   },
+   {
+    "task_id": "hard-vat-apply-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 0.5,
+    "recall_at_10": 0.5,
+    "ndcg_at_10": 0.6131,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "py-calculator-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "py-discount-001",
+    "recall_at_1": 0.25,
+    "recall_at_5": 0.75,
+    "recall_at_10": 0.75,
+    "ndcg_at_10": 0.7537,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "py-discount-report-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "py-inventory-sku-001",
+    "recall_at_1": 1.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "ts-discount-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "ts-inventory-reconcile-001",
+    "recall_at_1": 1.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "ts-math-total-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.9197,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "ts-reporting-stats-001",
+    "recall_at_1": 1.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   }
+  ],
+  "sum": [
+   {
+    "task_id": "hard-apply-discount-001",
+    "recall_at_1": 0.3333,
+    "recall_at_5": 0.6667,
+    "recall_at_10": 0.6667,
+    "ndcg_at_10": 0.7654,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-buried-quote-001",
+    "recall_at_1": 0.3333,
+    "recall_at_5": 0.6667,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.818,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-cart-apply-001",
+    "recall_at_1": 0.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.7606,
+    "mrr": 0.5
+   },
+   {
+    "task_id": "hard-doc-concession-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.8772,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-rules-vs-readme-001",
+    "recall_at_1": 1.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-settings-001",
+    "recall_at_1": 1.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-similarnames-001",
+    "recall_at_1": 0.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.6509,
+    "mrr": 0.5
+   },
+   {
+    "task_id": "hard-stock-clearance-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.8503,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "hard-types-line-001",
+    "recall_at_1": 0.0,
+    "recall_at_5": 0.5,
+    "recall_at_10": 0.5,
+    "ndcg_at_10": 0.3066,
+    "mrr": 0.3333
+   },
+   {
+    "task_id": "hard-vat-apply-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 0.5,
+    "recall_at_10": 0.5,
+    "ndcg_at_10": 0.6131,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "py-calculator-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "py-discount-001",
+    "recall_at_1": 0.25,
+    "recall_at_5": 0.75,
+    "recall_at_10": 0.75,
+    "ndcg_at_10": 0.7366,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "py-discount-report-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "py-inventory-sku-001",
+    "recall_at_1": 1.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "ts-discount-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "ts-inventory-reconcile-001",
+    "recall_at_1": 1.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "ts-math-total-001",
+    "recall_at_1": 0.5,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 0.9197,
+    "mrr": 1.0
+   },
+   {
+    "task_id": "ts-reporting-stats-001",
+    "recall_at_1": 1.0,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "ndcg_at_10": 1.0,
+    "mrr": 1.0
+   }
+  ]
+ }
+}
