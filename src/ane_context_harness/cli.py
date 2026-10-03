@@ -71,7 +71,7 @@ def main(argv: list | None = None) -> int:
     if args.command == "shell-init":
         print(usage_log.SHELL_INIT_SNIPPET, end="")
         return 0
-    if args.command == "session":
+    if args.command in ("daily", "session"):
         today = usage_log.summarize()
         if args.brief:
             if today["runs"] == 0:

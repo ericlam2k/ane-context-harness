@@ -58,3 +58,14 @@ def test_shell_init_snippet_guarded():
     assert "daily --brief" in usage.SHELL_INIT_SNIPPET
     assert "zshexit" in usage.SHELL_INIT_SNIPPET
     assert "trap" in usage.SHELL_INIT_SNIPPET
+
+
+def test_cli_daily_and_session_alias_work(tmp_path, monkeypatch, capsys):
+    # regression: "daily" was a dead subcommand (dispatch matched "session" only)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    from src.ane_context_harness.cli import main
+    assert main(["daily"]) == 0
+    out = capsys.readouterr().out
+    assert out.startswith("# ane-harness daily (today)")
+    assert main(["session", "--brief"]) == 0
+    assert capsys.readouterr().out == ""  # silent with no runs yet
