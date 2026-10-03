@@ -60,10 +60,11 @@ def main(argv: list | None = None) -> int:
     p_mcp.add_argument("--transport", default="stdio",
                        choices=["stdio", "sse"], help="MCP transport")
     p_session = sub.add_parser(
-        "session", help="Show saved-tokens totals from the local usage ledger")
+        "daily", aliases=["session"],
+        help="Show saved-tokens daily totals from the local usage ledger")
     p_session.add_argument("--brief", action="store_true",
                            help="One line, or nothing when no runs yet (for shell-exit hooks)")
-    sub.add_parser("shell-init", help="Print shell snippet: session savings on shell exit; "
+    sub.add_parser("shell-init", help="Print shell snippet: daily savings on shell exit; "
                                       "opt in with eval \"$(ane-harness shell-init)\"")
 
     args = parser.parse_args(argv)

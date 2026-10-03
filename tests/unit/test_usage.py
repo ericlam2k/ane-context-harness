@@ -37,7 +37,7 @@ def test_format_session_leads_with_savings(tmp_path):
     ledger = tmp_path / "usage.jsonl"
     usage.record("select", 10000, 1000, path=ledger)
     line = usage.format_session(usage.summarize(path=ledger))
-    assert line.startswith("# ane-harness session")
+    assert line.startswith("# ane-harness daily")
     assert "90.0% saved" in line
 
 
@@ -55,5 +55,6 @@ def test_log_disabled_under_pytest():
 
 def test_shell_init_snippet_guarded():
     assert "command -v ane-harness" in usage.SHELL_INIT_SNIPPET
+    assert "daily --brief" in usage.SHELL_INIT_SNIPPET
     assert "zshexit" in usage.SHELL_INIT_SNIPPET
     assert "trap" in usage.SHELL_INIT_SNIPPET

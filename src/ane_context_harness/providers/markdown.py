@@ -5,6 +5,7 @@ stays untouched (FR-8).
 from __future__ import annotations
 
 from ..schemas import EvidencePackage
+from ..summary import tokens_line
 from .layout import SECTION_TITLES, build_prompt_sections
 
 
@@ -34,8 +35,7 @@ def render_markdown(package: EvidencePackage) -> str:
     lines.append(f"**Policy:** {package.policy_version} | **Index:** {package.index_version} | **Model:** {package.model_version}")
     m = package.metrics
     if isinstance(m, dict):
-        lines.append(f"**Tokens:** {m.get('selected_tokens', 0)} selected of {m.get('candidate_tokens', 0)} candidate "
-                     f"({m.get('reduction_percent', 0)}% reduction) | **Latency:** {m.get('total_latency_ms', 0)} ms")
+        lines.append(tokens_line(m))
     lines.append("")
     lines.append("Evidence packages follow, ordered stably:")
     lines.append("")
