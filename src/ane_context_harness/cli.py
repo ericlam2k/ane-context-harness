@@ -48,8 +48,26 @@ def main(argv: list | None = None) -> int:
     p_evi_build.add_argument("--force", action="store_true")
     p_evi_verify = evi_sub.add_parser("verify", help="Verify bundle checksums")
     p_evi_verify.add_argument("bundle", help="Bundle directory")
+    p_mcp = sub.add_parser(
+        "mcp", help="Serve ane-harness over MCP (optional; requires "
+                    "the 'mcp' extra: pip install 'ane-context-harness[mcp]')")
+    p_mcp.add_argument("--transport", default="stdio",
+                       choices=["stdio", "sse"], help="MCP transport")
 
     args = parser.parse_args(argv)
+    if args.command == "mcp":
+        try:
+            import mcp  # noqa: F401
+            from .mcp_server import build_server
+        except ImportError:
+            print(json.dumps({"ok": False, "error": (
+                "mcp extra not installed; run: pip install 'ane-context-harness[mcp]'")}),
+                file=sys.stderr)
+            return 1
+        server = build_server()
+        server.run(args.transport)
+        return 0
+
     cfg = build_config()
     pipe = Pipeline(cfg)
 
