@@ -114,10 +114,11 @@ def summarize_all(path: Path | None = None) -> dict[str, Any]:
 
 
 def format_session(stats: dict[str, Any], label: str = "today") -> str:
-    from .summary import fmt_tokens
-    return (f"ane-harness daily ({label}): saved {stats['saved_percent']}% "
-            f"context ({fmt_tokens(stats['selected_tokens'])} of "
-            f"{fmt_tokens(stats['candidate_tokens'])}), "
+    from .summary import fmt_tokens, _occupied_pct
+    return (f"ane-harness daily ({label}): saved {stats['saved_percent']}% · "
+            f"uses {fmt_tokens(stats['selected_tokens'])} of "
+            f"{fmt_tokens(stats['candidate_tokens'])} "
+            f"({_occupied_pct(stats['selected_tokens'], stats['candidate_tokens'])}), "
             f"{stats['tasks']} tasks")
 
 

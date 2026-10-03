@@ -42,21 +42,30 @@ def tokens_line(metrics: dict[str, Any]) -> str:
             f"**Latency:** {metrics.get('total_latency_ms', 0)} ms")
 
 
+def _occupied_pct(selected: int, candidate: int) -> str:
+    """Share of the pool actually used: the complement of saved%."""
+    if not candidate:
+        return "0%"
+    return f"{round(selected / candidate * 100.0, 1)}%"
+
+
 def select_footer(metrics: dict[str, Any], execution: dict[str, Any] | None,
                   n_chunks: int, budget: int) -> str:
     """One-line footer for a single select run.
 
-    User lens only: percent saved, totals, time. No `#` prefix (it renders
-    as a giant heading in chat UIs), no jargon (required/discretionary,
-    chunks, backend names) — those stay in the JSON for machines.
+    User lens only: percent saved AND percent used (they sum to 100%),
+    totals, time. No `#` prefix (renders as a giant heading in chat UIs),
+    no jargon (required/discretionary, chunks, backend names) — those stay
+    in the JSON for machines.
     """
     cand = metrics.get("candidate_tokens", 0)
     sel = metrics.get("selected_tokens", 0)
     red = metrics.get("reduction_percent", 0.0)
     lat = metrics.get("total_latency_ms", 0.0)
     disc = metrics.get("discretionary_tokens", 0)
-    line = (f"ane-harness: saved {red}% context ({fmt_tokens(sel)} of "
-            f"{fmt_tokens(cand)}) in {round(lat)} ms")
+    line = (f"ane-harness: saved {red}% · uses {fmt_tokens(sel)} of "
+            f"{fmt_tokens(cand)} ({_occupied_pct(sel, cand)}) "
+            f"in {round(lat)} ms")
     if disc - budget > 0:
         line += " — too big, narrow the task"
     return line
@@ -66,5 +75,6 @@ def update_footer(before_total: int, after_total: int,
                   reduction_median: float, n_tasks: int,
                   budget: int, required_total: int = 0) -> str:
     """One-line footer for a batch update run (user lens: tasks + savings)."""
-    return (f"ane-harness: {n_tasks} tasks, saved {reduction_median}% "
-            f"context median ({fmt_tokens(after_total)} of {fmt_tokens(before_total)})")
+    return (f"ane-harness: {n_tasks} tasks, saved {reduction_median}% median · uses "
+            f"{fmt_tokens(after_total)} of {fmt_tokens(before_total)} "
+            f"({_occupied_pct(after_total, before_total)})")
