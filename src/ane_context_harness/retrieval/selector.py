@@ -229,6 +229,6 @@ def build_evidence(package_chunks: list, scores: list, task: str, request_id: st
         redaction_summary=redaction_summary,
         evidence=evidence,
         markdown="",
-        execution={"reranker": "cpu_deterministic", "coreml_compute_units_requested": None, "fallback_used": False},
+        execution={"reranker": "cpu_deterministic", "fallback_used": False},
     )
     return pkg

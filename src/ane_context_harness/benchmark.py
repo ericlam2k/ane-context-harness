@@ -284,7 +284,7 @@ def _chunk_matches(c, req: dict) -> bool:
     if lines and not (c.start_line <= lines[0] and c.end_line >= lines[1]):
         return False
     # Symbol scope only applies to symbol-scoped chunks (file-level chunks are
-    # decided by path/lines) — mirrors coreml.evaluation._matches.
+    # decided by path/lines) — mirrors metrics._matches.
     symbol = req.get("symbol")
     if symbol and c.symbol and c.symbol != symbol:
         return False

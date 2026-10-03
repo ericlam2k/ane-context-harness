@@ -14,10 +14,8 @@ class BehavioralProfile(str, Enum):
 
 
 class RankBackend(str, Enum):
-    """Ranker backends. Phase 1 ships CPU_DETERMINISTIC only."""
+    """Ranker backends. Portable line ships CPU_DETERMINISTIC only."""
     CPU_DETERMINISTIC = "cpu_deterministic"
-    COREML_ALL = "coreml_all"
-    COREML_CPU_GPU = "coreml_cpu_gpu"
     LOCAL_GPU = "local_gpu"
 
 
@@ -88,10 +86,6 @@ class SelectRequest:
     explicit_paths: list = field(default_factory=list)
     tool_outputs: list = field(default_factory=list)
     conversation_summary: Optional[str] = None
-    # Concurrent-agent fan-out this request belongs to (1 = single prompt).
-    # The pipeline judges Arm C eligibility against
-    # runtime.max_concurrent_agents; scripts pass their N through.
-    concurrent_agents: int = 1
     options: dict = field(default_factory=lambda: {
         "include_tests": True,
         "redact_secrets": False,
@@ -119,12 +113,10 @@ class EvidencePackage:
 class HealthResponse:
     status: str
     platform: str
-    coreml_model_loaded: bool
     compute_mode: str
     index_version: str
     service_version: str
     behavioral_profile: str
-    coreml_compute_units_requested: Optional[str] = None
     fallback_used: bool = False
     secret_classifier: str = "cpu_deterministic"
     capabilities: dict = field(default_factory=dict)

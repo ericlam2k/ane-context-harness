@@ -34,39 +34,11 @@ class CapabilityProfile:
         }
 
 
-def _gate_ml(backend: str, meas: dict) -> bool:
-    """An ML backend is enabled only when it clears all measured gates.
-
-    The deterministic backend never needs the speedup gate.
-    """
-    if backend == "cpu_deterministic":
-        return meas.get("failure_rate_percent", 0) <= 0.1
-    speedup = meas.get("measured_speedup_percent", 0) or 0
-    min_speedup = meas.get("required_speedup_percent", 15) or 15
-    fail = meas.get("failure_rate_percent", 0) or 0
-    p95 = meas.get("warm_p95_ms")
-    mem = meas.get("peak_memory_mb")
-    max_mem = meas.get("profile_memory_limit_mb", 1200) or 1200
-    within_latency = (p95 is None) or (p95 <= 1500)
-    within_mem = (mem is None) or (mem <= max_mem)
-    numerical_ok = meas.get("numerical_validation", "not_run") == "passed"
-    return (
-        speedup >= min_speedup
-        and fail <= 0.1
-        and within_latency
-        and within_mem
-        and numerical_ok
-    )
-
-
 def derive_profile(discovery: dict, measurements: dict | None = None) -> CapabilityProfile:
-    """Derive a behavioral profile from discovery + optional calibration measurements.
+    """Derive a behavioral profile from discovery + optional measurements.
 
-    measurements shape:
-      {"reranker": {"backend": "coreml_all", "enabled": True,
-                    "measured_speedup_percent": 22.0, "warm_p95_ms": 390,
-                    "peak_memory_mb": 410, "failure_rate_percent": 0.0,
-                    "numerical_validation": "passed"}, ...}
+    Portable line: measurements never enable ML backends; the profile is
+    always deterministic-only.
     """
     measurements = measurements or {}
     machine_id = discovery.get("machine_id", "")
@@ -80,20 +52,8 @@ def derive_profile(discovery: dict, measurements: dict | None = None) -> Capabil
         "secret_classifier": _feature_state(measurements.get("secret_classifier", {})),
     }
 
-    reranker = features["reranker"]
-    rb = reranker.get("backend", "cpu_deterministic")
-    p95 = reranker.get("warm_p95_ms")
-    # ML backends (coreml/local_gpu) are measurement-qualified; the deterministic
-    # CPU backend is always available but yields DETERMINISTIC_ONLY.
-    if rb in ("coreml_all", "coreml_cpu_gpu", "local_gpu"):
-        if p95 is not None and p95 <= 500:
-            behavioral = BehavioralProfile.BALANCED
-        elif p95 is not None and p95 <= 1500:
-            behavioral = BehavioralProfile.CONSTRAINED
-        else:
-            behavioral = BehavioralProfile.BALANCED  # qualified, limits unknown
-    else:
-        behavioral = BehavioralProfile.DETERMINISTIC_ONLY
+    # Portable line: deterministic CPU backend only (always available).
+    behavioral = BehavioralProfile.DETERMINISTIC_ONLY
 
     fp = (
         f"{machine_id}-{sw.get('macos_version', 'na')}-"
@@ -113,25 +73,13 @@ def derive_profile(discovery: dict, measurements: dict | None = None) -> Capabil
 
 
 def _feature_state(meas: dict) -> dict:
-    """Compute a feature's final state from its measurement dict.
+    """Compute a feature's final state.
 
-    Phase 1 default (no measurements supplied): deterministic-only.
+    Portable line: deterministic-only, always. Measurement-gated ML
+    backends live in the private distribution.
     """
-    backend = meas.get("backend", "cpu_deterministic")
-    allowed = _gate_ml(backend, meas)
-    if allowed and backend != "cpu_deterministic":
-        return {
-            "enabled": True,
-            "backend": backend,
-            "warm_p95_ms": meas.get("warm_p95_ms"),
-            "peak_memory_mb": meas.get("peak_memory_mb"),
-            "failure_rate_percent": meas.get("failure_rate_percent", 0),
-            "numerical_validation": meas.get("numerical_validation", "passed"),
-            "reason": meas.get("reason", "benchmark_qualified"),
-        }
-    # Deterministic fallback (always available).
     return {
         "enabled": True,
         "backend": "cpu_deterministic",
-        "reason": meas.get("reason", "no_qualified_ml_backend") if meas else "default_no_measurements",
+        "reason": "deterministic_only_portable_line",
     }

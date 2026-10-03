@@ -23,7 +23,7 @@ def _run(mode: str):
     from ane_context_harness.benchmark import (
         FIXTURE_REPO_PATHS, load_task_split, DEFAULT_NEVER_READ)
     from ane_context_harness.config import build_config
-    from ane_context_harness.evaluation import package_ranking_metrics
+    from ane_context_harness.metrics import package_ranking_metrics
     from ane_context_harness.pipeline import Pipeline
     from ane_context_harness.schemas import SelectRequest
     cfg = build_config({

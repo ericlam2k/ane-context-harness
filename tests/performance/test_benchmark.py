@@ -47,11 +47,10 @@ def test_phase1_required_evidence_recall_at_least_95(bench):
     assert summary["min_recall"] >= 0.95, summary
 
 
-def test_phase1_no_ane_claim(bench):
+def test_phase1_no_accelerator_surface(bench):
     report, summary = bench
     disc = report.platform["discovery"]
-    assert disc["devices"]["neural_engine_observed"] is False
-    assert disc["devices"]["neural_engine_observed_tri"] == "unknown"
+    assert disc["devices"] == {}
     # compute_mode must stay conservative
     assert report.platform["discovery"]["runtime"]["compute_mode"] == "deterministic_only"
 

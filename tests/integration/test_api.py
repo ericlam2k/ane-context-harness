@@ -41,8 +41,6 @@ def test_api_health_and_select(tmp_path, py_repo):
         assert health["status"] == "ok"
         assert health["compute_mode"] == "deterministic_only"
         assert health["behavioral_profile"] == "DETERMINISTIC_ONLY"
-        assert health["coreml_model_loaded"] is False
-        assert health["coreml_compute_units_requested"] is None  # no ANE claim
 
         status, idx = _post(base, "/v1/repositories/index",
                             {"repository_path": py_repo, "repository_id": "synthetic_py_project"})

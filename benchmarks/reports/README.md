@@ -2,12 +2,8 @@
 
 - `phase1-measurement.json` — Phase 0/1 measurement, written by
   `scripts/measure_phase1.py`.
-- `phase5-ab-evaluation.{json,md}` — Phase 5 A/B evaluation, written by
-  `scripts/run_phase5.py` (**frozen eval split**, 18 tasks;
-  `~/.venvs/ane-p36/bin/python` runs arm C with the P3.6-qualified
-  `coreml_all` artifact from `~/.ane_context_harness/`; without coremltools
-  arm C is reported as not run, never faked; cost/TTFT figures derived under
-  stated assumptions).
+- Frozen-split A/B evaluation (deterministic arms) runs on the eval split
+  (18 tasks); cost/TTFT figures derived under stated assumptions.
 
 ## Split
 

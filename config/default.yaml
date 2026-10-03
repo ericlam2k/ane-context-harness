@@ -23,7 +23,6 @@ retrieval:
 
 runtime:
   compute_mode: deterministic_only
-  coreml_enabled: false
   fail_closed: false
 
 privacy:

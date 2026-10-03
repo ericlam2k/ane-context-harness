@@ -1,11 +1,11 @@
-"""Release-evidence bundle: build and verify a frozen, checksummed snapshot
-of the measured evidence behind a release candidate.
+"""Frozen release-evidence bundle: checksum verification (portable line).
 
-The bundle contains reports, provenance fingerprints and version locks only —
-never source code, repository secrets, raw credentials or benchmark content.
+Verifies ``manifest.json`` checksums + required metadata fields of a frozen
+bundle. Bundle construction is ANE-release infrastructure and lives in the
+private distribution.
 """
 from .bundle import (BUNDLE_NAME, BUNDLE_SCHEMA_VERSION, EvidenceError,
-                     build_bundle, verify_bundle)
+                     verify_bundle)
 
 __all__ = ["BUNDLE_NAME", "BUNDLE_SCHEMA_VERSION", "EvidenceError",
-           "build_bundle", "verify_bundle"]
+           "verify_bundle"]

@@ -10,7 +10,7 @@ DISCOVERY = {
     "machine_id": "abc123",
     "hardware": {"architecture": "arm64", "is_apple_silicon": True, "unified_memory_bytes": 17179869184},
     "software": {"macos_version": "14.0", "python_version": "3.14.0"},
-    "devices": {"coreml_available": False, "neural_engine_observed": False},
+    "devices": {},
     "runtime": {"compute_mode": "deterministic_only"},
 }
 
@@ -33,31 +33,19 @@ def test_default_profile_is_deterministic_only():
     assert prof.features["reranker"]["backend"] == "cpu_deterministic"
 
 
-def test_no_ane_claim_from_apple_silicon():
+def test_no_accelerator_claim_from_apple_silicon():
     prof = derive_profile(DISCOVERY)
-    # Even on arm64 macOS, no ANE feature is enabled without measurements.
-    assert prof.devices.get("neural_engine_observed") is False
+    # Even on arm64 macOS, no accelerator surface exists on portable line.
+    assert prof.devices == {}
     assert prof.features["secret_classifier"]["backend"] == "cpu_deterministic"
 
 
-def test_ml_backend_requires_measurements():
-    """An ml backend is only enabled when measured gates pass."""
+def test_measurements_never_enable_ml():
+    """Portable line: measurements cannot enable ML backends."""
     meas = {
         "reranker": {"backend": "coreml_all", "enabled": True,
                      "measured_speedup_percent": 22.0, "warm_p95_ms": 390,
                      "peak_memory_mb": 512, "failure_rate_percent": 0.0,
-                     "numerical_validation": "passed"},
-    }
-    prof = derive_profile(DISCOVERY, measurements=meas)
-    assert prof.features["reranker"]["backend"] == "coreml_all"
-    assert prof.behavioral_profile == BehavioralProfile.BALANCED.value
-
-
-def test_ml_backend_gated_by_speedup():
-    meas = {
-        "reranker": {"backend": "coreml_all", "enabled": True,
-                     "measured_speedup_percent": 5.0, "warm_p95_ms": 200,
-                     "peak_memory_mb": 200, "failure_rate_percent": 0.0,
                      "numerical_validation": "passed"},
     }
     prof = derive_profile(DISCOVERY, measurements=meas)
@@ -72,8 +60,8 @@ def test_mock_calibration_is_deterministic_only():
     assert prof.features["reranker"]["backend"] == "cpu_deterministic"
 
 
-def test_constrained_profile_when_ml_qualified_but_slow():
-    """ML backend qualifies (>=15% speedup, p95<=1500) but p95 > 500ms -> CONSTRAINED."""
+def test_no_constrained_profile_on_portable_line():
+    """Slow measurements cannot move the portable line off deterministic."""
     meas = {
         "reranker": {"backend": "coreml_all", "enabled": True,
                      "measured_speedup_percent": 20.0, "warm_p95_ms": 800,
@@ -81,5 +69,5 @@ def test_constrained_profile_when_ml_qualified_but_slow():
                      "numerical_validation": "passed"},
     }
     prof = derive_profile(DISCOVERY, measurements=meas)
-    assert prof.behavioral_profile == BehavioralProfile.CONSTRAINED.value
-    assert prof.features["reranker"]["backend"] == "coreml_all"
+    assert prof.behavioral_profile == BehavioralProfile.DETERMINISTIC_ONLY.value
+    assert prof.features["reranker"]["backend"] == "cpu_deterministic"

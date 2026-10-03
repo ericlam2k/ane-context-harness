@@ -15,11 +15,10 @@ def test_discover_returns_expected_keys():
     assert "is_apple_silicon" in d["hardware"]
 
 
-def test_discover_does_not_claim_ane():
+def test_discover_reports_no_accelerators():
     d = discover()
-    # ANE must never be claimed from chip identity alone.
-    assert d["devices"]["neural_engine_observed"] is False
-    assert d["devices"]["neural_engine_observed_tri"] == "unknown"
+    # Portable line probes nothing: no accelerator keys at all.
+    assert d["devices"] == {}
 
 
 def test_machine_id_stable_and_non_secret():

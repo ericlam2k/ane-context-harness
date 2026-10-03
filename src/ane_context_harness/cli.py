@@ -47,11 +47,8 @@ def main(argv: list | None = None) -> int:
                           help="Optional path to append per-task JSONL log to")
     p_update.add_argument("--quiet", action="store_true",
                           help="Suppress the human-readable stderr summary footer")
-    p_evidence = sub.add_parser("evidence", help="Build/verify release evidence bundle")
+    p_evidence = sub.add_parser("evidence", help="Verify a release evidence bundle")
     evi_sub = p_evidence.add_subparsers(dest="evidence_command")
-    p_evi_build = evi_sub.add_parser("build", help="Freeze an evidence bundle")
-    p_evi_build.add_argument("--out", required=True, help="Bundle output directory")
-    p_evi_build.add_argument("--force", action="store_true")
     p_evi_verify = evi_sub.add_parser("verify", help="Verify bundle checksums")
     p_evi_verify.add_argument("bundle", help="Bundle directory")
     p_mcp = sub.add_parser(
@@ -230,15 +227,7 @@ def main(argv: list | None = None) -> int:
                              tasks=summary["tasks"])
         return 0
     if args.command == "evidence":
-        from .evidence import EvidenceError, build_bundle, verify_bundle
-        if args.evidence_command == "build":
-            try:
-                info = build_bundle(args.out, force=args.force)
-            except EvidenceError as exc:
-                print(json.dumps({"ok": False, "error": str(exc)}), file=sys.stderr)
-                return 1
-            print(json.dumps({"ok": True, **info}, indent=2))
-            return 0
+        from .evidence import verify_bundle
         if args.evidence_command == "verify":
             result = verify_bundle(args.bundle)
             print(json.dumps(result, indent=2))

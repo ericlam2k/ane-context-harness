@@ -19,7 +19,7 @@ When you vibe-code or run AI agents (Cursor, Claude Code, OpenCode, Cline, Winds
 
 **ane-context-harness** is a lightweight, local-first context engine that sits between your codebase and your coding agent. In **~3 milliseconds**, it indexes your repo, extracts symbol hierarchies (functions, interfaces, types), strips the noise, redacts secrets, and packs only the high-value code evidence your agent actually needs to complete the task.
 
-> The name `ane` is historical (for Apple Neural Engine, the intended acceleration substrate); it is **not** a dependency. The shipped path is pure CPU and runs on macOS Apple Silicon, macOS Intel, and Linux. Specialized-silicon acceleration is an *optional*, **disabled-by-default** Core ML reranker path (Arm C) — see the honest note under "Technical Specifications".
+> The name `ane` is historical; it is **not** a dependency. The shipped path is pure CPU and runs on macOS Apple Silicon, macOS Intel, and Linux. Hardware acceleration lives in a separate private distribution.
 
 Zero external network calls. 100% private and offline.
 
@@ -224,26 +224,13 @@ User Prompt  ──────►   BM25 Lexical Search
 4. **Secret Detection & Privacy Fence:** Canonical exclusion patterns (`.env*`, `.aws/**`, `*.pem`, etc.) are never read, and regex + entropy classifiers replace sensitive tokens with stable placeholders.
 5. **Noise Compression:** Verbose tool outputs (test traces, terminal logs) are collapsed into compact signal-preserving digests.
 
-### Hardware acceleration: optional, not required (and not adopted by default)
+### Hardware acceleration: separate private distribution
 
 The name contains `ane`, but **no specialized silicon is required or claimed** to
-run the harness. The shipped default (Arm B) is pure deterministic CPU (Python +
+run the harness. The shipped engine is pure deterministic CPU (Python +
 SQLite) and runs identically on macOS Apple Silicon, macOS Intel, and Linux.
-
-- **Never required:** CPU deterministic path — no Core ML, no Neural Engine.
-- **Measured, optional, disabled by default:** Where an Apple Neural Engine is
-  available on Apple Silicon, the *optional* Core ML backend (`coreml_all`,
-  `computeUnits = .all`) can schedule the reranker model onto CPU+GPU+**ANE**,
-  measured at warm p50 1.7–8.2 ms (P3.6). It is gated off
-  (`coreml_enabled: false`) and **not adopted as the default** because, end-to-end
-  on the frozen eval split, it failed the recall gate on one task and was slower
-  than the deterministic path (~31 ms vs ~3.83 ms).
-- **Honest claim policy:** `coreml_all` is a qualified backend *on this host*;
-  the harness does **not** claim ANE execution from `computeUnits = all`.
-  Selecting it is a deliberate, opt-in choice for the reranker only; it does not
-  accelerate indexing, packing, redaction, or compression (those are
-  non-neural by design).
-- See `docs/adr-003-arm-c-adoption.md` and `docs/adr-001-capability-based-runtime.md`.
+Neural-hardware acceleration is maintained separately and is not part of
+this repository.
 
 ---
 
@@ -253,7 +240,6 @@ For researchers, architects, and technical leads who care about numerical rigor:
 
 - **Frozen Benchmark Split:** All release numbers run on a frozen 18-task evaluation split (`benchmarks/splits.json`, seed `20261002`). Tuning is strictly quarantined to the dev split.
 - **Deterministic Token Estimator:** Token counting uses a pinned estimator (`TOKEN_ESTIMATOR_VERSION="2"`) so numbers are 100% reproducible across machines and Python versions without external tokenizer drift.
-- **Arm C (Core ML / Apple Silicon) Research:** We built and calibrated a native Core ML MiniLM reranker toolchain (`cross-encoder/ms-marco-MiniLM-L6-v2`). While warm inference reaches ~25ms on device, evaluation on the frozen split revealed a budget/ranking failure on one complex task (`hard-rules-vs-readme-001`). Per our honest reporting policy, **Arm B (deterministic) remains the shipped default**, and Core ML is disabled until blend tuning is completed. See [ADR-003](docs/adr-003-arm-c-adoption.md).
 - **Embedding Policy:** Embeddings are intentionally excluded in v0.1 based on local cost/latency trade-offs. See [ADR-002](docs/adr-002-embedding-go-no-go.md).
 - **Release Evidence Bundle:** Checksummed release evidence is cryptographically verified via `ane-harness evidence verify ane-context-harness-evidence-v0.1`.
 

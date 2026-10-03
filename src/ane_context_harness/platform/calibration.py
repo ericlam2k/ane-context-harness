@@ -68,7 +68,7 @@ def mock_calibration_deterministic_only(fingerprint: str = "test") -> Calibratio
                 peak_memory_mb=0.0,
                 failure_rate_percent=0.0,
                 numerical_validation="passed",
-                reason="no_coreml_backend_qualified_phase1",
+                reason="deterministic_only_portable_line",
             ),
             CalibrationResult(
                 feature="embedding",

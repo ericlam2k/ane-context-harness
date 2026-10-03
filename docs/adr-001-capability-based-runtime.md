@@ -13,7 +13,7 @@ decision loop.
 - Features are mapped to **backends**, each independently activatable:
   - Lexical retrieval -> CPU (deterministic)
   - Symbol extraction -> CPU (deterministic)
-  - Code reranking -> `CPU_DETERMINISTIC | COREML_ALL | COREML_CPU_GPU | LOCAL_GPU`
+  - Code reranking -> `CPU_DETERMINISTIC | LOCAL_GPU` (accelerated backends: private distribution)
   - Embeddings -> CPU or benchmark-qualified Core ML
   - Secret classification -> rules-based CPU, optional benchmark-qualified Core ML
 - A backend is **enabled only** when it passes correctness validation AND measured

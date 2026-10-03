@@ -16,12 +16,12 @@ from types import SimpleNamespace
 
 from ane_context_harness.benchmark import (BenchmarkTask,
                                            required_chunks_covered)
-from ane_context_harness.coreml.evaluation import (METRIC_DEFINITIONS,
-                                                   evaluate_rerank,
-                                                   mrr, ndcg_at_k,
-                                                   recall_at_k,
-                                                   relevance_labels)
-from ane_context_harness.evaluation import _label_rate
+from ane_context_harness.metrics import (METRIC_DEFINITIONS,
+                                             _label_rate,
+                                             evaluate_rerank,
+                                             mrr, ndcg_at_k,
+                                             recall_at_k,
+                                             relevance_labels)
 
 
 def _chunk(path, start, end, symbol=None):

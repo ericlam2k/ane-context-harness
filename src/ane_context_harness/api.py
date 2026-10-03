@@ -114,12 +114,10 @@ def _health_dict(h: schemas.HealthResponse) -> dict:
     return {
         "status": h.status,
         "platform": h.platform,
-        "coreml_model_loaded": h.coreml_model_loaded,
         "compute_mode": h.compute_mode,
         "index_version": h.index_version,
         "service_version": h.service_version,
         "behavioral_profile": h.behavioral_profile,
-        "coreml_compute_units_requested": h.coreml_compute_units_requested,
         "fallback_used": h.fallback_used,
         "capabilities": h.capabilities,
     }

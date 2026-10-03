@@ -21,8 +21,7 @@ from .privacy.redaction import Redactor
 from .privacy.classifier import SecretClassifier
 from .providers.markdown import render_markdown
 from .retrieval.lexical import BM25, lexical_scores
-from .coreml.runtime import ModelArtifact
-from .retrieval.reranker import RerankerFacade
+from .retrieval.reranker import RerankDecision
 from .retrieval.structural import aggregate_scores
 from .retrieval.selector import build_evidence, select_evidence
 from .telemetry.metrics import Timer
@@ -41,26 +40,21 @@ class Pipeline:
         self.retrieval = config.get("retrieval", {})
         self.limits = config.get("limits", {})
         self.never_read = config.get("privacy", {}).get("never_read", [])
-        self._model_path = (config.get("coreml", {}) or {}).get("model_path")
-        self._coreml_cfg = config.get("coreml", {}) or {}
-        self._calibration_report = (self._coreml_cfg or {}).get("calibration_report")
         self._profile_cache = None
         self._facade = None
-        from .coreml.lifecycle import LifecycleMetrics
-        self._lifecycle = LifecycleMetrics()
-        self._reranker_cache = None
         self.storage_base = os.path.expanduser(config.get("index", {}).get("storage_path", "~/.ane_context_harness"))
         os.makedirs(self.storage_base, exist_ok=True)
         self.storage = None
 
     def lifecycle_metrics(self) -> dict:
-        """Model-lifecycle telemetry snapshot (counts only — no source text)."""
-        return self._lifecycle.snapshot()
+        """Portable line loads no models: static zero snapshot (shape kept)."""
+        return {"artifact_resolution_count": 0, "model_load_count": 0,
+                "prediction_count": 0, "fallback_count": 0}
 
     def close(self) -> None:
-        """Clean shutdown: release the cached reranker model, if any."""
-        if self._reranker_cache is not None:
-            self._reranker_cache.close()
+        """Clean shutdown: nothing to release on the portable line."""
+        if self._facade is not None:
+            self._facade.close()
 
     def _storage_for(self, repo_id, repo_root=None) -> Storage:
         repo_id_safe = repo_id.replace("/", "_").replace(":", "_")
@@ -71,29 +65,13 @@ class Pipeline:
         return st
 
     def _calibration_measurements(self) -> dict:
-        """Load Phase 3 calibration measurements, if a report path is configured.
-
-        The report JSON maps feature names to measurement dicts, e.g.
-        {"reranker": {"backend": "coreml_cpu_gpu", "enabled": true, ...}}.
-        """
-        if not self._calibration_report:
-            return {}
-        path = os.path.expanduser(self._calibration_report)
-        if not os.path.exists(path):
-            return {}
-        import json as _json
-        try:
-            with open(path, "r", encoding="utf-8") as fh:
-                data = _json.load(fh)
-            return data.get("measurements", data) if isinstance(data, dict) else {}
-        except Exception:
-            return {}
+        """Portable line: no calibration reports; deterministic profile always."""
+        return {}
 
     def _profile(self) -> dict:
         """Capability profile (cached). Drives backend selection; never claims ANE.
 
-        Optionally merged with on-disk Phase 3 calibration measurements when
-        ``coreml.calibration_report`` is configured.
+        Portable line: deterministic profile, no calibration inputs.
         """
         if self._profile_cache is None:
             disc = discover()
@@ -101,110 +79,11 @@ class Pipeline:
             self._profile_cache = derive_profile(disc, measurements=measurements).to_dict()
         return self._profile_cache
 
-    def coreml_concurrency_eligible(self, concurrent_agents: int = 1) -> dict:
-        """Judge Arm C eligibility by fan-out OR machine contention.
-
-        Returns {"eligible", "threshold", "agents", "contended",
-        "load_per_core"}. Eligible when N >= runtime.max_concurrent_agents
-        (default 5, Phase 6 crossover) or the 1-min loadavg per core >=
-        runtime.load_threshold (default 0.75) — the latter covers simultaneous
-        projects whose fan-outs never meet in one counter. Set
-        ANE_HARNESS_NO_LOAD_SENSE=1 to judge N only (tests do this).
-        Eligibility never enables Arm C by itself — artifact presence, ANE
-        availability, and the per-task benefit check still apply downstream.
-        """
-        runtime = self.config.get("runtime", {}) or {}
-        threshold = runtime.get("max_concurrent_agents", 5)
-        load_threshold = runtime.get("load_threshold", 0.75)
-        try:
-            agents = int(concurrent_agents)
-        except (TypeError, ValueError):
-            agents = 1
-        contended: bool = False
-        load_per_core: float | None = None
-        if (load_threshold and load_threshold > 0
-                and not os.environ.get("ANE_HARNESS_NO_LOAD_SENSE")):
-            try:
-                cores = os.cpu_count() or 1
-                load_per_core = round(os.getloadavg()[0] / cores, 3)
-                contended = load_per_core >= load_threshold
-            except OSError:
-                pass
-        return {"eligible": bool(agents >= threshold or contended),
-                "threshold": threshold, "agents": agents,
-                "contended": contended, "load_per_core": load_per_core}
-
     def _classifier_artifact_path(self) -> str | None:
         p = (self.config.get("privacy", {}) or {}).get("classifier_model_path")
         if p:
             return os.path.expanduser(p)
         return os.path.join(self.storage_base, "secret_classifier.model")
-
-    def _reranker_artifact(self) -> ModelArtifact | None:
-        """Resolve a compiled Core ML reranker artifact, if configured/available.
-
-        Looks up ``coreml.artifact_path`` or scans ``storage_base/artifacts``
-        for a compiled ``.mlmodelc``/``.mlpackage`` directory carrying
-        metadata + checksums. Returns None when absent (pipeline uses the
-        deterministic reranker).
-        """
-        configured = self._coreml_cfg.get("artifact_path")
-        if configured:
-            candidate = os.path.expanduser(configured)
-        else:
-            art_dir = os.path.join(self.storage_base, "artifacts")
-            candidate = None
-            if os.path.isdir(art_dir):
-                for name in sorted(os.listdir(art_dir), reverse=True):
-                    d = os.path.join(art_dir, name)
-                    if name.endswith((".mlmodelc", ".mlpackage")) and os.path.isdir(d):
-                        candidate = d
-                        break
-        if not candidate or not os.path.isdir(candidate):
-            return None
-        meta_path = os.path.join(candidate, "metadata.json")
-        vocab_path = os.path.join(candidate, "tokenizer", "vocab.txt")
-        tok_cfg = os.path.join(candidate, "tokenizer", "tokenizer_config.json")
-        model_path = self._find_model_file(candidate)
-        if not model_path or not os.path.exists(vocab_path):
-            return None
-        import json as _json
-        meta = {}
-        if os.path.exists(meta_path):
-            try:
-                meta = _json.load(open(meta_path))
-            except Exception:
-                meta = {}
-        checksums = {}
-        ck = os.path.join(candidate, "checksums.sha256")
-        if os.path.exists(ck):
-            for line in open(ck):
-                line = line.strip()
-                if line:
-                    parts = line.split(None, 1)
-                    if len(parts) == 2:
-                        checksums[parts[1]] = parts[0]
-        return ModelArtifact(
-            model_id=meta.get("model", ""), revision=meta.get("revision", ""),
-            seq_len=int(meta.get("seq_len", 256)),
-            model_version=meta.get("artifact_version", "none"),
-            model_path=model_path, vocab_path=vocab_path,
-            tokenizer_config_path=tok_cfg, checksums=checksums,
-            numeric_validation=meta.get("numeric_validation", {}),
-            manifest_entry=meta.get("entry_key", ""),
-        )
-
-    @staticmethod
-    def _find_model_file(candidate: str) -> str | None:
-        for name in ("model.mlmodelc", "model.mlpackage"):
-            p = os.path.join(candidate, name)
-            if os.path.isdir(p):
-                return p
-        for name in ("model.mlmodelc", "model.mlpackage"):
-            p = os.path.join(candidate, name)
-            if os.path.isdir(p):
-                return p
-        return None
 
     def register_repository(self, repo_path: str, repo_id: str | None = None,
                             force_rebuild: bool = False) -> schemas.IndexResponse:
@@ -307,34 +186,14 @@ class Pipeline:
                 fused = fuse_scores(per_query, fusion)
                 for s, v in zip(scores, fused):
                     s.initial_score = v
-            # Phase 3 reranker (profile-driven). No bundled model => cpu_deterministic.
-            # The keyed cache guarantees ONE runtime/model load per stable
-            # (artifact, calibration, profile, runtime, config) state; every
-            # request still runs predictions through the cached facade.
-            if self._reranker_cache is None:
-                from .retrieval.model_cache import RerankerCache
-                self._reranker_cache = RerankerCache(
-                    profile_provider=self._profile,
-                    artifact_provider=self._reranker_artifact,
-                    config_provider=lambda: self.config,
-                    metrics=self._lifecycle,
-                )
-            facade, decision = self._reranker_cache.get()
+            # Portable line: deterministic reranker only (no models loaded).
+            decision = RerankDecision(
+                backend="cpu_deterministic", ml_used=False, fallback=False,
+                reason="deterministic_only_no_ml_qualified",
+                model_version="none")
             ml_scores = None
             use_ml = False
             reranker_ms = 0.0
-            if decision.ml_used:
-                top_k = min(self.retrieval.get("max_rerank_candidates", 120), len(chunks))
-                order = sorted(range(len(chunks)), key=lambda i: -scores[i].final_score)
-                top_idx = order[:top_k]
-                top_chunks = [chunks[i] for i in top_idx]
-                t_rr = time.perf_counter()
-                top_scores = facade.rerank(request.task, top_chunks, top_k)
-                reranker_ms = round((time.perf_counter() - t_rr) * 1000.0, 2)
-                ml_scores = [None] * len(chunks)
-                for j, i in enumerate(top_idx):
-                    ml_scores[i] = top_scores[j] if j < len(top_scores) else None
-                use_ml = True
         stage_ms["reranking_ms"] = round(t_rank.elapsed_ms, 2)
         stage_ms["reranker_ms"] = reranker_ms
 
@@ -362,7 +221,6 @@ class Pipeline:
         )
         pkg.execution = {
             "reranker": decision.backend,
-            "coreml_compute_units_requested": decision.backend if decision.backend.startswith("coreml_") else None,
             "fallback_used": decision.fallback,
             "fallback_reason": decision.reason,
             "model_version": decision.model_version,
@@ -435,12 +293,10 @@ class Pipeline:
         return schemas.HealthResponse(
             status="ok",
             platform="apple-silicon" if disc["hardware"]["is_apple_silicon"] else "non-apple-silicon",
-            coreml_model_loaded=False,
             compute_mode="deterministic_only",
             index_version="2",
             service_version=SERVICE_VERSION,
             behavioral_profile=prof.behavioral_profile,
-            coreml_compute_units_requested=None,
             fallback_used=False,
             secret_classifier=prof.features.get("secret_classifier", {}).get("backend", "cpu_deterministic"),
             capabilities=disc,

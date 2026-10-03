@@ -1,8 +1,7 @@
 """Runtime hardware/software discovery (generation-neutral).
 
-Reports only what is directly observable from the local system. Does NOT
-attempt Core ML introspection without an optional coremltools import, and
-never equates Apple Silicon with Neural Engine use.
+Reports only what is directly observable from the local system. The portable
+line performs no accelerator probing.
 """
 from __future__ import annotations
 
@@ -82,29 +81,10 @@ def _macos() -> dict:
     return {"macos_version": None, "macos_build": None}
 
 
-def _detect_coreml() -> dict:
-    """Probe for Core ML availability without fabricating ANE claims.
-
-    Returns coreml_available as a tri-state: True (optional coremltools import
-    succeeds AND we are on a known Apple Silicon macOS runtime), False when
-    absent, and 'unknown' otherwise. Neural Engine availability is 'unknown'
-    unless an ANE-backed compute unit is observed during calibration
-    (Phase 3). We never claim ANE from computeUnits=all.
-    """
-    try:
-        import coremltools  # type: ignore
-        has_coreml = True
-    except Exception:
-        has_coreml = False
-    apple = _hw_info()["is_apple_silicon"]
-    macos = platform.system() == "Darwin"
-    available = has_coreml and apple and macos
-    return {
-        "coreml_available": available,
-        "coreml_available_tri": "true" if available else ("false" if not has_coreml and not apple else "unknown"),
-        "neural_engine_observed": False,  # only ever set True by measured calibration (Phase 3)
-        "neural_engine_observed_tri": "unknown",
-    }
+def _detect_accelerators() -> dict:
+    """Portable line: no accelerator probing (hardware acceleration lives in
+    the private distribution)."""
+    return {}
 
 
 def discover() -> dict:
@@ -126,7 +106,7 @@ def discover() -> dict:
             **_macos(),
             "python_version": platform.python_version(),
         },
-        "devices": _detect_coreml(),
+        "devices": _detect_accelerators(),
         "runtime": {
             "compute_mode": "deterministic_only",  # no qualified Core ML backend in Phase 1
         },
