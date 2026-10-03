@@ -132,6 +132,9 @@ def main(argv: list | None = None) -> int:
             foot = (f"ane-harness: full context "
                     f"({fmt_tokens(pkg.metrics['selected_tokens'])}) "
                     f"in {round(pkg.metrics.get('total_latency_ms', 0.0))} ms")
+            print("# WARNING: full baseline bypasses selection AND redaction; "
+                  "untrimmed content (including any indexed secrets) is included.",
+                  file=sys.stderr)
         else:
             foot = select_footer(pkg.metrics, pkg.execution, len(pkg.evidence),
                                  args.budget)
