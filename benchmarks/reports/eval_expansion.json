@@ -1,0 +1,26 @@
+{
+ "n_eval_tasks": 18,
+ "modes": {
+  "off": {
+   "median_reduction": 60.47,
+   "min_reduction": 33.21,
+   "mean_recall": 1.0,
+   "min_recall": 1.0,
+   "p50_latency_ms": 3.03
+  },
+  "max": {
+   "median_reduction": 63.09,
+   "min_reduction": 39.46,
+   "mean_recall": 1.0,
+   "min_recall": 1.0,
+   "p50_latency_ms": 4.23
+  },
+  "sum": {
+   "median_reduction": 63.14,
+   "min_reduction": 39.46,
+   "mean_recall": 1.0,
+   "min_recall": 1.0,
+   "p50_latency_ms": 4.27
+  }
+ }
+}
