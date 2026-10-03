@@ -12,6 +12,7 @@ from .config import build_config
 from .pipeline import Pipeline, SERVICE_VERSION
 from .providers.markdown import render_markdown
 from .summary import select_footer, update_footer
+from . import usage as usage_log
 
 
 def main(argv: list | None = None) -> int:
@@ -58,8 +59,27 @@ def main(argv: list | None = None) -> int:
                     "the 'mcp' extra: pip install 'ane-context-harness[mcp]')")
     p_mcp.add_argument("--transport", default="stdio",
                        choices=["stdio", "sse"], help="MCP transport")
+    p_session = sub.add_parser(
+        "session", help="Show saved-tokens totals from the local usage ledger")
+    p_session.add_argument("--brief", action="store_true",
+                           help="One line, or nothing when no runs yet (for shell-exit hooks)")
+    sub.add_parser("shell-init", help="Print shell snippet: session savings on shell exit; "
+                                      "opt in with eval \"$(ane-harness shell-init)\"")
 
     args = parser.parse_args(argv)
+    if args.command == "shell-init":
+        print(usage_log.SHELL_INIT_SNIPPET, end="")
+        return 0
+    if args.command == "session":
+        today = usage_log.summarize()
+        if args.brief:
+            if today["runs"] == 0:
+                return 0
+            print(usage_log.format_session(today))
+            return 0
+        print(usage_log.format_session(today))
+        print(usage_log.format_session(usage_log.summarize_all(), "all time"))
+        return 0
     if args.command == "mcp":
         try:
             import mcp  # noqa: F401
@@ -128,6 +148,10 @@ def main(argv: list | None = None) -> int:
             print(select_footer(pkg.metrics, pkg.execution, len(pkg.evidence),
                                 args.budget),
                   file=sys.stderr)
+        if usage_log.log_enabled():
+            usage_log.record("select", pkg.metrics["candidate_tokens"],
+                             pkg.metrics["selected_tokens"],
+                             pkg.metrics.get("total_latency_ms"))
         return 0
     if args.command == "serve":
         from .api import serve
@@ -198,6 +222,10 @@ def main(argv: list | None = None) -> int:
                                 summary["tasks"], args.budget,
                                 summary["required_tokens_total"]),
                   file=sys.stderr)
+        if usage_log.log_enabled():
+            usage_log.record("update", summary["before_tokens_total"],
+                             summary["after_tokens_total"],
+                             tasks=summary["tasks"])
         return 0
     if args.command == "evidence":
         from .evidence import EvidenceError, build_bundle, verify_bundle
