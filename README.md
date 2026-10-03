@@ -130,6 +130,14 @@ Per-task rows are also appended as JSONL to `--log` (gitignored).
 **Honest caveat** printed to stderr on every run: *"local measurements over the
 given repo; redaction does not guarantee all secrets are caught."*
 
+Every run also prints a one-line savings footer to stderr (stdout stays pure
+JSON), e.g. `# ane-harness: 96.6% saved (7.1k of 211.2k) · 5.8k required kept +
+discretionary 1.3k of 2000 budget ok · 23 chunks · 165 ms`. The budget governs
+discretionary context only — required evidence is always kept, so you never
+touch it. Totals accumulate locally (counts only, no task text) — see them
+anytime with `ane-harness daily`, or on every shell exit with
+`eval "$(ane-harness shell-init)"` in your `.zshrc`/`.bashrc`.
+
 ### 4. Or Run as a Local Background Server
 
 Start the local HTTP API (ready to be hooked up to your agent or tools):

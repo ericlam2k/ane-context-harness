@@ -4,6 +4,7 @@ from __future__ import annotations
 from src.ane_context_harness.summary import (
     fmt_tokens,
     select_footer,
+    tokens_line,
     update_footer,
 )
 
@@ -12,6 +13,14 @@ def test_fmt_tokens_compact():
     assert fmt_tokens(800) == "800"
     assert fmt_tokens(18794) == "18.8k"
     assert fmt_tokens(211240) == "211.2k"
+
+
+def test_tokens_line_single_source_of_truth():
+    # markdown output and footers share this line; byte-stable contract
+    m = {"selected_tokens": 800, "candidate_tokens": 5000,
+         "reduction_percent": 84.0, "total_latency_ms": 5.0}
+    assert tokens_line(m) == ("**Tokens:** 800 selected of 5000 candidate "
+                              "(84.0% reduction) | **Latency:** 5.0 ms")
 
 
 def test_select_footer_reports_floor_split_not_exceeded():

@@ -30,6 +30,18 @@ def fmt_tokens(n: float | int) -> str:
     return str(n)
 
 
+def tokens_line(metrics: dict[str, Any]) -> str:
+    """Canonical Tokens/Latency line.
+
+    Single source of truth shared by the markdown output and the CLI/MCP
+    footers — render here so the two can never drift apart.
+    """
+    return (f"**Tokens:** {metrics.get('selected_tokens', 0)} selected of "
+            f"{metrics.get('candidate_tokens', 0)} candidate "
+            f"({metrics.get('reduction_percent', 0)}% reduction) | "
+            f"**Latency:** {metrics.get('total_latency_ms', 0)} ms")
+
+
 def select_footer(metrics: dict[str, Any], execution: dict[str, Any] | None,
                   n_chunks: int, budget: int) -> str:
     """One-line footer for a single select run."""

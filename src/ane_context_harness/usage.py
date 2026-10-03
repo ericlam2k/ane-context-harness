@@ -1,13 +1,15 @@
-"""Session savings ledger for vibe-coders.
+"""Daily savings ledger for vibe-coders.
 
 Nobody remembers flags. So every `select`/`update` run silently appends one
 counts-only line (no task text, no paths, no content) to a local ledger:
 
     ~/.ane_context_harness/usage.jsonl
 
-`ane-harness session` totals it (today + all time), and
-`eval "$(ane-harness shell-init)"` prints the session line when the shell
+`ane-harness daily` totals it (today + all time), and
+`eval "$(ane-harness shell-init)"` prints the daily line when the shell
 exits. Users only ever see savings; everything else is handled.
+
+(Totals are grouped by calendar day — simple and predictable across shells.)
 
 Disabled with ANE_HARNESS_NO_USAGE_LOG=1. Never written under pytest.
 """
@@ -113,18 +115,18 @@ def summarize_all(path: Path | None = None) -> dict[str, Any]:
 
 def format_session(stats: dict[str, Any], label: str = "today") -> str:
     from .summary import fmt_tokens
-    return (f"# ane-harness session ({label}): {stats['saved_percent']}% saved "
+    return (f"# ane-harness daily ({label}): {stats['saved_percent']}% saved "
             f"({fmt_tokens(stats['selected_tokens'])} of "
             f"{fmt_tokens(stats['candidate_tokens'])}) · "
             f"{stats['tasks']} tasks in {stats['runs']} runs")
 
 
 SHELL_INIT_SNIPPET = """\
-# ane-harness: print session savings on shell exit.
+# ane-harness: print daily savings on shell exit.
 # Opt-in: eval "$(ane-harness shell-init)"
 _ane_session_summary() {
   command -v ane-harness >/dev/null 2>&1 || return 0
-  ane-harness session --brief 2>/dev/null || true
+  ane-harness daily --brief 2>/dev/null || true
 }
 if [ -n "${ZSH_VERSION:-}" ]; then
   autoload -Uz add-zsh-hook 2>/dev/null && add-zsh-hook zshexit _ane_session_summary 2>/dev/null || true
