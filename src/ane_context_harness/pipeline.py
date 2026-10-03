@@ -352,12 +352,20 @@ class Pipeline:
 
         sel_tokens = sum(tokens_mod.count(e["content"]) for e in pkg.evidence)
         reduction = ((cand_tokens - sel_tokens) / cand_tokens * 100.0) if cand_tokens else 0.0
+        # Required-coverage floor: mandatory (required-evidence) chunks are
+        # always retained; the token budget governs discretionary chunks only.
+        # Users never manage this split — the footer reports it as consequence.
+        req_tokens = sum(
+            tokens_mod.count(e["content"]) for e in pkg.evidence
+            if "mandatory" in (e.get("selection_reasons") or []))
 
         metrics = {
             "candidate_tokens": cand_tokens,
             "selected_tokens": sel_tokens,
             "tokens_removed": cand_tokens - sel_tokens,
             "reduction_percent": round(reduction, 2),
+            "required_tokens": req_tokens,
+            "discretionary_tokens": sel_tokens - req_tokens,
             "total_latency_ms": round((time.perf_counter() - t_total) * 1000.0, 2),
             "candidate_generation_ms": stage_ms["candidate_generation_ms"],
             "reranking_ms": stage_ms["reranking_ms"],

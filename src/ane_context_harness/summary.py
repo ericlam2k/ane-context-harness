@@ -10,6 +10,12 @@ same numbers as a one-line footer:
 Rules: stdout stays pure JSON (footers go to stderr on the CLI, or a
 `summary` key over MCP) so parsers never break. No recall claim is ever
 made here — recall needs labelled ground truth, unavailable at runtime.
+
+Budget policy (users never touch this): the token budget governs
+*discretionary* chunks only. Required-evidence (mandatory) chunks form a
+floor that is always kept. The footer reports the split as consequence;
+the only case a user is ever involved is discretionary overrun, which
+means "narrow the task" — and the footer says exactly that.
 """
 from __future__ import annotations
 
@@ -31,22 +37,26 @@ def select_footer(metrics: dict[str, Any], execution: dict[str, Any] | None,
     sel = metrics.get("selected_tokens", 0)
     red = metrics.get("reduction_percent", 0.0)
     lat = metrics.get("total_latency_ms", 0.0)
-    diag = metrics.get("diagnostics", {}) or {}
-    exceeded = bool(diag.get("budget_exceeded", sel > budget))
-    if exceeded:
-        budget_bit = f"budget {budget} EXCEEDED (+{fmt_tokens(sel - budget)})"
+    req = metrics.get("required_tokens", sel)
+    disc = metrics.get("discretionary_tokens", 0)
+    over = disc - budget
+    if over > 0:
+        budget_bit = (f"discretionary {fmt_tokens(disc)} over budget "
+                      f"{budget} (+{fmt_tokens(over)}) — narrow the task")
     else:
-        budget_bit = f"budget {budget} ok"
+        budget_bit = f"discretionary {fmt_tokens(disc)} of {budget} budget ok"
     backend = (execution or {}).get("reranker", "unknown")
-    return (f"# ane-harness: {fmt_tokens(sel)} of {fmt_tokens(cand)} tokens "
-            f"({red}% saved) · {n_chunks} chunks · {lat} ms · "
-            f"{budget_bit} · {backend}")
+    return (f"# ane-harness: {red}% saved ({fmt_tokens(sel)} of "
+            f"{fmt_tokens(cand)}) · {fmt_tokens(req)} required kept + "
+            f"{budget_bit} · {n_chunks} chunks · {lat} ms · {backend}")
 
 
 def update_footer(before_total: int, after_total: int,
                   reduction_median: float, n_tasks: int,
-                  budget: int) -> str:
+                  budget: int, required_total: int = 0) -> str:
     """One-line footer for a batch update run."""
-    return (f"# ane-harness: {n_tasks} tasks · {fmt_tokens(after_total)} of "
-            f"{fmt_tokens(before_total)} tokens "
-            f"({reduction_median}% saved median) · budget {budget}")
+    disc = after_total - required_total
+    return (f"# ane-harness: {n_tasks} tasks · {reduction_median}% saved "
+            f"median ({fmt_tokens(after_total)} of {fmt_tokens(before_total)} "
+            f"· {fmt_tokens(required_total)} required kept + "
+            f"{fmt_tokens(disc)} discretionary) · budget {budget}")

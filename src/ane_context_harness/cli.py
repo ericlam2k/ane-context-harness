@@ -165,6 +165,8 @@ def main(argv: list | None = None) -> int:
                 "selected_tokens": m["selected_tokens"],
                 "tokens_removed": m["tokens_removed"],
                 "reduction_percent": m["reduction_percent"],
+                "required_tokens": m.get("required_tokens", 0),
+                "discretionary_tokens": m.get("discretionary_tokens", 0),
             })
         if args.log:
             stamp = _time.strftime("%Y%m%d-%H%M%S")
@@ -181,6 +183,8 @@ def main(argv: list | None = None) -> int:
             "before_tokens_total": sum(r["candidate_tokens"] for r in per_task),
             "after_tokens_total": sum(r["selected_tokens"] for r in per_task),
             "tokens_removed_total": sum(r["tokens_removed"] for r in per_task),
+            "required_tokens_total": sum(r["required_tokens"] for r in per_task),
+            "discretionary_tokens_total": sum(r["discretionary_tokens"] for r in per_task),
             "reduction_percent_median": round(sorted(reductions)[len(reductions) // 2], 2) if reductions else 0.0,
             "per_task": per_task,
         }
@@ -191,7 +195,8 @@ def main(argv: list | None = None) -> int:
             print(update_footer(summary["before_tokens_total"],
                                 summary["after_tokens_total"],
                                 summary["reduction_percent_median"],
-                                summary["tasks"], args.budget),
+                                summary["tasks"], args.budget,
+                                summary["required_tokens_total"]),
                   file=sys.stderr)
         return 0
     if args.command == "evidence":
