@@ -52,6 +52,9 @@ def main(argv: list | None = None) -> int:
                                "for with/without comparison of results")
     p_select.add_argument("--quiet", action="store_true",
                           help="Suppress the human-readable stderr summary footer")
+    p_select.add_argument("--profile", default=None,
+                          help="Budget profile: debugging | research | refactoring "
+                               "(packing policy; unknown names are rejected)")
     p_serve = sub.add_parser("serve", help="Run local HTTP server")
     p_serve.add_argument("--host", default="127.0.0.1")
     p_serve.add_argument("--port", type=int, default=8765)
@@ -117,6 +120,8 @@ def main(argv: list | None = None) -> int:
                          help="Optional directory to write prove.json + prove.md")
     p_prove.add_argument("--quiet", action="store_true",
                          help="Suppress the human-readable stderr summary footer")
+    p_prove.add_argument("--profile", default=None,
+                         help="Budget profile: debugging | research | refactoring")
 
     args = parser.parse_args(argv)
     if args.command == "shell-init":
@@ -163,8 +168,14 @@ def main(argv: list | None = None) -> int:
         return 0
     if args.command == "prove":
         from .prove import run_prove
-        summary = run_prove(args.repo, args.repo_id, budget=args.budget,
-                            tasks_file=args.tasks_file, out=args.out)
+        try:
+            summary = run_prove(args.repo, args.repo_id, budget=args.budget,
+                                tasks_file=args.tasks_file, out=args.out,
+                                profile=args.profile)
+        except ValueError as exc:
+            print(json.dumps({"ok": False, "error": str(exc)}),
+                  file=sys.stderr)
+            return 2
         print(json.dumps(summary, indent=2))
         if not args.quiet:
             print(summary["summary"], file=sys.stderr)
@@ -216,9 +227,15 @@ def main(argv: list | None = None) -> int:
             task=args.task,
             token_budget=args.budget,
             explicit_paths=args.explicit_path,
-            options={"full_context": True} if args.full else {},
+            options={"full_context": True} if args.full else (
+                {"profile": args.profile} if args.profile else {}),
         )
-        pkg = pipe.select_context(req)
+        try:
+            pkg = pipe.select_context(req)
+        except ValueError as exc:
+            print(json.dumps({"ok": False, "error": str(exc)}),
+                  file=sys.stderr)
+            return 2
         pkg.markdown = render_markdown(pkg)
         if args.full:
             foot = (f"ane-harness: full context "

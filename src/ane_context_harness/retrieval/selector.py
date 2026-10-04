@@ -91,7 +91,18 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
                     explicit_paths: list, use_ml: bool = False,
                     ml_scores: list | None = None, weights: dict | None = None,
                     per_file_fraction: float = _PER_FILE_FRACTION,
-                    authority_paths: list | None = None) -> tuple[list, dict]:
+                    authority_paths: list | None = None,
+                    category_order: dict | None = None,
+                    category_caps: dict | None = None) -> tuple[list, dict]:
+    """Return (selected_chunks_in_order, diagnostics).
+
+    category_order maps category name -> sort rank (default CATEGORY_ORDER;
+    only the final stable sort moves — scores and recall are untouched).
+    category_caps maps category name -> fraction of token_budget capping
+    NON-mandatory chunks (mandatory retention always wins over caps).
+    In practice selector categories are implementation/test/supporting
+    (explicit/interface exist for rendering); unknown names are ignored.
+    """
     """Return (selected_chunks_in_order, diagnostics)."""
     weights = weights or {}
     task_terms = _terms(task)
@@ -148,6 +159,13 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
     selected = []  # list of (chunk_idx, category)
     used_tokens = 0
     per_file_tokens = {}
+    per_category_tokens = {}
+    order_map = dict(CATEGORY_ORDER)
+    for cat, rank in (category_order or {}).items():
+        if cat in order_map:
+            order_map[cat] = rank
+    caps = {c: f for c, f in (category_caps or {}).items()
+            if c in order_map and isinstance(f, (int, float)) and f > 0}
 
     # Score-first admission with mandatory retention. Candidates are visited
     # in final-score order, so high-ranked evidence (including required
@@ -170,12 +188,17 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
                 continue
         tokens = c.estimated_tokens
         pf = per_file_tokens.get(c.path, 0)
+        cat = categorize(c)
         if not is_mandatory:
             per_file_cap = max(tokens, int(per_file_fraction * token_budget))
             if pf + tokens > per_file_cap:
                 continue
             if used_tokens + tokens > token_budget:
                 continue  # does not fit; later chunks may be smaller
+            if cat in caps:
+                cat_cap = max(tokens, int(caps[cat] * token_budget))
+                if per_category_tokens.get(cat, 0) + tokens > cat_cap:
+                    continue
         reason = ("ml_reranker_high_score"
                   if score_by_id[c.chunk_id].ml_relevance_score is not None
                   else "lexical_rerank")
@@ -191,10 +214,11 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
         selected.append((i, categorize(c)))
         used_tokens += tokens
         per_file_tokens[c.path] = pf + tokens
+        per_category_tokens[cat] = per_category_tokens.get(cat, 0) + tokens
         selected_terms.append(c.lexical_terms)
 
     # stable final order by category then score
-    selected_sorted = sorted(selected, key=lambda x: (CATEGORY_ORDER.get(x[1], 9), -scores[x[0]].final_score, x[0]))
+    selected_sorted = sorted(selected, key=lambda x: (order_map.get(x[1], 9), -scores[x[0]].final_score, x[0]))
     final_chunks = [chunks[i] for i, _ in selected_sorted]
     diagnostics = {
         "mandatory_count": len(mandatory_idx),
@@ -203,6 +227,7 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
         "budget": token_budget,
         "budget_exceeded": used_tokens > token_budget,
         "per_file_tokens": per_file_tokens,
+        "per_category_tokens": per_category_tokens,
         "authority_flags": sorted(authority_fired),
     }
     return final_chunks, diagnostics

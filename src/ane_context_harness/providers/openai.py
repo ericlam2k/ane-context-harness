@@ -7,6 +7,7 @@ keys on the identical prefix; no extra parameter is required.
 """
 from __future__ import annotations
 
+from ..conversation import section_for as _conversation_section
 from .layout import build_prompt_sections, system_text
 
 DEFAULT_MODEL = "gpt-4o"
@@ -14,10 +15,11 @@ DEFAULT_MODEL = "gpt-4o"
 
 def render_openai_responses(package, *, model: str = DEFAULT_MODEL,
                             instructions: str = "", tool_outputs=(),
-                            task=None) -> dict:
+                            task=None, conversation_turns=()) -> dict:
     """Render an OpenAI Responses API request body for this package."""
     sections = build_prompt_sections(
-        package, instructions=instructions, tool_outputs=tool_outputs)
+        package, instructions=instructions, tool_outputs=tool_outputs,
+        conversation=_conversation_section(conversation_turns))
     task_text = package.task if task is None else task
     return {
         "model": model,
