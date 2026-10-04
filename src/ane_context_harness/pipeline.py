@@ -358,6 +358,8 @@ class Pipeline:
         }
         pkg.metrics = metrics
         pkg.markdown = "" if cleared else render_markdown(pkg)
+        from .integrity import verify_package
+        diag["integrity"] = verify_package(pkg.evidence, [pkg.markdown])
         return pkg
 
     def health(self) -> schemas.HealthResponse:
