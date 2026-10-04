@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from ..retrieval.selector import CATEGORY_ORDER
 
 SECTION_ORDER = ("instructions", "explicit", "interface", "implementation",
-                  "test", "tool_output", "supporting", "conversation")
+                 "test", "tool_output", "supporting")
 
 SECTION_TITLES = {
     "instructions": "Instructions",
@@ -25,7 +25,6 @@ SECTION_TITLES = {
     "test": "Relevant tests",
     "tool_output": "Recent errors and tool output",
     "supporting": "Supporting context",
-    "conversation": "Conversation state",
 }
 
 _EVIDENCE_ORDER = tuple(c for c in CATEGORY_ORDER)  # explicit..supporting
@@ -68,13 +67,12 @@ def _render_tool_output(entry) -> str:
 
 
 def build_prompt_sections(package, *, instructions: str = "",
-                           tool_outputs=(), conversation: str = "") -> list:
+                          tool_outputs=()) -> list:
     """Assemble thesis-ordered sections from an EvidencePackage.
 
     Evidence keeps its stably-ordered relative order within each category;
     tool output (already compressed) is spliced between tests and supporting
-    context, matching the thesis prompt order. Conversation state, when
-    given, renders LAST — below all evidence, never above it.
+    context, matching the thesis prompt order.
     """
     groups = {c: [] for c in _EVIDENCE_ORDER}
     for ev in package.evidence:
@@ -101,8 +99,6 @@ def build_prompt_sections(package, *, instructions: str = "",
             "tool_output", "\n\n".join(_render_tool_output(t) for t in tool_outputs)))
     if groups["supporting"]:
         sections.append(PromptSection("supporting", "\n\n".join(groups["supporting"])))
-    if conversation and conversation.strip():
-        sections.append(PromptSection("conversation", conversation.strip()))
 
     names = [s.name for s in sections]
     order = [SECTION_ORDER.index(n) for n in names]

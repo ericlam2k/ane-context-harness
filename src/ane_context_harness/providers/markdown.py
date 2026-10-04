@@ -6,18 +6,15 @@ from __future__ import annotations
 
 from ..schemas import EvidencePackage
 from ..summary import tokens_line
-from ..conversation import section_for as _conversation_section
 from .layout import SECTION_TITLES, build_prompt_sections
 
 
 def render_prompt_markdown(package, *, instructions: str = "",
-                           tool_outputs=(), task=None,
-                           conversation_turns=()) -> str:
+                           tool_outputs=(), task=None) -> str:
     """Plain Markdown for manual use (FR-8). Task first for human entry; the
     sections keep the stable thesis order."""
     sections = build_prompt_sections(
-        package, instructions=instructions, tool_outputs=tool_outputs,
-        conversation=_conversation_section(conversation_turns))
+        package, instructions=instructions, tool_outputs=tool_outputs)
     task_text = package.task if task is None else task
     lines = [f"# {task_text}", ""]
     for s in sections:

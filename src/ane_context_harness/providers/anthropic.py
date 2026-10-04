@@ -9,13 +9,12 @@ most 3.
 """
 from __future__ import annotations
 
-from ..conversation import section_for as _conversation_section
 from .layout import build_prompt_sections, system_text
 
 DEFAULT_MODEL = "claude-sonnet-4-5"
 
 _GROUPS = (("instructions",), ("explicit", "interface", "implementation", "test"),
-           ("tool_output", "supporting", "conversation"))
+           ("tool_output", "supporting"))
 
 
 def _system_blocks(sections):
@@ -30,12 +29,10 @@ def _system_blocks(sections):
 
 def render_anthropic_messages(package, *, model: str = DEFAULT_MODEL,
                               instructions: str = "", tool_outputs=(),
-                              task=None, max_tokens: int = 4096,
-                              conversation_turns=()) -> dict:
+                              task=None, max_tokens: int = 4096) -> dict:
     """Render an Anthropic Messages API request body for this package."""
     sections = build_prompt_sections(
-        package, instructions=instructions, tool_outputs=tool_outputs,
-        conversation=_conversation_section(conversation_turns))
+        package, instructions=instructions, tool_outputs=tool_outputs)
     blocks = _system_blocks(sections)
     if len(blocks) > 4:
         raise ValueError("prompt-cache breakpoint budget exceeded (4 max)")

@@ -258,15 +258,6 @@ class Pipeline:
 
         with Timer("packing") as t_pack:
             max_budget = min(request.token_budget, self.limits.get("max_output_token_budget", 30000))
-            profile_name = (request.options or {}).get("profile")
-            profile = {}
-            if profile_name:
-                profiles = self.retrieval.get("budget_profiles", {}) or {}
-                if profile_name not in profiles:
-                    raise ValueError(
-                        f"unknown budget profile {profile_name!r}; "
-                        f"expected one of {sorted(profiles)}")
-                profile = profiles[profile_name] or {}
             if request.options.get("full_context"):
                 # Baseline mode for with/without comparison: everything, in
                 # stable path order. No budget, no trimming, no ranking.
@@ -283,15 +274,9 @@ class Pipeline:
                     chunks, scores, request.task, max_budget, request.explicit_paths,
                     use_ml=use_ml, ml_scores=ml_scores, weights=self.retrieval,
                     authority_paths=authority_paths,
-                    category_order=profile.get("category_order"),
-                    category_caps=profile.get("category_caps"),
                 )
                 diag["pinned_changed"] = pinned_changed
                 diag["pinned_missing"] = pinned_missing
-                if profile_name:
-                    diag["profile"] = {"name": profile_name,
-                                       "category_order": profile.get("category_order", {}),
-                                       "category_caps": profile.get("category_caps", {})}
         stage_ms["packing_ms"] = round(t_pack.elapsed_ms, 2)
 
         cand_tokens = sum(c.estimated_tokens for c in chunks)
@@ -346,10 +331,6 @@ class Pipeline:
             "model_version": classifier.model_version if classifier else "none",
         }
 
-        from .routing import route_evidence
-        routing_counts = route_evidence(pkg.evidence)
-        diag["routing"] = {"strategies": routing_counts}
-
         sel_tokens = sum(tokens_mod.count(e["content"]) for e in pkg.evidence)
         reduction = ((cand_tokens - sel_tokens) / cand_tokens * 100.0) if cand_tokens else 0.0
         # Required-coverage floor: mandatory (required-evidence) chunks are
@@ -377,8 +358,6 @@ class Pipeline:
         }
         pkg.metrics = metrics
         pkg.markdown = "" if cleared else render_markdown(pkg)
-        from .integrity import verify_package
-        diag["integrity"] = verify_package(pkg.evidence, [pkg.markdown])
         return pkg
 
     def health(self) -> schemas.HealthResponse:

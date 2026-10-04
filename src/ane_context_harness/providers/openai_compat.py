@@ -5,7 +5,6 @@ Responses adapter.
 """
 from __future__ import annotations
 
-from ..conversation import section_for as _conversation_section
 from .layout import build_prompt_sections, system_text
 
 DEFAULT_MODEL = "local-model"
@@ -13,11 +12,10 @@ DEFAULT_MODEL = "local-model"
 
 def render_openai_chat(package, *, model: str = DEFAULT_MODEL,
                        instructions: str = "", tool_outputs=(),
-                       task=None, conversation_turns=()) -> dict:
+                       task=None) -> dict:
     """Render an OpenAI-compatible chat/completions request body."""
     sections = build_prompt_sections(
-        package, instructions=instructions, tool_outputs=tool_outputs,
-        conversation=_conversation_section(conversation_turns))
+        package, instructions=instructions, tool_outputs=tool_outputs)
     task_text = package.task if task is None else task
     return {
         "model": model,

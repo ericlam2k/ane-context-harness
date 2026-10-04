@@ -41,27 +41,6 @@ DEFAULT_CONFIG = {
         # on robustness grounds at equal metrics; see
         # benchmarks/reports/eval_expansion.json.
         "query_expansion": "max",
-        # Budget profiles: per-task-type packing policies (category order +
-        # caps over NON-mandatory chunks; mandatory retention always wins).
-        # Selected per request via options.profile; unknown names raise.
-        # Tune on the dev split only; eval numbers reported once per profile.
-        "budget_profiles": {
-            "debugging": {
-                "category_order": {"test": 0, "implementation": 1,
-                                   "supporting": 2},
-                "category_caps": {"test": 0.5, "supporting": 0.15},
-            },
-            "research": {
-                "category_order": {"supporting": 0, "implementation": 1,
-                                   "test": 2},
-                "category_caps": {"supporting": 0.5, "test": 0.1},
-            },
-            "refactoring": {
-                "category_order": {"interface": 0, "implementation": 1,
-                                   "test": 2, "supporting": 3},
-                "category_caps": {"interface": 0.4, "test": 0.3},
-            },
-        },
     },
     "runtime": {
         "compute_mode": "deterministic_only",

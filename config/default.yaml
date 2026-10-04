@@ -20,13 +20,6 @@ retrieval:
   git_recency_weight: 0.05
   diversity_lambda: 0.25
   top_k_for_diversity: 60
-  # Budget profiles live in code defaults (config.py retrieval.budget_profiles:
-  # debugging / research / refactoring). Override per profile here only when
-  # tuning on the dev split, e.g.:
-  # budget_profiles:
-  #   debugging:
-  #     category_order: {"test": 0, "implementation": 1, "supporting": 2}
-  #     category_caps: {"test": 0.5, "supporting": 0.15}
 
 runtime:
   compute_mode: deterministic_only

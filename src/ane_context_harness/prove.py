@@ -142,8 +142,7 @@ def _median(xs: list) -> float:
 
 
 def run_prove(repo: str, repo_id: str | None, budget: int = 2000,
-              tasks_file: str | None = None, out: str | None = None,
-              profile: str | None = None) -> dict:
+              tasks_file: str | None = None, out: str | None = None) -> dict:
     from .config import build_config
     from .pipeline import Pipeline, SERVICE_VERSION
     from . import schemas, tokens as tokens_mod
@@ -161,8 +160,7 @@ def run_prove(repo: str, repo_id: str | None, budget: int = 2000,
     per_task = []
     for task in tasks:
         req = schemas.SelectRequest(
-            repository_id=rid, task=task, token_budget=budget,
-            options={"profile": profile} if profile else {})
+            repository_id=rid, task=task, token_budget=budget)
         pkg = pipe.select_context(req)
         m = pkg.metrics
         per_task.append({
@@ -179,7 +177,6 @@ def run_prove(repo: str, repo_id: str | None, budget: int = 2000,
         "repo_id": rid,
         "repo": root,
         "budget": budget,
-        "profile": profile,
         "tasks": len(per_task),
         "task_kind": detect_repo_kind(root),
         "labelled": False,
