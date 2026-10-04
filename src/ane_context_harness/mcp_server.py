@@ -15,8 +15,12 @@ from . import schemas, tokens
 from .config import build_config
 from .evidence import verify_bundle as _verify_bundle
 from .pipeline import Pipeline
+from .providers.markdown import render_markdown
 from .summary import select_footer, update_footer
 from . import usage as usage_log
+
+CONTENT_WARNING = ("local measurements over the given repo; redaction does "
+                   "not guarantee all secrets are caught.")
 
 
 def _select_summary(pkg: schemas.EvidencePackage) -> dict[str, Any]:
@@ -36,11 +40,19 @@ def _select_summary(pkg: schemas.EvidencePackage) -> dict[str, Any]:
 
 def _select_human(pkg: schemas.EvidencePackage, budget: int) -> str:
     return select_footer(pkg.metrics, pkg.execution, len(pkg.evidence),
-                         budget)
+                         budget,
+                         pkg.metrics.get("diagnostics", {}).get("pinned_changed"))
 
 
-async def select_context_tool(repo_id: str, task: str, budget: int = 12000) -> str:
-    """MCP tool: select context for a single task (Arm B deterministic)."""
+async def select_context_tool(repo_id: str, task: str, budget: int = 12000,
+                              include_content: bool = True) -> str:
+    """MCP tool: select context for a single task (Arm B deterministic).
+
+    Unlike the old stats-only shape, this delivers the evidence package:
+    per-chunk path/lines/symbol/score/content plus rendered markdown, so a
+    calling agent receives usable context, not just savings numbers.
+    Pass include_content=False for the legacy stats-only report.
+    """
     cfg = build_config()
     pipe = Pipeline(cfg)
     req = schemas.SelectRequest(repository_id=repo_id, task=task,
@@ -48,6 +60,14 @@ async def select_context_tool(repo_id: str, task: str, budget: int = 12000) -> s
     pkg = pipe.select_context(req)
     out = _select_summary(pkg)
     out["summary"] = _select_human(pkg, budget)
+    if include_content:
+        pkg.markdown = render_markdown(pkg)
+        out["evidence"] = [dict(e) for e in pkg.evidence]
+        out["markdown"] = pkg.markdown
+        out["markdown_length"] = len(pkg.markdown)
+        out["redactions"] = pkg.redaction_summary
+        out["execution"] = pkg.execution
+        out["content_warning"] = CONTENT_WARNING
     if usage_log.log_enabled():
         usage_log.record("select", pkg.metrics["candidate_tokens"],
                          pkg.metrics["selected_tokens"],
@@ -116,9 +136,14 @@ def build_server() -> Any:
     server = FastMCP("ane-harness")
 
     @server.tool()
-    async def select(repo_id: str, task: str, budget: int = 12000) -> str:
-        """Select context for a single task (Arm B deterministic)."""
-        return await select_context_tool(repo_id, task, budget)
+    async def select(repo_id: str, task: str, budget: int = 12000,
+                     include_content: bool = True) -> str:
+        """Select context for a single task (Arm B deterministic).
+
+        Returns the evidence package (chunks + markdown) by default;
+        pass include_content=False for stats only."""
+        return await select_context_tool(repo_id, task, budget,
+                                         include_content)
 
     @server.tool()
     async def update(repo_id: str, budget: int, tasks: list[str]) -> str:

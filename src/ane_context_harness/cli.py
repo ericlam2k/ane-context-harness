@@ -15,6 +15,23 @@ from .summary import fmt_tokens, select_footer, update_footer
 from . import usage as usage_log
 
 
+def _parse_task_lines(raw_lines: list) -> list:
+    """Parse JSONL-or-bare task lines (shared by update and proxy)."""
+    tasks = []
+    for line in raw_lines:
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith("{"):
+            try:
+                tasks.append(json.loads(line)["task"])
+            except (json.JSONDecodeError, KeyError):
+                tasks.append(line)
+        else:
+            tasks.append(line)
+    return tasks
+
+
 def main(argv: list | None = None) -> int:
     parser = argparse.ArgumentParser(prog="ane-harness")
     sub = parser.add_subparsers(dest="command")
@@ -50,6 +67,17 @@ def main(argv: list | None = None) -> int:
                           help="Optional path to append per-task JSONL log to")
     p_update.add_argument("--quiet", action="store_true",
                           help="Suppress the human-readable stderr summary footer")
+    p_proxy = sub.add_parser(
+        "proxy", help="Agent proxy: read tasks from stdin, print evidence "
+                      "markdown to stdout (for agents without native integration)")
+    p_proxy.add_argument("--repo-id", required=True)
+    p_proxy.add_argument("--repo", default=None,
+                         help="Optional repo path to index first (zero-setup); "
+                              "otherwise the repo-id must already be indexed")
+    p_proxy.add_argument("--budget", type=int, default=12000)
+    p_proxy.add_argument("--tasks-file", default=None,
+                         help="JSONL file (one {\"task\": \"...\"} or task string per line); "
+                              "defaults to stdin")
     p_evidence = sub.add_parser("evidence", help="Verify a release evidence bundle")
     evi_sub = p_evidence.add_subparsers(dest="evidence_command")
     p_evi_verify = evi_sub.add_parser("verify", help="Verify bundle checksums")
@@ -66,6 +94,29 @@ def main(argv: list | None = None) -> int:
                            help="One line, or nothing when no runs yet (for shell-exit hooks)")
     sub.add_parser("shell-init", help="Print shell snippet: daily savings on shell exit; "
                                       "opt in with eval \"$(ane-harness shell-init)\"")
+    p_setup = sub.add_parser("setup", help="One-command agent setup: index, install skill, smoke select")
+    p_setup.add_argument("--repo", default=".")
+    p_setup.add_argument("--repo-id", default=None)
+    p_setup.add_argument("--budget", type=int, default=2000)
+    p_setup.add_argument("--yes", action="store_true",
+                         help="Non-interactive; accept defaults (no prompts today)")
+    p_setup.add_argument("--no-shell-init", action="store_true",
+                         help="Hide the shell-exit hook hint")
+    p_setup.add_argument("--no-skill", action="store_true",
+                         help="Skip copying the agent skill file")
+    p_setup.add_argument("--with-mcp", action="store_true",
+                         help="Check the optional mcp extra is installed")
+    p_prove = sub.add_parser("prove", help="Prove-it one-liner: reduction/latency proof on any repo (unlabelled)")
+    p_prove.add_argument("--repo", default=".")
+    p_prove.add_argument("--repo-id", default=None)
+    p_prove.add_argument("--budget", type=int, default=2000)
+    p_prove.add_argument("--tasks-file", default=None,
+                         help="JSONL file (one {\"task\": \"...\"} or task string per line); "
+                              "defaults to 5 canned tasks")
+    p_prove.add_argument("--out", default=None,
+                         help="Optional directory to write prove.json + prove.md")
+    p_prove.add_argument("--quiet", action="store_true",
+                         help="Suppress the human-readable stderr summary footer")
 
     args = parser.parse_args(argv)
     if args.command == "shell-init":
@@ -80,6 +131,47 @@ def main(argv: list | None = None) -> int:
             return 0
         print(usage_log.format_session(today))
         print(usage_log.format_session(usage_log.summarize_all(), "all time"))
+        return 0
+    if args.command == "setup":
+        from .setup import run_setup
+        info = run_setup(args.repo, args.repo_id, budget=args.budget,
+                         with_mcp=args.with_mcp,
+                         dests=None if not args.no_skill else [])
+        if args.no_skill:
+            info["skills_installed"] = []
+        if args.no_shell_init:
+            info.pop("shell_hint", None)
+        if args.with_mcp:
+            try:
+                import mcp  # noqa: F401
+            except ImportError:
+                print(json.dumps({"ok": False, "error": (
+                    "mcp extra not installed; run: pip install "
+                    "'ane-context-harness[mcp]'")}), file=sys.stderr)
+                print(json.dumps({**info, "ok": False}, indent=2))
+                return 1
+            info["mcp_note"] = None
+        print(json.dumps(info, indent=2))
+        if not info.get("python", {}).get("ok", True):
+            print("WARNING: unsupported Python; requires >=3.11",
+                  file=sys.stderr)
+        print(info["smoke_summary"], file=sys.stderr)
+        if usage_log.log_enabled():
+            sm = info["smoke_metrics"]
+            usage_log.record("setup", sm["candidate_tokens"],
+                             sm["selected_tokens"], tasks=1)
+        return 0
+    if args.command == "prove":
+        from .prove import run_prove
+        summary = run_prove(args.repo, args.repo_id, budget=args.budget,
+                            tasks_file=args.tasks_file, out=args.out)
+        print(json.dumps(summary, indent=2))
+        if not args.quiet:
+            print(summary["summary"], file=sys.stderr)
+        if usage_log.log_enabled():
+            usage_log.record("prove", summary["before_tokens_total"],
+                             summary["after_tokens_total"],
+                             tasks=summary["tasks"])
         return 0
     if args.command == "mcp":
         try:
@@ -137,7 +229,8 @@ def main(argv: list | None = None) -> int:
                   file=sys.stderr)
         else:
             foot = select_footer(pkg.metrics, pkg.execution, len(pkg.evidence),
-                                 args.budget)
+                                 args.budget,
+                                 pkg.metrics.get("diagnostics", {}).get("pinned_changed"))
         out = {
             "request_id": pkg.request_id,
             "metrics": pkg.metrics,
@@ -174,18 +267,7 @@ def main(argv: list | None = None) -> int:
             raw_tasks = Path(args.tasks_file).read_text(encoding="utf-8").splitlines()
         else:
             raw_tasks = sys.stdin.read().splitlines()
-        tasks = []
-        for line in raw_tasks:
-            line = line.strip()
-            if not line:
-                continue
-            if line.startswith("{"):
-                try:
-                    tasks.append(json.loads(line)["task"])
-                except (json.JSONDecodeError, KeyError):
-                    tasks.append(line)
-            else:
-                tasks.append(line)
+        tasks = _parse_task_lines(raw_tasks)
         per_task = []
         for task in tasks:
             req = schemas.SelectRequest(
@@ -237,6 +319,44 @@ def main(argv: list | None = None) -> int:
             usage_log.record("update", summary["before_tokens_total"],
                              summary["after_tokens_total"],
                              tasks=summary["tasks"])
+        return 0
+    if args.command == "proxy":
+        if args.repo:
+            pipe.register_repository(args.repo, args.repo_id)
+        if args.tasks_file:
+            raw_tasks = Path(args.tasks_file).read_text(encoding="utf-8").splitlines()
+        else:
+            raw_tasks = sys.stdin.read().splitlines()
+        tasks = _parse_task_lines(raw_tasks)
+        if not tasks:
+            print(json.dumps({"ok": False,
+                              "error": "no tasks on stdin (one {\"task\": \"...\"} "
+                                       "or task string per line)"}),
+                  file=sys.stderr)
+            return 2
+        total_cand = total_sel = 0
+        for n, task in enumerate(tasks):
+            req = schemas.SelectRequest(
+                repository_id=args.repo_id,
+                task=task,
+                token_budget=args.budget,
+            )
+            pkg = pipe.select_context(req)
+            pkg.markdown = render_markdown(pkg)
+            m = pkg.metrics
+            total_cand += m["candidate_tokens"]
+            total_sel += m["selected_tokens"]
+            if n:
+                print("\n\n---\n", end="")
+            print(f"<!-- ane-harness task {n + 1}/{len(tasks)}: "
+                  f"{select_footer(m, pkg.execution, len(pkg.evidence), args.budget)} -->")
+            print(pkg.markdown, end="" if pkg.markdown.endswith("\n") else "\n")
+            print(select_footer(m, pkg.execution, len(pkg.evidence),
+                                args.budget), file=sys.stderr)
+        print("# Note: local measurements over the given repo; redaction does not "
+              "guarantee all secrets are caught.", file=sys.stderr)
+        if usage_log.log_enabled():
+            usage_log.record("proxy", total_cand, total_sel, tasks=len(tasks))
         return 0
     if args.command == "evidence":
         from .evidence import verify_bundle

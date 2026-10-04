@@ -94,6 +94,7 @@ class Pipeline:
             repo_id = hashlib.sha256(root.encode()).hexdigest()[:12]
         storage = self._storage_for(repo_id)
         storage.set_index_version("2")
+        storage.set_repo_root(root)
         if force_rebuild:
             # wipe chunks/files for this repo
             storage._conn.execute("DELETE FROM chunks WHERE repo_id=?", (repo_id,))
@@ -119,31 +120,7 @@ class Pipeline:
                     res["files_skipped"] += 1
                     continue
                 res["files_indexed"] += 1
-                storage.upsert_file(fi.rel_path, fi.language, fi.size_bytes, fi.content_hash, fi.mtime_ns)
-                spans = []
-                from .indexing.symbols import extract_symbols as _es
-                spans = _es(fi.language, fi.content)
-                for name, s, e in spans:
-                    storage.upsert_symbol(fi.rel_path, name, s, e)
-                    res["symbols_extracted"] += 1
-                from .indexing.chunking import chunk_file, lex_terms as _lt
-                import hashlib as _hl
-                pieces = chunk_file(fi.content, self.chunk_target, self.chunk_overlap)
-                chunk_objs = []
-                for pc in pieces:
-                    chunk_objs.append({
-                        "chunk_id": _hl.sha256(f"{repo_id}:{fi.rel_path}:{pc.start_line}".encode()).hexdigest()[:16],
-                        "path": fi.rel_path,
-                        "language": fi.language,
-                        "start_line": pc.start_line,
-                        "end_line": pc.end_line,
-                        "symbol": _nearest_symbol(pc.start_line, spans),
-                        "content_hash": fi.content_hash,
-                        "estimated_tokens": pc.tokens,
-                        "lexical_terms": tuple(_lt(pc.content)),
-                        "content": pc.content,
-                    })
-                storage.replace_chunks(fi.rel_path, chunk_objs)
+                res["symbols_extracted"] += self._store_scanned_file(storage, repo_id, fi)
         duration_ms = (time.perf_counter() - t0) * 1000.0
         return schemas.IndexResponse(
             repository_id=repo_id,
@@ -155,10 +132,92 @@ class Pipeline:
             index_version="2",
         )
 
+    def _store_scanned_file(self, storage, repo_id: str, fi) -> int:
+        """Persist one scanned file: metadata, symbols, chunks. Returns
+        the symbol count. Shared by index and silent pinned refresh."""
+        storage.upsert_file(fi.rel_path, fi.language, fi.size_bytes, fi.content_hash, fi.mtime_ns)
+        from .indexing.symbols import extract_symbols as _es
+        spans = _es(fi.language, fi.content)
+        for name, s, e in spans:
+            storage.upsert_symbol(fi.rel_path, name, s, e)
+        from .indexing.chunking import chunk_file, lex_terms as _lt
+        import hashlib as _hl
+        pieces = chunk_file(fi.content, self.chunk_target, self.chunk_overlap)
+        chunk_objs = []
+        for pc in pieces:
+            chunk_objs.append({
+                "chunk_id": _hl.sha256(f"{repo_id}:{fi.rel_path}:{pc.start_line}".encode()).hexdigest()[:16],
+                "path": fi.rel_path,
+                "language": fi.language,
+                "start_line": pc.start_line,
+                "end_line": pc.end_line,
+                "symbol": _nearest_symbol(pc.start_line, spans),
+                "content_hash": fi.content_hash,
+                "estimated_tokens": pc.tokens,
+                "lexical_terms": tuple(_lt(pc.content)),
+                "content": pc.content,
+            })
+        storage.replace_chunks(fi.rel_path, chunk_objs)
+        return len(spans)
+
+    def _refresh_pinned(self, storage, repo_id: str, root: str,
+                        explicit_paths: list, authority_paths: list) -> tuple[list, list]:
+        """Silent refresh of pinned sources. Returns (changed, missing).
+
+        Only pinned paths are touched — the agent's own edits elsewhere
+        never trigger re-indexing or notices here.
+        """
+        from . import freshness as _fresh
+        from .indexing.repository import detect_language
+        stored = storage.stored_file_hashes()
+        rels = _fresh.expand_pinned(root, explicit_paths, authority_paths,
+                                    set(stored))
+        if not rels:
+            return [], []
+        changed, missing = _fresh.find_stale(root, rels, stored)
+        for rel in changed:
+            abs_path = os.path.join(root, rel)
+            try:
+                st = os.stat(abs_path)
+                if st.st_size > self.max_file_bytes:
+                    continue
+                with open(abs_path, "r", encoding="utf-8") as fh:
+                    content = fh.read()
+            except (OSError, UnicodeDecodeError):
+                continue
+            import hashlib as _hl
+            from .indexing.repository import FileInfo
+            fi = FileInfo(
+                rel_path=rel, abs_path=abs_path,
+                language=detect_language(rel), size_bytes=st.st_size,
+                content_hash=_hl.sha256(content.encode("utf-8")).hexdigest(),
+                mtime_ns=st.st_mtime_ns, content=content,
+            )
+            self._store_scanned_file(storage, repo_id, fi)
+        for rel in missing:
+            if rel in stored:
+                storage.drop_path(repo_id, rel)
+        return changed, missing
+
     def select_context(self, request: schemas.SelectRequest) -> schemas.EvidencePackage:
         t_total = time.perf_counter()
         storage = self._storage_for(request.repository_id)
         stage_ms = {}
+        # Silent pinned refresh: re-index changed pinned sources before
+        # ranking, so notices below describe an already-fresh index.
+        # Legacy DBs without a recorded root skip this silently.
+        pinned_changed: list = []
+        pinned_missing: list = []
+        authority_paths = (self.config.get("authority", {}) or {}).get(
+            "authoritative_paths", [])
+        if request.explicit_paths or authority_paths:
+            with Timer("refresh") as t_ref:
+                root = storage.repo_root()
+                if root and os.path.isdir(root):
+                    pinned_changed, pinned_missing = self._refresh_pinned(
+                        storage, request.repository_id, root,
+                        request.explicit_paths, authority_paths)
+            stage_ms["refresh_ms"] = round(t_ref.elapsed_ms, 2)
 
         with Timer("candidate_generation") as t_cand:
             chunks = storage.load_chunks()
@@ -207,12 +266,17 @@ class Pipeline:
                         "selected_count": len(selected),
                         "used_tokens": sum(c.estimated_tokens for c in selected),
                         "budget": max_budget, "budget_exceeded": False,
-                        "full_context": True, "per_file_tokens": {}}
+                        "full_context": True, "per_file_tokens": {},
+                        "authority_flags": [], "pinned_changed": pinned_changed,
+                        "pinned_missing": pinned_missing}
             else:
                 selected, diag = select_evidence(
                     chunks, scores, request.task, max_budget, request.explicit_paths,
                     use_ml=use_ml, ml_scores=ml_scores, weights=self.retrieval,
+                    authority_paths=authority_paths,
                 )
+                diag["pinned_changed"] = pinned_changed
+                diag["pinned_missing"] = pinned_missing
         stage_ms["packing_ms"] = round(t_pack.elapsed_ms, 2)
 
         cand_tokens = sum(c.estimated_tokens for c in chunks)

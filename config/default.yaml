@@ -36,6 +36,13 @@ privacy:
     - "**/.ssh/**"
     - "**/*.pem"
 
+# Rule-following v1: developer-declared source truth. Repo-relative globs
+# whose chunks pin as mandatory (same retention as explicit paths). Empty
+# by default — the machine finds candidates, only you crown truth.
+# Example: authoritative_paths: ["docs/pricing-rules.md"]
+authority:
+  authoritative_paths: []
+
 limits:
   request_body_bytes: 10000000
   candidate_token_limit: 100000

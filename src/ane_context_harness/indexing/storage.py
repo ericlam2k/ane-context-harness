@@ -97,6 +97,30 @@ class Storage:
             row = self._conn.execute("SELECT v FROM meta WHERE k='index_version'").fetchone()
         return row["v"] if row else "0"
 
+    def set_repo_root(self, root: str):
+        """Remember the scanned filesystem root so select-time freshness
+        checks can resolve pinned relative paths. Best-effort meta write."""
+        with self._lock:
+            try:
+                self._conn.execute(
+                    "INSERT OR REPLACE INTO meta(k,v) VALUES (?,?)",
+                    ("repo_root", root),
+                )
+            except sqlite3.OperationalError:
+                pass
+
+    def repo_root(self) -> str | None:
+        with self._lock:
+            row = self._conn.execute("SELECT v FROM meta WHERE k='repo_root'").fetchone()
+        return row["v"] if row else None
+
+    def drop_path(self, repo_id: str, rel_path: str):
+        """Remove all rows for a deleted file (chunks/files/symbols)."""
+        with self._lock:
+            self._conn.execute("DELETE FROM chunks WHERE repo_id=? AND rel_path=?", (repo_id, rel_path))
+            self._conn.execute("DELETE FROM files WHERE repo_id=? AND rel_path=?", (repo_id, rel_path))
+            self._conn.execute("DELETE FROM symbols WHERE repo_id=? AND rel_path=?", (repo_id, rel_path))
+
     def stored_file_hashes(self) -> dict:
         with self._lock:
             rows = self._conn.execute(

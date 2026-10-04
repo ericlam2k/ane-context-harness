@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 
 from ..schemas import ChunkScore, EvidenceItem
 from .. import tokens as tokens_mod
+from ..authority import match_authority
 
 
 CATEGORY_ORDER = {
@@ -89,7 +90,8 @@ def compute_final_scores(scores: list, weights: dict, use_ml: bool, ml_scores: l
 def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
                     explicit_paths: list, use_ml: bool = False,
                     ml_scores: list | None = None, weights: dict | None = None,
-                    per_file_fraction: float = _PER_FILE_FRACTION) -> tuple[list, dict]:
+                    per_file_fraction: float = _PER_FILE_FRACTION,
+                    authority_paths: list | None = None) -> tuple[list, dict]:
     """Return (selected_chunks_in_order, diagnostics)."""
     weights = weights or {}
     task_terms = _terms(task)
@@ -109,12 +111,21 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
     # mandatory flags
     explicit_set = set(p.replace("\\", "/") for p in explicit_paths)
     mandatory_idx = set()
+    authority_fired: set = set()
     for i, c in enumerate(chunks):
         norm = c.path.replace("\\", "/")
         if norm in explicit_set or norm.endswith(tuple(explicit_set)):
             mandatory_idx.add(i)
             score_by_id[c.chunk_id].mandatory = True
             score_by_id[c.chunk_id].selection_reasons.append("explicit_path")
+        # developer-crowned authority: flagged sources pin like explicit
+        # paths (no scoring change — retrieval finds, this file declares)
+        for pat in match_authority(c.path, authority_paths):
+            authority_fired.add(pat)
+            mandatory_idx.add(i)
+            score_by_id[c.chunk_id].mandatory = True
+            if "authority" not in score_by_id[c.chunk_id].selection_reasons:
+                score_by_id[c.chunk_id].selection_reasons.append("authority")
         # symbol directly named in task — own symbol for symbol-scoped chunks,
         # full file symbol list for file-level chunks (metadata.file_symbols);
         # micro/generic terms (to/is/for/test) never trigger retention
@@ -192,6 +203,7 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
         "budget": token_budget,
         "budget_exceeded": used_tokens > token_budget,
         "per_file_tokens": per_file_tokens,
+        "authority_flags": sorted(authority_fired),
     }
     return final_chunks, diagnostics
 

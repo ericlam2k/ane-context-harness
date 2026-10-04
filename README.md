@@ -80,6 +80,23 @@ Verify your installation:
 ane-harness health
 ```
 
+### 1b. One-command setup + prove-it (adoption gates)
+
+```bash
+# index, install the agent skill, smoke-test (prints one summary line)
+ane-harness setup --repo /path/to/your/project --repo-id my-project --yes
+
+# prove-it: reduction/latency proof on YOUR repo (5 canned tasks, no labels needed)
+ane-harness prove --repo /path/to/your/project --repo-id my-project
+# with your own tasks: --tasks-file prompts.jsonl
+# with a report dir: --out /tmp/prove-report
+```
+
+`prove` is unlabelled: it reports median reduction + p50 latency and
+`recall: not_applicable`. Recall proofs need hand-labelled tasks (the
+frozen `benchmarks/splits.json` machinery); unlabelled runs never claim
+recall.
+
 ### 2. Index Your Codebase
 
 Index any local folder or repository into the local SQLite store (incremental and super fast):
@@ -144,6 +161,21 @@ and savings surface automatically after each task, no other setup. For
 OpenCode/Claude/agent-compatible hosts it also works globally, no per-project
 install: `~/.config/opencode/skills/`, `~/.claude/skills/`, or
 `~/.agents/skills/` (new sessions pick it up).
+
+### 3c. Proxy mode for agents without native integration (`proxy`)
+
+Pipe tasks in on stdin (one `{"task": "..."}` or bare task per line),
+get evidence Markdown back on stdout — no skill, MCP, or HTTP needed:
+
+```bash
+printf '%s\n' '{"task": "Fix the discount bug"}' 'review inventory loader' \
+  | ane-harness proxy --repo /path/to/your/project --repo-id my-project --budget 2000 \
+  > context.md
+```
+
+Stdout is pure Markdown (one doc per task, `---`-separated, with
+`<!-- ane-harness task N/M ... -->` boundaries); per-task savings
+footers go to stderr. Omit `--repo` when the repo-id is already indexed.
 
 ### 4. Or Run as a Local Background Server
 

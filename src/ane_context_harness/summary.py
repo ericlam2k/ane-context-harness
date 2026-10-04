@@ -50,7 +50,8 @@ def _occupied_pct(selected: int, candidate: int) -> str:
 
 
 def select_footer(metrics: dict[str, Any], execution: dict[str, Any] | None,
-                  n_chunks: int, budget: int) -> str:
+                  n_chunks: int, budget: int,
+                  pinned_changed: list | None = None) -> str:
     """One-line footer for a single select run.
 
     User lens only: percent saved AND percent used (they sum to 100%),
@@ -68,6 +69,10 @@ def select_footer(metrics: dict[str, Any], execution: dict[str, Any] | None,
             f"in {round(lat)} ms")
     if disc - budget > 0:
         line += " — too big, narrow the task"
+    if pinned_changed:
+        names = ", ".join(p.split("/")[-1] for p in pinned_changed[:2])
+        extra = f" +{len(pinned_changed) - 2} more" if len(pinned_changed) > 2 else ""
+        line += f" — pinned source updated: {names}{extra}"
     return line
 
 

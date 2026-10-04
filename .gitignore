@@ -11,6 +11,10 @@ dist/
 benchmarks/logs/run-*
 benchmarks/logs/LAST_RUN
 benchmarks/logs/update_*.jsonl
+# Raw paid live-call event streams (may contain session/message IDs);
+# manifests + grades are the committed evidence.
+benchmarks/logs/paid-*.jsonl
+benchmarks/logs/paid-*.stderr
 
 # macOS
 .DS_Store

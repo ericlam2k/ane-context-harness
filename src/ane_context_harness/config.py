@@ -52,6 +52,13 @@ DEFAULT_CONFIG = {
         "never_read": ["**/.git/**", "**/.env*", "**/.EnvLocal",
                        "**/.aws/**", "**/.ssh/**", "**/*.pem"],
     },
+    # Rule-following v1: developer-declared source truth. Repo-relative
+    # globs whose chunks pin as mandatory (same retention as explicit
+    # paths). Empty by default; the machine finds candidates, only the
+    # developer crowns truth — no auto-suggestion. See authority.py.
+    "authority": {
+        "authoritative_paths": [],
+    },
     "limits": {
         "request_body_bytes": 10000000,
         "candidate_token_limit": 100000,
