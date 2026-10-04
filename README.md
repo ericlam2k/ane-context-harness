@@ -63,6 +63,14 @@ Evaluated across **30 benchmark tasks** (10 small, 10 typical, 10 difficult) acr
 
 ---
 
+## How it works
+
+![Context packing overview: what the LLM receives, how tasks rewrite to terms, keep/drop rules, reason dictionary, packing limits, history](docs/context-packing-overview.png)
+
+One-page poster generated from the real pipeline (`scripts/plot_packing_overview.py`): task words rewrite to scored terms, mandatory pins always fly, discretionary cards pack score-first under budget, every kept card carries the reasons you can argue with. The percent is evidence trimmed from the retrievable pool — the bill itself moves with provider cache rate on these stable bytes.
+
+---
+
 ## Quick Start (60 Seconds)
 
 ### 1. Install
