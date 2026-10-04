@@ -1,0 +1,9 @@
+# Line-ending policy: LF everywhere in the working tree.
+#
+# Rationale: hash-pinned artifacts (the frozen evidence bundle) must be
+# byte-identical on every platform for `evidence verify` to pass. Git for
+# Windows otherwise checks out CRLF, which changes sha256 without changing
+# any test-visible behavior — the failure mode is silent until verify runs.
+# `text eol=lf` normalizes to LF on commit and checks out LF everywhere;
+# token counting is unaffected (the pinned estimator skips whitespace).
+* text=auto eol=lf

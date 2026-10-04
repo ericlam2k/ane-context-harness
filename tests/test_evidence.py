@@ -112,3 +112,17 @@ def test_cli_evidence_verify_exit_codes(tmp_path, capsys):
     assert main(["evidence", "verify", str(out)]) == 0
     (out / "reports" / "r.json").write_text("tampered", encoding="utf-8")
     assert main(["evidence", "verify", str(out)]) == 1
+
+
+def test_frozen_bundle_has_no_crlf():
+    """Hash-pinned bundles must be LF-only: a CRLF checkout (stock Git for
+    Windows) changes sha256 without changing behavior, failing verify.
+    Enforced repo-wide by .gitattributes (`* text=auto eol=lf`)."""
+    root = Path(__file__).resolve().parents[1] / "ane-context-harness-evidence-v0.1"
+    checked = 0
+    for p in sorted(root.rglob("*")):
+        if p.is_file():
+            raw = p.read_bytes()
+            assert b"\r\n" not in raw and not raw.endswith(b"\r"), p
+            checked += 1
+    assert checked > 0
