@@ -64,7 +64,7 @@ source editing, shell execution.
 Schema/split guards: `tests/test_task_schema.py`; eval-split gates:
 `tests/performance/test_benchmark.py` (frozen eval split: reduction, recall, latency).
 
-## Dogfood: show savings after each task
+## Dogfood: show trim totals after each task
 
 After every task in this repo, run one
 `ane-harness select --repo-id <repo> --task "<task>" --budget 2000`, read the

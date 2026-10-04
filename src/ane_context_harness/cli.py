@@ -110,10 +110,10 @@ def main(argv: list | None = None) -> int:
                        choices=["stdio", "sse"], help="MCP transport")
     p_session = sub.add_parser(
         "daily", aliases=["session"],
-        help="Show saved-tokens daily totals from the local usage ledger")
+        help="Show daily evidence-trim totals from the local usage ledger")
     p_session.add_argument("--brief", action="store_true",
                            help="One line, or nothing when no runs yet (for shell-exit hooks)")
-    sub.add_parser("shell-init", help="Print shell snippet: daily savings on shell exit; "
+    sub.add_parser("shell-init", help="Print shell snippet: daily trim totals on shell exit; "
                                       "opt in with eval \"$(ane-harness shell-init)\"")
     p_setup = sub.add_parser("setup", help="One-command agent setup: index, install skill, smoke select")
     p_setup.add_argument("--repo", default=".")

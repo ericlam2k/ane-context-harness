@@ -1,11 +1,15 @@
 """Human-readable one-line run summaries for vibe-coders.
 
 Every `select`/`update` run (CLI or MCP) returns machine JSON, but nobody
-remembers flags to ask "how much did that save?". These helpers render the
-same numbers as a one-line footer:
+remembers flags to ask "how much context did that hand over?". These helpers
+render the same numbers as a one-line footer:
 
-    # ane-harness: 18.8k of 211.2k tokens (91.1% saved) · 61 chunks ·
-    #   141 ms · budget 2000 EXCEEDED (+16.8k) · cpu_deterministic
+    # ane-harness: evidence 18.8k of 211.2k retrievable · trimmed 91.1% ·
+    #   61 chunks · 141 ms · budget 2000 EXCEEDED (+16.8k) · cpu_deterministic
+
+The percent is evidence trimmed from the locally retrievable pool — not
+provider bills or cache behavior, which are the provider's layer and are
+never claimed here.
 
 Rules: stdout stays pure JSON (footers go to stderr on the CLI, or a
 `summary` key over MCP) so parsers never break. No recall claim is ever
@@ -42,31 +46,24 @@ def tokens_line(metrics: dict[str, Any]) -> str:
             f"**Latency:** {metrics.get('total_latency_ms', 0)} ms")
 
 
-def _occupied_pct(selected: int, candidate: int) -> str:
-    """Share of the pool actually used: the complement of saved%."""
-    if not candidate:
-        return "0%"
-    return f"{round(selected / candidate * 100.0, 1)}%"
-
-
 def select_footer(metrics: dict[str, Any], execution: dict[str, Any] | None,
                   n_chunks: int, budget: int,
                   pinned_changed: list | None = None) -> str:
     """One-line footer for a single select run.
 
-    User lens only: percent saved AND percent used (they sum to 100%),
-    totals, time. No `#` prefix (renders as a giant heading in chat UIs),
-    no jargon (required/discretionary, chunks, backend names) — those stay
-    in the JSON for machines.
+    User lens only: evidence handed over out of the retrievable pool, plus
+    percent trimmed. Trimmed% is local evidence reduction, not bill savings —
+    no jargon (required/discretionary, chunks, backend names), no `#`
+    prefix (renders as a giant heading in chat UIs); those stay in the JSON
+    for machines.
     """
     cand = metrics.get("candidate_tokens", 0)
     sel = metrics.get("selected_tokens", 0)
     red = metrics.get("reduction_percent", 0.0)
     lat = metrics.get("total_latency_ms", 0.0)
     disc = metrics.get("discretionary_tokens", 0)
-    line = (f"ane-harness: saved {red}% · uses {fmt_tokens(sel)} of "
-            f"{fmt_tokens(cand)} ({_occupied_pct(sel, cand)}) "
-            f"in {round(lat)} ms")
+    line = (f"ane-harness: evidence {fmt_tokens(sel)} of {fmt_tokens(cand)} "
+            f"retrievable · trimmed {red}% in {round(lat)} ms")
     if disc - budget > 0:
         line += " — too big, narrow the task"
     if pinned_changed:
@@ -79,7 +76,7 @@ def select_footer(metrics: dict[str, Any], execution: dict[str, Any] | None,
 def update_footer(before_total: int, after_total: int,
                   reduction_median: float, n_tasks: int,
                   budget: int, required_total: int = 0) -> str:
-    """One-line footer for a batch update run (user lens: tasks + savings)."""
-    return (f"ane-harness: {n_tasks} tasks, saved {reduction_median}% median · uses "
-            f"{fmt_tokens(after_total)} of {fmt_tokens(before_total)} "
-            f"({_occupied_pct(after_total, before_total)})")
+    """One-line footer for a batch update run (user lens: tasks + trim)."""
+    return (f"ane-harness: {n_tasks} tasks · evidence {fmt_tokens(after_total)} "
+            f"of {fmt_tokens(before_total)} retrievable · trimmed "
+            f"{reduction_median}% median")

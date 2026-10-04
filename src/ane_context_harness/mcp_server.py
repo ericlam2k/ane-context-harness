@@ -50,7 +50,7 @@ async def select_context_tool(repo_id: str, task: str, budget: int = 12000,
 
     Unlike the old stats-only shape, this delivers the evidence package:
     per-chunk path/lines/symbol/score/content plus rendered markdown, so a
-    calling agent receives usable context, not just savings numbers.
+    calling agent receives usable context, not just trim totals.
     Pass include_content=False for the legacy stats-only report.
     """
     cfg = build_config()
@@ -76,7 +76,7 @@ async def select_context_tool(repo_id: str, task: str, budget: int = 12000,
 
 
 async def update_tool(repo_id: str, budget: int, tasks: list[str]) -> str:
-    """MCP tool: batch-select context for many tasks; report token savings.
+    """MCP tool: batch-select context for many tasks; report evidence trim.
 
     Mirrors `ane-harness update` — local only, no network/redaction guarantee.
     """
@@ -147,7 +147,7 @@ def build_server() -> Any:
 
     @server.tool()
     async def update(repo_id: str, budget: int, tasks: list[str]) -> str:
-        """Batch-select context for many tasks; report token savings.
+        """Batch-select context for many tasks; report evidence trim.
 
         Local only, no network. Mirrors `ane-harness update`."""
         return await update_tool(repo_id, budget, tasks)

@@ -1,10 +1,10 @@
 ---
 name: ane-harness
-description: Show context-token savings after each coding task and daily totals at session end. Use after completing any coding task in a repository, and once when the session ends.
+description: Show per-task evidence-trim totals after each coding task and cumulative totals at session end. Use after completing any coding task in a repository, and once when the session ends. Trimmed% is local evidence reduction, never a billing claim.
 ---
 
 ## When to Use
-- After finishing a coding task: run one savings check and show its one-line summary.
+- After finishing a coding task: run one evidence check and show its one-line summary.
 - At session end: show the daily totals.
 - Skip silently if `ane-harness` is not on PATH. Never fail the session over this skill.
 
@@ -15,7 +15,7 @@ description: Show context-token savings after each coding task and daily totals 
    `ane-harness select --repo-id <repo> --task "<task>" --budget 2000`
 3. Read the top-level `summary` line from its stdout JSON and show that
    single line to the user. Example:
-   `ane-harness: saved 96.6% · uses 7.1k of 211.2k (3.4%) in 165 ms`
+    `ane-harness: evidence 7.1k of 211.2k retrievable · trimmed 96.6% in 165 ms`
 4. At session end, run `ane-harness daily` and show both lines.
 
 ## Guidelines
