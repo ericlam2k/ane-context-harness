@@ -32,6 +32,27 @@ def _parse_task_lines(raw_lines: list) -> list:
     return tasks
 
 
+class _NoStdinTasks(Exception):
+    """Raised when tasks would come from an interactive terminal."""
+
+
+def _read_task_lines(tasks_file: str | None) -> list:
+    """Task lines from a file, else stdin — never blocking on a TTY.
+
+    A bare `update`/`proxy` on an interactive terminal would wait on stdin
+    forever (hanging whatever agent invoked it); fail fast instead with a
+    hint, matching the empty-input exit contract (stderr JSON, exit 2).
+    """
+    if tasks_file:
+        return Path(tasks_file).read_text(encoding="utf-8").splitlines()
+    if sys.stdin.isatty():
+        raise _NoStdinTasks(
+            "no tasks on stdin (interactive terminal): pass --tasks-file "
+            "with one {\"task\": \"...\"} or task string per line, or pipe "
+            "tasks in")
+    return sys.stdin.read().splitlines()
+
+
 def main(argv: list | None = None) -> int:
     parser = argparse.ArgumentParser(prog="ane-harness")
     sub = parser.add_subparsers(dest="command")
@@ -263,10 +284,12 @@ def main(argv: list | None = None) -> int:
         serve(args.host, args.port)
         return 0
     if args.command == "update":
-        if args.tasks_file:
-            raw_tasks = Path(args.tasks_file).read_text(encoding="utf-8").splitlines()
-        else:
-            raw_tasks = sys.stdin.read().splitlines()
+        try:
+            raw_tasks = _read_task_lines(args.tasks_file)
+        except _NoStdinTasks as exc:
+            print(json.dumps({"ok": False, "error": str(exc)}),
+                  file=sys.stderr)
+            return 2
         tasks = _parse_task_lines(raw_tasks)
         per_task = []
         for task in tasks:
@@ -323,10 +346,12 @@ def main(argv: list | None = None) -> int:
     if args.command == "proxy":
         if args.repo:
             pipe.register_repository(args.repo, args.repo_id)
-        if args.tasks_file:
-            raw_tasks = Path(args.tasks_file).read_text(encoding="utf-8").splitlines()
-        else:
-            raw_tasks = sys.stdin.read().splitlines()
+        try:
+            raw_tasks = _read_task_lines(args.tasks_file)
+        except _NoStdinTasks as exc:
+            print(json.dumps({"ok": False, "error": str(exc)}),
+                  file=sys.stderr)
+            return 2
         tasks = _parse_task_lines(raw_tasks)
         if not tasks:
             print(json.dumps({"ok": False,

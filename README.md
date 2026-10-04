@@ -179,6 +179,14 @@ footers go to stderr. Omit `--repo` when the repo-id is already indexed.
 
 ### 4. Or Run as a Local Background Server
 
+> **Agents: do NOT run this inside an agent turn.** `serve` (like `mcp`,
+> and bare `update` with no `--tasks-file`) never exits — a tool call that
+> launches it blocks forever, so the turn never completes and every later
+> prompt queues behind it. Inside agent turns use only one-shot commands
+> (`index`, `select`, `prove`, `daily`, `health`). Run the server detached
+> from a real terminal (`nohup ane-harness serve --port 8765 &`) or not
+> at all.
+
 Start the local HTTP API (ready to be hooked up to your agent or tools):
 
 ```bash
