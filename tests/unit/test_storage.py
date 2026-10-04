@@ -1,7 +1,10 @@
 """Tests for SQLite incremental storage + hash invalidation."""
 from __future__ import annotations
 
+import sys
 from pathlib import Path
+
+import pytest
 
 from src.ane_context_harness.indexing.repository import build_chunks, detect_language
 from src.ane_context_harness.indexing.storage import Storage
@@ -73,6 +76,8 @@ def test_index_version_persisted(tmp_path, py_repo):
 
 
 def test_storage_permissions_user_only(tmp_path):
+    if sys.platform == "win32":
+        pytest.skip("POSIX permission bits don't apply on Windows ACLs")
     st = Storage(tmp_path / "idx.db", "repo1")
     st.close()
     mode = oct((tmp_path / "idx.db").stat().st_mode & 0o777)

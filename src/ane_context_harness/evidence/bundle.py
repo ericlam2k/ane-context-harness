@@ -106,7 +106,9 @@ def verify_bundle(bundle_dir: str | Path) -> dict:
     listed = set(files) | {"manifest.json"}
     for p in sorted(bundle.rglob("*")):
         if p.is_file():
-            rel = str(p.relative_to(bundle))
+            # Forward slashes on every platform: bundle manifests are
+            # cross-platform evidence (Windows str() would emit backslashes).
+            rel = p.relative_to(bundle).as_posix()
             if rel not in listed:
                 result["unexpected"].append(rel)
 
