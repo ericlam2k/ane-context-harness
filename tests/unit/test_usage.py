@@ -37,7 +37,7 @@ def test_format_session_leads_with_savings(tmp_path):
     ledger = tmp_path / "usage.jsonl"
     usage.record("select", 10000, 1000, path=ledger)
     line = usage.format_session(usage.summarize(path=ledger))
-    assert line.startswith("ane-harness daily")
+    assert line.startswith("Today: saved")
     assert "saved 90.0% · uses 1.0k of 10.0k (10.0%)" in line
     assert "#" not in line
 
@@ -67,6 +67,6 @@ def test_cli_daily_and_session_alias_work(tmp_path, monkeypatch, capsys):
     from src.ane_context_harness.cli import main
     assert main(["daily"]) == 0
     out = capsys.readouterr().out
-    assert out.startswith("ane-harness daily (today)")
+    assert out.startswith("Today: saved")
     assert main(["session", "--brief"]) == 0
     assert capsys.readouterr().out == ""  # silent with no runs yet

@@ -5,7 +5,7 @@ counts-only line (no task text, no paths, no content) to a local ledger:
 
     ~/.ane_context_harness/usage.jsonl
 
-`ane-harness daily` totals it (today + all time), and
+`ane-harness daily` totals it (today's line + to-date line), and
 `eval "$(ane-harness shell-init)"` prints the daily line when the shell
 exits. Users only ever see savings; everything else is handled.
 
@@ -113,9 +113,9 @@ def summarize_all(path: Path | None = None) -> dict[str, Any]:
             "saved_percent": round(saved, 1)}
 
 
-def format_session(stats: dict[str, Any], label: str = "today") -> str:
+def format_session(stats: dict[str, Any], label: str = "Today") -> str:
     from .summary import fmt_tokens, _occupied_pct
-    return (f"ane-harness daily ({label}): saved {stats['saved_percent']}% · "
+    return (f"{label}: saved {stats['saved_percent']}% · "
             f"uses {fmt_tokens(stats['selected_tokens'])} of "
             f"{fmt_tokens(stats['candidate_tokens'])} "
             f"({_occupied_pct(stats['selected_tokens'], stats['candidate_tokens'])}), "

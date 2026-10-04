@@ -151,7 +151,7 @@ def main(argv: list | None = None) -> int:
             print(usage_log.format_session(today))
             return 0
         print(usage_log.format_session(today))
-        print(usage_log.format_session(usage_log.summarize_all(), "all time"))
+        print(usage_log.format_session(usage_log.summarize_all(), "To date (all sessions)"))
         return 0
     if args.command == "setup":
         from .setup import run_setup
