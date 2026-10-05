@@ -1,6 +1,6 @@
 # ⚡ ane-context-harness
 
-> **Trim the context your agent reads by 60%+, keep every required line guaranteed present, and select context in under 4ms — running completely offline on your local machine.**
+> **Cut the context your agent reads by 60%+, keep every required line, and select context in under 4ms — running completely offline on your local machine.**
 
 [![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14-blue.svg)](https://python.org)
 [![Platform](https://img.shields.io/badge/Platform-macOS%20(Apple%20Silicon)%20%7C%20Linux-brightgreen.svg)]()
@@ -12,7 +12,7 @@
 ## What is this?
 
 When you vibe-code or run AI agents (Cursor, Claude Code, OpenCode, Cline, Windsurf, Aider), feeding your entire codebase into an LLM context window is **slow, wasteful, and dangerous**:
-- **Bloated context:** Shoveling whole files into every turn buries the model in irrelevant boilerplate — and the provider meters every token, cached or not.
+- **Bloated context:** Shoveling whole files into every turn buries the model in irrelevant boilerplate — and the provider counts every token, reused or not.
 - **Slower responses:** LLM time-to-first-token crawls when prefilling thousands of unnecessary lines.
 - **Lost in the middle:** Models hallucinate or miss bugs when buried under irrelevant boilerplate.
 - **Secret leaks:** Unwittingly sending `.env` secrets or AWS credentials to third-party model providers.
@@ -31,13 +31,13 @@ Evaluated across **30 benchmark tasks** (10 small, 10 typical, 10 difficult) acr
 
 | Metric | Without Harness (Full Repo Dump) | With Harness (Deterministic) | What this means for you |
 |---|---|---|---|
-| **Median Context Tokens** | **3,213 tokens** | **782 tokens** | **60.47% trimmed from the retrievable pool before the LLM** |
+| **Median Context Tokens** | **3,213 tokens** | **782 tokens** | **60.47% cut from all available context before the LLM** |
 | **Required-Evidence Recall** | 1.0 (100%) | **1.0 (100%)** | **Never missed a single piece of critical code** |
 | **Context Selection Speed** | ~0.01 ms (raw dump) | **3.05 ms – 3.83 ms** | **Sub-4ms local response — 100x faster than network** |
 | **Peak Token Savings** | 0% | **Up to 90.32%** | **Saves up to ~90% on targeted config & settings tasks** |
 | **Ranking Accuracy (nDCG@10)**| n/a | **0.849** | **Places the most critical functions right at the top** |
 | **Secret Redaction** | 0% (leaks all secrets) | **100% local redaction** | **`.env`, AWS keys, and certificates never leave your machine** |
-| **Derived Cost per Task** *(at $3/M)* | ~$0.0096 / task | **~$0.0023 / task** | **~75% smaller evidence slice at the stated rate — the bill itself moves with provider cache rate on these stable bytes** |
+| **Derived Cost per Task** *(at $3/M)* | ~$0.0096 / task | **~$0.0023 / task** | **~75% smaller context slice at the stated rate — your bill itself moves with how much the provider reuses instead of re-reading** |
 
 *(Latency and memory measured locally on Apple Silicon / CPU; cost and TTFT figures are derived under stated token rates; methodology and reproducible logs in `benchmarks/reports/` and `benchmarks/logs/`).*
 
@@ -55,7 +55,7 @@ Evaluated across **30 benchmark tasks** (10 small, 10 typical, 10 difficult) acr
 
 ## Why Developers & Vibecoders Love It
 
-- 💰 **Less context per task, stable bytes:** Stop re-reading files that have nothing to do with the prompt — and byte-stable output rides provider prefix cache instead of rebilling. Trimmed% is local evidence reduction, never a billing promise.
+- 💰 **Less context per task, stable output:** Skip files that have nothing to do with the prompt — and stable output lets the provider reuse what it already read instead of charging again. Cut% measures local context reduction, never your bill.
 - ⚡ **Instant (~3ms) Latency:** Runs entirely in native Python and C extensions locally on your Mac or Linux box.
 - 🎯 **Pinpoint Accuracy:** Combines AST symbol declarations (classes, TypeScript interfaces, enums, functions) with BM25 lexical search and token-budgeted score-first packing.
 - 🛡️ **Zero-Leak Secret Sanitization:** Automatically scans and redacts AWS keys, private RSA/PEM keys, `.env` files, and high-entropy secrets with stable request-scoped placeholders before prompts are rendered.
@@ -67,7 +67,7 @@ Evaluated across **30 benchmark tasks** (10 small, 10 typical, 10 difficult) acr
 
 ![Context packing overview: what the LLM receives, how tasks rewrite to terms, keep/drop rules, reason dictionary, packing limits, history](docs/context-packing-overview.png)
 
-One-page poster generated from the real pipeline (`scripts/plot_packing_overview.py`): task words rewrite to scored terms, mandatory pins always fly, discretionary cards pack score-first under budget, every kept card carries the reasons you can argue with. The percent is evidence trimmed from the retrievable pool — the bill itself moves with provider cache rate on these stable bytes.
+One-page poster generated from the real pipeline (`scripts/plot_packing_overview.py`): task words rewrite to scored terms, mandatory pins always fly, discretionary cards pack score-first under budget, every kept card carries the reasons you can argue with. The percent is context cut from everything available — your bill itself moves with how much the provider reuses instead of re-reading.
 
 ---
 
@@ -124,7 +124,7 @@ ane-harness select \
   --budget 1200
 ```
 
-  ### 3b. Log before/after evidence trim across many prompts (`update`)
+  ### 3b. Log before/after context cuts across many prompts (`update`)
 
 Run selection over a batch of tasks (a JSONL file or stdin) and print + log
 before/after token budgets. Local, no network:
@@ -155,9 +155,9 @@ Per-task rows are also appended as JSONL to `--log` (gitignored).
 **Honest caveat** printed to stderr on every run: *"local measurements over the
 given repo; redaction does not guarantee all secrets are caught."*
 
-Every run also prints a one-line trim footer to stderr (and the same
+Every run also prints a one-line cut footer to stderr (and the same
 line as the `summary` key in stdout JSON), e.g.
-`ane-harness: evidence 7.1k of 211.2k retrievable · trimmed 96.6% in 165 ms`. Plain words only —
+`ane-harness: used 7.1k of 211.2k available context · cut 96.6% in 165 ms`. Plain words only —
 no jargon, no `#` heading markup. Totals accumulate locally (counts only, no
 task text) — see them
 anytime with `ane-harness daily`, or on every shell exit with
@@ -165,7 +165,7 @@ anytime with `ane-harness daily`, or on every shell exit with
 
 Agents get the same behavior dependency-free via the bundled skill:
 `skills/ane-harness/SKILL.md` — copy it into your agent's skills directory
-and trim totals surface automatically after each task, no other setup. For
+and cut totals surface automatically after each task, no other setup. For
 OpenCode/Claude/agent-compatible hosts it also works globally, no per-project
 install: `~/.config/opencode/skills/`, `~/.claude/skills/`, or
 `~/.agents/skills/` (new sessions pick it up).
@@ -182,7 +182,7 @@ printf '%s\n' '{"task": "Fix the discount bug"}' 'review inventory loader' \
 ```
 
 Stdout is pure Markdown (one doc per task, `---`-separated, with
-`<!-- ane-harness task N/M ... -->` boundaries); per-task trim
+`<!-- ane-harness task N/M ... -->` boundaries); per-task cut
 footers go to stderr. Omit `--repo` when the repo-id is already indexed.
 
 ### 4. Or Run as a Local Background Server
@@ -240,7 +240,7 @@ anthropic_payload = serialize("anthropic", package)
 openai_payload    = serialize("openai", package)
 markdown_text     = serialize("markdown", package)
 
-print(f"Packed {package.metrics['selected_tokens']} tokens (trimmed {package.metrics['tokens_removed']} tokens)")
+print(f"Packed {package.metrics['selected_tokens']} tokens (cut {package.metrics['tokens_removed']} tokens)")
 ```
 
 ---

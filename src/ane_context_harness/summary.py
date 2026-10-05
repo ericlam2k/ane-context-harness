@@ -4,10 +4,10 @@ Every `select`/`update` run (CLI or MCP) returns machine JSON, but nobody
 remembers flags to ask "how much context did that hand over?". These helpers
 render the same numbers as a one-line footer:
 
-    # ane-harness: evidence 18.8k of 211.2k retrievable · trimmed 91.1% ·
+    # ane-harness: used 18.8k of 211.2k available context · cut 91.1% ·
     #   61 chunks · 141 ms · budget 2000 EXCEEDED (+16.8k) · cpu_deterministic
 
-The percent is evidence trimmed from the locally retrievable pool — not
+The percent is context cut from everything available locally — not
 provider bills or cache behavior, which are the provider's layer and are
 never claimed here.
 
@@ -40,9 +40,9 @@ def tokens_line(metrics: dict[str, Any]) -> str:
     Single source of truth shared by the markdown output and the CLI/MCP
     footers — render here so the two can never drift apart.
     """
-    return (f"**Tokens:** {metrics.get('selected_tokens', 0)} selected of "
-            f"{metrics.get('candidate_tokens', 0)} candidate "
-            f"({metrics.get('reduction_percent', 0)}% reduction) | "
+    return (f"**Tokens:** {metrics.get('selected_tokens', 0)} used of "
+            f"{metrics.get('candidate_tokens', 0)} available "
+            f"({metrics.get('reduction_percent', 0)}% cut) | "
             f"**Latency:** {metrics.get('total_latency_ms', 0)} ms")
 
 
@@ -51,8 +51,8 @@ def select_footer(metrics: dict[str, Any], execution: dict[str, Any] | None,
                   pinned_changed: list | None = None) -> str:
     """One-line footer for a single select run.
 
-    User lens only: evidence handed over out of the retrievable pool, plus
-    percent trimmed. Trimmed% is local evidence reduction, not bill savings —
+    User lens only: context handed over out of everything available, plus
+    percent cut. Cut% is local context reduction, not bill savings —
     no jargon (required/discretionary, chunks, backend names), no `#`
     prefix (renders as a giant heading in chat UIs); those stay in the JSON
     for machines.
@@ -62,8 +62,8 @@ def select_footer(metrics: dict[str, Any], execution: dict[str, Any] | None,
     red = metrics.get("reduction_percent", 0.0)
     lat = metrics.get("total_latency_ms", 0.0)
     disc = metrics.get("discretionary_tokens", 0)
-    line = (f"ane-harness: evidence {fmt_tokens(sel)} of {fmt_tokens(cand)} "
-            f"retrievable · trimmed {red}% in {round(lat)} ms")
+    line = (f"ane-harness: used {fmt_tokens(sel)} of {fmt_tokens(cand)} "
+            f"available context · cut {red}% in {round(lat)} ms")
     if disc - budget > 0:
         line += " — too big, narrow the task"
     if pinned_changed:
@@ -76,7 +76,7 @@ def select_footer(metrics: dict[str, Any], execution: dict[str, Any] | None,
 def update_footer(before_total: int, after_total: int,
                   reduction_median: float, n_tasks: int,
                   budget: int, required_total: int = 0) -> str:
-    """One-line footer for a batch update run (user lens: tasks + trim)."""
-    return (f"ane-harness: {n_tasks} tasks · evidence {fmt_tokens(after_total)} "
-            f"of {fmt_tokens(before_total)} retrievable · trimmed "
+    """One-line footer for a batch update run (user lens: tasks + cut)."""
+    return (f"ane-harness: {n_tasks} tasks · used {fmt_tokens(after_total)} "
+            f"of {fmt_tokens(before_total)} available context · cut "
             f"{reduction_median}% median")

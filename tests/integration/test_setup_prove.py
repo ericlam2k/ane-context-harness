@@ -57,9 +57,9 @@ def test_setup_subcommand_json_stdout(capsys, tmp_path):
     assert data["repository_id"] == "ut-setup"
     assert data["chunks_indexed"] >= 1  # total, stable across incremental runs
     assert "smoke_summary" in data
-    assert data["smoke_summary"].startswith("ane-harness: evidence")
+    assert data["smoke_summary"].startswith("ane-harness: used")
     assert "shell_hint" not in data  # --no-shell-init hides it
-    assert "ane-harness: evidence" in err  # footer to stderr
+    assert "ane-harness: used" in err  # footer to stderr
 
 
 def test_canned_tasks_per_repo_kind():

@@ -1,4 +1,4 @@
-"""Daily evidence-trim ledger for vibe-coders.
+"""Daily context-cut ledger for vibe-coders.
 
 Nobody remembers flags. So every `select`/`update` run silently appends one
 counts-only line (no task text, no paths, no content) to a local ledger:
@@ -7,8 +7,8 @@ counts-only line (no task text, no paths, no content) to a local ledger:
 
 `ane-harness daily` totals it (today's line + to-date line), and
 `eval "$(ane-harness shell-init)"` prints the daily line when the shell
-exits. Users only ever see trim totals; everything else is handled.
-Trimmed% is local evidence reduction, never a billing claim.
+exits. Users only ever see cut totals; everything else is handled.
+Cut% is local context reduction, never a billing claim.
 
 (Totals are grouped by calendar day — simple and predictable across shells.)
 
@@ -116,14 +116,14 @@ def summarize_all(path: Path | None = None) -> dict[str, Any]:
 
 def format_session(stats: dict[str, Any], label: str = "Today") -> str:
     from .summary import fmt_tokens
-    return (f"{label}: trimmed {stats['saved_percent']}% · "
-            f"evidence {fmt_tokens(stats['selected_tokens'])} of "
-            f"{fmt_tokens(stats['candidate_tokens'])} retrievable, "
+    return (f"{label}: cut {stats['saved_percent']}% · "
+            f"used {fmt_tokens(stats['selected_tokens'])} of "
+            f"{fmt_tokens(stats['candidate_tokens'])} available context, "
             f"{stats['tasks']} tasks")
 
 
 SHELL_INIT_SNIPPET = """\
-# ane-harness: print daily trim totals on shell exit.
+# ane-harness: print daily cut totals on shell exit.
 # Opt-in: eval "$(ane-harness shell-init)"
 _ane_session_summary() {
   command -v ane-harness >/dev/null 2>&1 || return 0
