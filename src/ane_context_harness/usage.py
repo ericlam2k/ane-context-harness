@@ -116,9 +116,9 @@ def summarize_all(path: Path | None = None) -> dict[str, Any]:
 
 def format_session(stats: dict[str, Any], label: str = "Today") -> str:
     from .summary import fmt_tokens
-    return (f"{label}: cut {stats['saved_percent']}% · "
-            f"used {fmt_tokens(stats['selected_tokens'])} of "
-            f"{fmt_tokens(stats['candidate_tokens'])} available context, "
+    return (f"{label}: sent {fmt_tokens(stats['selected_tokens'])} instead of "
+            f"{fmt_tokens(stats['candidate_tokens'])} · "
+            f"cut {stats['saved_percent']}%, "
             f"{stats['tasks']} tasks")
 
 

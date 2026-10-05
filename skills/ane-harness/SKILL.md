@@ -15,7 +15,7 @@ description: Show per-task context-cut totals after each coding task and cumulat
    `ane-harness select --repo-id <repo> --task "<task>" --budget 2000`
 3. Read the top-level `summary` line from its stdout JSON and show that
    single line to the user. Example:
-    `ane-harness: used 7.1k of 211.2k available context · cut 96.6% in 165 ms`
+    `ane-harness: sent 7.1k instead of 211.2k · cut 96.6% in 165 ms`
 4. At session end, run `ane-harness daily` and show both lines.
 
 ## Guidelines

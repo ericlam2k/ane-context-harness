@@ -4,10 +4,10 @@ Every `select`/`update` run (CLI or MCP) returns machine JSON, but nobody
 remembers flags to ask "how much context did that hand over?". These helpers
 render the same numbers as a one-line footer:
 
-    # ane-harness: used 18.8k of 211.2k available context · cut 91.1% ·
+    # ane-harness: sent 18.8k instead of 211.2k · cut 91.1% ·
     #   61 chunks · 141 ms · budget 2000 EXCEEDED (+16.8k) · cpu_deterministic
 
-The percent is context cut from everything available locally — not
+The percent is how much less we send than everything we could send — not
 provider bills or cache behavior, which are the provider's layer and are
 never claimed here.
 
@@ -40,8 +40,8 @@ def tokens_line(metrics: dict[str, Any]) -> str:
     Single source of truth shared by the markdown output and the CLI/MCP
     footers — render here so the two can never drift apart.
     """
-    return (f"**Tokens:** {metrics.get('selected_tokens', 0)} used of "
-            f"{metrics.get('candidate_tokens', 0)} available "
+    return (f"**Tokens:** {metrics.get('selected_tokens', 0)} sent instead of "
+            f"{metrics.get('candidate_tokens', 0)} "
             f"({metrics.get('reduction_percent', 0)}% cut) | "
             f"**Latency:** {metrics.get('total_latency_ms', 0)} ms")
 
@@ -62,8 +62,8 @@ def select_footer(metrics: dict[str, Any], execution: dict[str, Any] | None,
     red = metrics.get("reduction_percent", 0.0)
     lat = metrics.get("total_latency_ms", 0.0)
     disc = metrics.get("discretionary_tokens", 0)
-    line = (f"ane-harness: used {fmt_tokens(sel)} of {fmt_tokens(cand)} "
-            f"available context · cut {red}% in {round(lat)} ms")
+    line = (f"ane-harness: sent {fmt_tokens(sel)} instead of {fmt_tokens(cand)} "
+            f"· cut {red}% in {round(lat)} ms")
     if disc - budget > 0:
         line += " — too big, narrow the task"
     if pinned_changed:
@@ -77,6 +77,6 @@ def update_footer(before_total: int, after_total: int,
                   reduction_median: float, n_tasks: int,
                   budget: int, required_total: int = 0) -> str:
     """One-line footer for a batch update run (user lens: tasks + cut)."""
-    return (f"ane-harness: {n_tasks} tasks · used {fmt_tokens(after_total)} "
-            f"of {fmt_tokens(before_total)} available context · cut "
+    return (f"ane-harness: {n_tasks} tasks · sent {fmt_tokens(after_total)} "
+            f"instead of {fmt_tokens(before_total)} · cut "
             f"{reduction_median}% median")

@@ -31,13 +31,13 @@ Evaluated across **30 benchmark tasks** (10 small, 10 typical, 10 difficult) acr
 
 | Metric | Without Harness (Full Repo Dump) | With Harness (Deterministic) | What this means for you |
 |---|---|---|---|
-| **Median Context Tokens** | **3,213 tokens** | **782 tokens** | **60.47% cut from all available context before the LLM** |
+| **Median Context Tokens** | **3,213 tokens** | **782 tokens** | **Sends 60.47% less to the LLM** |
 | **Required-Evidence Recall** | 1.0 (100%) | **1.0 (100%)** | **Never missed a single piece of critical code** |
 | **Context Selection Speed** | ~0.01 ms (raw dump) | **3.05 ms – 3.83 ms** | **Sub-4ms local response — 100x faster than network** |
 | **Peak Token Savings** | 0% | **Up to 90.32%** | **Saves up to ~90% on targeted config & settings tasks** |
 | **Ranking Accuracy (nDCG@10)**| n/a | **0.849** | **Places the most critical functions right at the top** |
 | **Secret Redaction** | 0% (leaks all secrets) | **100% local redaction** | **`.env`, AWS keys, and certificates never leave your machine** |
-| **Derived Cost per Task** *(at $3/M)* | ~$0.0096 / task | **~$0.0023 / task** | **~75% smaller context slice at the stated rate — your bill itself moves with how much the provider reuses instead of re-reading** |
+| **Derived Cost per Task** *(at $3/M)* | ~$0.0096 / task | **~$0.0023 / task** | **Sends ~75% less per task at the stated rate — your bill itself moves with how much the provider reuses instead of re-reading** |
 
 *(Latency and memory measured locally on Apple Silicon / CPU; cost and TTFT figures are derived under stated token rates; methodology and reproducible logs in `benchmarks/reports/` and `benchmarks/logs/`).*
 
@@ -67,7 +67,7 @@ Evaluated across **30 benchmark tasks** (10 small, 10 typical, 10 difficult) acr
 
 ![Context packing overview: what the LLM receives, how tasks rewrite to terms, keep/drop rules, reason dictionary, packing limits, history](docs/context-packing-overview.png)
 
-One-page poster generated from the real pipeline (`scripts/plot_packing_overview.py`): task words rewrite to scored terms, mandatory pins always fly, discretionary cards pack score-first under budget, every kept card carries the reasons you can argue with. The percent is context cut from everything available — your bill itself moves with how much the provider reuses instead of re-reading.
+One-page poster generated from the real pipeline (`scripts/plot_packing_overview.py`): task words rewrite to scored terms, mandatory pins always fly, discretionary cards pack score-first under budget, every kept card carries the reasons you can argue with. The percent says how much less we send than everything we could send — your bill itself moves with how much the provider reuses instead of re-reading.
 
 ---
 
@@ -157,7 +157,7 @@ given repo; redaction does not guarantee all secrets are caught."*
 
 Every run also prints a one-line cut footer to stderr (and the same
 line as the `summary` key in stdout JSON), e.g.
-`ane-harness: used 7.1k of 211.2k available context · cut 96.6% in 165 ms`. Plain words only —
+`ane-harness: sent 7.1k instead of 211.2k · cut 96.6% in 165 ms`. Plain words only —
 no jargon, no `#` heading markup. Totals accumulate locally (counts only, no
 task text) — see them
 anytime with `ane-harness daily`, or on every shell exit with

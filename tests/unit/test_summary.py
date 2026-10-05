@@ -24,7 +24,7 @@ def test_tokens_line_single_source_of_truth():
     # markdown output and footers share this line; byte-stable contract
     m = {"selected_tokens": 800, "candidate_tokens": 5000,
          "reduction_percent": 84.0, "total_latency_ms": 5.0}
-    assert tokens_line(m) == ("**Tokens:** 800 used of 5000 available "
+    assert tokens_line(m) == ("**Tokens:** 800 sent instead of 5000 "
                                "(84.0% cut) | **Latency:** 5.0 ms")
 
 
@@ -34,7 +34,7 @@ def test_select_footer_plain_words_only():
          "required_tokens": 16794, "discretionary_tokens": 2000,
          "diagnostics": {"budget_exceeded": True}}
     foot = select_footer(m, {"reranker": "cpu_deterministic"}, 61, 2000)
-    assert foot == ("ane-harness: used 18.8k of 211.2k available context · cut 91.1% in 141 ms")
+    assert foot == ("ane-harness: sent 18.8k instead of 211.2k · cut 91.1% in 141 ms")
     assert not foot.startswith("#")
     for jargon in ("required", "discretionary", "chunk", "cpu_deterministic",
                    "budget", "recall"):
@@ -52,5 +52,5 @@ def test_select_footer_flags_oversize_plainly():
 
 def test_update_footer_batch_totals():
     foot = update_footer(45000, 8200, 81.8, 2, 12000, 4200)
-    assert foot == "ane-harness: 2 tasks · used 8.2k of 45.0k available context · cut 81.8% median"
+    assert foot == "ane-harness: 2 tasks · sent 8.2k instead of 45.0k · cut 81.8% median"
     assert not foot.startswith("#")

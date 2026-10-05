@@ -63,7 +63,7 @@ def test_proxy_emits_markdown_per_task(tmp_path, monkeypatch):
     # no JSON on stdout (pure markdown for the agent)
     assert not proc.stdout.lstrip().startswith("{")
     # stderr: one cut footer per task + redaction caveat
-    assert proc.stderr.count("ane-harness: used") == 2
+    assert proc.stderr.count("ane-harness: sent") == 2
     assert "redaction does not guarantee" in proc.stderr
 
 
