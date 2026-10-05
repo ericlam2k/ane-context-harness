@@ -5,6 +5,7 @@ context only — they must not own retrieval or ranking logic.
 from __future__ import annotations
 
 from .anthropic import DEFAULT_MODEL as ANTHROPIC_DEFAULT_MODEL, render_anthropic_messages
+from .compact import render_compact
 from .layout import SECTION_ORDER, SECTION_TITLES, PromptSection, build_prompt_sections, canonical_json, system_text
 from .markdown import render_markdown, render_prompt_markdown
 from .openai import DEFAULT_MODEL as OPENAI_DEFAULT_MODEL, render_openai_responses
@@ -15,6 +16,7 @@ SERIALIZERS = {
     "openai": render_openai_responses,
     "openai_compat": render_openai_chat,
     "markdown": render_prompt_markdown,
+    "compact": render_compact,
 }
 
 _ALIASES = {
@@ -41,5 +43,5 @@ __all__ = [
     "SERIALIZERS", "SECTION_ORDER", "SECTION_TITLES", "PromptSection",
     "build_prompt_sections", "canonical_json", "system_text",
     "render_anthropic_messages", "render_openai_responses", "render_openai_chat",
-    "render_prompt_markdown", "render_markdown", "serialize",
+    "render_prompt_markdown", "render_markdown", "render_compact", "serialize",
 ]
