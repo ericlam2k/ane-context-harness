@@ -57,6 +57,12 @@ Evaluated across **30 benchmark tasks** (10 small, 10 typical, 10 difficult) acr
 
 Measured with public functions only (`scripts/measure_token_savings.py`, frozen eval split, one pinned counter — reproduce with `PYTHONPATH=src python3 scripts/measure_token_savings.py`, draw with `scripts/plot_token_savings.py`). Same evidence, three renderings; rendering never touches selection.
 
+### Same exercise against real tools (no keys, no accounts)
+
+![Selection medians and identical-pack format medians: harness select vs headroom rewrite vs evidence-JSON / markdown / real TOON / compact](docs/same-exercise-comparison.png)
+
+The passthrough test any rival can run: 18 eval tasks, one counter. Headroom 0.39.1 and the real TOON encoder run locally (`pip install headroom-ai toon-format`, then `PYTHONPATH=src python3 scripts/bench_same_exercise.py`, draw with `scripts/plot_same_exercise.py`). Task-blind rewriting sends more than selecting and keeps no survival gate; real TOON falls back to per-row mappings on multiline code while our compact keeps CSV headers with verbatim rows.
+
 ---
 
 ## Why Developers & Vibecoders Love It
