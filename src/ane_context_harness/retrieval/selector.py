@@ -48,8 +48,16 @@ def categorize(chunk) -> str:
     is_test = fname.startswith("test_") or fname.endswith(".test.ts") or fname.endswith(".spec.ts") or path.startswith("tests/")
     if is_test:
         return "test"
-    if chunk.symbol and (chunk.language == "python" and not fname.startswith("test_")):
-        # functions/classes are implementation; pure type defs are interface
+    if getattr(chunk, "symbol", None):
+        # Any symbol-scoped chunk is implementation. (The old python-only
+        # rule predates symbol extraction for other languages.)
+        return "implementation"
+    file_syms = list((getattr(chunk, "metadata", None) or {}).get("file_symbols") or [])
+    if file_syms:
+        # File-level chunk (the norm for small files, symbol None) from a
+        # file that declares symbols: a file of function/type definitions
+        # is implementation in any language. Without this, such files
+        # fall into "supporting" and eat the supporting cap ahead of docs.
         return "implementation"
     return "supporting"
 
