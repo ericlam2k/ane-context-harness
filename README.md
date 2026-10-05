@@ -1,5 +1,7 @@
 # ⚡ ane-context-harness
 
+[English](README.md) · [Tiếng Việt](README.vi.md) · [中文](README.zh.md) · [Français](README.fr.md) · [Español](README.es.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
+
 > **Cut the context your agent reads by 60%+, keep every required line, and select context in under 4ms — running completely offline on your local machine.**
 
 [![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14-blue.svg)](https://python.org)
