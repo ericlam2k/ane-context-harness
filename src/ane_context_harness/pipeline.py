@@ -203,6 +203,14 @@ class Pipeline:
         t_total = time.perf_counter()
         storage = self._storage_for(request.repository_id)
         stage_ms = {}
+
+        # Negative pins (exclude_paths): normalize once, refuse
+        # contradictions before any cache lookup or recompute — a path
+        # both pinned and excluded is a caller error, never a guess.
+        excluded = _normalize_excluded(
+            getattr(request, "exclude_paths", None) or [])
+        _reject_contradictions(request.explicit_paths or [], excluded)
+
         # Silent pinned refresh: re-index changed pinned sources before
         # ranking, so notices below describe an already-fresh index.
         # Legacy DBs without a recorded root skip this silently.
@@ -278,6 +286,23 @@ class Pipeline:
                 diag["pinned_changed"] = pinned_changed
                 diag["pinned_missing"] = pinned_missing
         stage_ms["packing_ms"] = round(t_pack.elapsed_ms, 2)
+
+        # Exclusion enforcement: drop after ranking, in every branch
+        # (including full-context baselines — "must never appear" has no
+        # exceptions). Retrieval may still score excluded chunks; they
+        # never enter evidence.
+        if excluded:
+            kept, dropped = [], 0
+            for c in selected:
+                if _is_excluded(c.path, excluded):
+                    dropped += 1
+                else:
+                    kept.append(c)
+            selected = kept
+            diag["excluded"] = {"paths": sorted(excluded),
+                                "chunks_dropped": dropped}
+        else:
+            diag["excluded"] = {"paths": [], "chunks_dropped": 0}
 
         cand_tokens = sum(c.estimated_tokens for c in chunks)
 
@@ -396,6 +421,40 @@ def _nearest_symbol(start_line, symbols):
 def _new_request_id() -> str:
     import secrets
     return "ctx_" + secrets.token_hex(8)
+
+
+def _norm_pin(p) -> str:
+    """Pin normalization, mirroring retrieval path matching."""
+    return str(p).replace("\\", "/").lstrip("./")
+
+
+def _normalize_excluded(paths: list) -> list:
+    seen: dict = {}
+    for p in paths or []:
+        n = _norm_pin(p)
+        if n:
+            seen[n] = True
+    return sorted(seen)
+
+
+def _is_excluded(chunk_path: str, excluded: list) -> bool:
+    """Conservative match: exact or suffix, same relation the selector
+    uses for explicit pins — a negative pin over-drops rather than leaks."""
+    n = _norm_pin(chunk_path)
+    return any(n == pat or n.endswith(pat) for pat in excluded)
+
+
+def _reject_contradictions(explicit_paths: list, excluded: list) -> None:
+    """A path both pinned and excluded is a caller error. Refuse with a
+    ValueError so every existing contract (select/prove: stderr JSON,
+    exit 2) handles it with no new plumbing."""
+    bad = sorted({_norm_pin(p) for p in explicit_paths or []
+                  if any(_norm_pin(p) == x or _norm_pin(p).endswith(x)
+                         or x.endswith(_norm_pin(p)) for x in excluded)})
+    if bad:
+        raise ValueError(
+            f"contradictory pin: {bad} both explicitly pinned and "
+            "excluded; pin or exclude, never both")
 
 
 def _any_secret_leak(evidence: list) -> bool:

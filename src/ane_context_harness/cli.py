@@ -67,6 +67,10 @@ def main(argv: list | None = None) -> int:
     p_select.add_argument("--task", required=True)
     p_select.add_argument("--budget", type=int, default=12000)
     p_select.add_argument("--explicit-path", action="append", default=[])
+    p_select.add_argument("--exclude-path", action="append", default=[],
+                          help="Repo-relative path that must never appear in the "
+                               "evidence pack (negative pin; enforced in "
+                               "packing, after ranking)")
     p_select.add_argument("--out", default=None)
     p_select.add_argument("--full", action="store_true",
                           help="Baseline mode: pack the whole repo, no trimming; "
@@ -237,9 +241,15 @@ def main(argv: list | None = None) -> int:
             task=args.task,
             token_budget=args.budget,
             explicit_paths=args.explicit_path,
+            exclude_paths=args.exclude_path,
             options={"full_context": True} if args.full else {},
         )
-        pkg = pipe.select_context(req)
+        try:
+            pkg = pipe.select_context(req)
+        except ValueError as exc:
+            print(json.dumps({"ok": False, "error": str(exc)}),
+                  file=sys.stderr)
+            return 2
         pkg.markdown = render_markdown(pkg)
         if args.full:
             foot = (f"ane-harness: full context "

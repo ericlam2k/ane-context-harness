@@ -84,6 +84,10 @@ class SelectRequest:
     task: str
     token_budget: int = 12000
     explicit_paths: list = field(default_factory=list)
+    # Paths that must never appear in the evidence pack (negative pins).
+    # Enforced in packing, after ranking; a path both pinned and excluded
+    # is a contradictory instruction and the request is refused.
+    exclude_paths: list = field(default_factory=list)
     tool_outputs: list = field(default_factory=list)
     conversation_summary: Optional[str] = None
     options: dict = field(default_factory=lambda: {

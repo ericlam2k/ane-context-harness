@@ -104,6 +104,7 @@ def _parse_select(body: dict) -> schemas.SelectRequest:
         task=body["task"],
         token_budget=int(body.get("token_budget", 12000)),
         explicit_paths=body.get("explicit_paths", []),
+        exclude_paths=body.get("exclude_paths", []),
         tool_outputs=body.get("tool_outputs", []),
         conversation_summary=body.get("conversation_summary"),
         options=opts,
