@@ -61,6 +61,8 @@ Measured with public functions only (`scripts/measure_token_savings.py`, frozen 
 
 ### Same exercise against real tools (no keys, no accounts)
 
+![One chart, one ruler: median tokens served per task for raw baseline, headroom rewrite, ours in TOON, ours compact — each with its evidence-survival gate](docs/head-to-head.png)
+
 ![Selection medians and identical-pack format medians: harness select vs headroom rewrite vs evidence-JSON / markdown / real TOON / compact](docs/same-exercise-comparison.png)
 
 The passthrough test any rival can run: 18 eval tasks, one counter. Headroom 0.39.1 and the real TOON encoder run locally (`pip install headroom-ai toon-format`, then `PYTHONPATH=src python3 scripts/bench_same_exercise.py`, draw with `scripts/plot_same_exercise.py`). Task-blind rewriting sends more than selecting and keeps no survival gate; real TOON falls back to per-row mappings on multiline code while our compact keeps CSV headers with verbatim rows.
