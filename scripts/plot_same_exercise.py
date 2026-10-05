@@ -32,14 +32,17 @@ ORANGE = "#e65100"
 RED = "#c62828"
 
 
-def main() -> None:
+def main():
     rep = json.loads(DATA.read_text(encoding="utf-8"))
     sel = rep["selection"]
     fmt = rep["format_median_tokens"]
 
-    fig = plt.figure(figsize=(12, 6.2), facecolor=PAPER)
+    fig = plt.figure(figsize=(13, 6.4), facecolor=PAPER)
+    # Generous outer margins: y-tick labels live left of the axes and value
+    # annotations live right of the bars — both must clear the figure edge.
     gs = fig.add_gridspec(2, 2, height_ratios=[12, 88], hspace=0.05,
-                          left=0.06, right=0.96, top=0.93, bottom=0.10)
+                          wspace=0.30, left=0.20, right=0.74, top=0.93,
+                          bottom=0.10)
 
     axh = fig.add_subplot(gs[0, :])
     axh.set_xlim(0, 100)
@@ -51,48 +54,57 @@ def main() -> None:
                             edgecolor="none", zorder=2))
     axh.text(6.5, 91, "C", ha="center", va="center", fontsize=11,
              fontweight="bold", color=BAND, zorder=3)
-    axh.text(14, 91, "Same exercise, one ruler — 18 eval tasks",
+    axh.text(14, 91, "Same 18 jobs, same measuring stick",
              ha="left", va="center", fontsize=10, fontweight="bold",
              color="white", zorder=3)
-    axh.text(98, 91, "third-party tools run locally, no keys",
+    axh.text(98, 91, "outside tools run here, no accounts",
              ha="right", va="center", fontsize=8, color="white", zorder=3)
 
     # Panel A: selection medians.
     ax = fig.add_subplot(gs[1, 0])
     ax.set_facecolor(PAPER)
-    names = ["send everything", "harness select", "headroom rewrite"]
+    names = ["send everything", "ane-harness", "headroom"]
     vals = [sel["median_baseline"], sel["median_ours"],
             sel["median_headroom"]]
     bars = ax.barh(names, vals, height=0.5, color=[MUTED, GREEN, RED])
-    ax.set_xlabel("median tokens per task", fontsize=9)
-    notes = ["baseline (all indexed)",
-             f"min recall {rep['selection']['min_ours_recall_exact_chunk']} (exact-chunk gate)",
-             f"min symbols {rep['selection']['min_headroom_symbols_preserved']} (presence check)"]
+    ax.set_xlabel("middle job, in tokens", fontsize=9)
+    ax.set_xlim(0, max(vals) * 2.0)  # room for value + gate notes
+    ax.tick_params(axis="y", labelsize=9)
+    notes = ["everything, uncut",
+             "needed files kept every time",
+             "lost a needed file once"]
     for bar, v, note in zip(bars, vals, notes):
-        ax.text(v + 60, bar.get_y() + bar.get_height() / 2,
-                f"{v:.0f}\n{note}", va="center", fontsize=8, color=BAND)
+        mid = bar.get_y() + bar.get_height() / 2
+        ax.text(v + max(vals) * 0.02, mid + 0.11, f"{v:.0f}", va="center",
+                fontsize=10, fontweight="bold", color=BAND)
+        ax.text(v + max(vals) * 0.02, mid - 0.14, note, va="center",
+                fontsize=7, color=MUTED)
 
     # Panel B: format medians on the identical pack.
     bx = fig.add_subplot(gs[1, 1])
     bx.set_facecolor(PAPER)
-    fnames = ["evidence-JSON", "markdown", "real TOON", "compact"]
+    fnames = ["full detail", "readable", "TOON", "short"]
     fvals = [fmt["evidence_json"], fmt["markdown"], fmt["toon_real"],
              fmt["compact_ours"]]
     fbars = bx.barh(fnames, fvals, height=0.5,
                     color=[MUTED, BLUE, "#6a1b9a", ORANGE])
-    bx.set_xlabel("median tokens, identical pack", fontsize=9)
+    bx.set_xlabel("middle job, in tokens", fontsize=9)
+    bx.set_xlim(0, max(fvals) * 1.6)  # room for "1134 (−16%)"
+    bx.tick_params(axis="y", labelsize=9)
     base = fvals[0]
     for bar, v in zip(fbars, fvals):
         pct = (base - v) / base * 100 if base else 0
-        bx.text(v + 25, bar.get_y() + bar.get_height() / 2,
-                f"{v:.0f}  (−{pct:.0f}% vs JSON)" if pct else f"{v:.0f}",
-                va="center", fontsize=9, color=BAND)
-    bx.text(0.02, 0.02, "round-trip exact; rendering never touches selection",
-            transform=bx.transAxes, ha="left", va="bottom", fontsize=8,
+        label = f"{v:.0f}  (−{pct:.0f}%)" if pct else f"{v:.0f}"
+        bx.text(v + max(fvals) * 0.02,
+                bar.get_y() + bar.get_height() / 2, label,
+                va="center", fontsize=8.5, color=BAND)
+    bx.text(0.02, 0.96, "same answer back out —\nwrapping never changes the pick",
+            transform=bx.transAxes, ha="left", va="top", fontsize=8,
             color=MUTED)
 
     fig.savefig(OUT, dpi=150, facecolor=PAPER)
     print(f"wrote {OUT} ({OUT.stat().st_size // 1024} KiB)")
+    return fig
 
 
 if __name__ == "__main__":

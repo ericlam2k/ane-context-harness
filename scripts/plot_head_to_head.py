@@ -40,7 +40,7 @@ PURPLE = "#6a1b9a"
 ORANGE = "#e65100"
 
 
-def main() -> None:
+def main():
     rep = json.loads(DATA.read_text(encoding="utf-8"))
     rows = rep["tasks"]
     med = lambda k: round(statistics.median([r[k] for r in rows]), 1)
@@ -49,13 +49,13 @@ def main() -> None:
     toon = med("fmt_toon")
     comp = med("fmt_compact")
 
-    names = ["raw\n(send all)", "headroom\n(rewrite)",
-             "ours in TOON", "ours compact"]
+    names = ["send\neverything", "headroom\n(rewrite)",
+             "ours, readable", "ours, short"]
     vals = [base, hr, toon, comp]
     colors = [MUTED, RED, PURPLE, GREEN]
-    gates = ["no gate\n(by definition)", "FAIL — config file\nlost on 1 task",
-             "PASS — recall 1.0\n(exact-chunk gate)",
-             "PASS — recall 1.0\n(exact-chunk gate)"]
+    gates = ["\n(by definition)", "FAIL — config file\nlost on 1 job",
+             "PASS — needed files\nkept every time",
+             "PASS — needed files\nkept every time"]
 
     fig = plt.figure(figsize=(11, 6.0), facecolor=PAPER)
     gs = fig.add_gridspec(2, 1, height_ratios=[13, 87], hspace=0.05,
@@ -70,16 +70,16 @@ def main() -> None:
                             edgecolor="none", zorder=2))
     axh.text(6.5, 91, "VS", ha="center", va="center", fontsize=11,
              fontweight="bold", color=BAND, zorder=3)
-    axh.text(14, 91, "One chart, one ruler — median tokens served per task",
+    axh.text(14, 91, "Same 18 jobs, one measuring stick",
              ha="left", va="center", fontsize=10, fontweight="bold",
              color="white", zorder=3)
-    axh.text(98, 91, "18 frozen eval tasks", ha="right", va="center",
+    axh.text(98, 91, "median job, in tokens", ha="right", va="center",
              fontsize=8, color="white", zorder=3)
 
     ax = fig.add_subplot(gs[1])
     ax.set_facecolor(PAPER)
     bars = ax.bar(names, vals, width=0.55, color=colors)
-    ax.set_ylabel("median tokens / task (pinned counter)", fontsize=10)
+    ax.set_ylabel("middle job, in tokens", fontsize=10)
     ax.set_ylim(0, max(vals) * 1.35)
     for bar, v, g in zip(bars, vals, gates):
         ax.text(bar.get_x() + bar.get_width() / 2, v + max(vals) * 0.02,
@@ -89,12 +89,13 @@ def main() -> None:
                 g, ha="center", fontsize=8,
                 color=RED if g.startswith("FAIL") else MUTED)
     best = (base - comp) / base * 100
-    ax.text(0.98, 0.96, f"compact serves −{best:.0f}% vs raw, gate held",
+    ax.text(0.98, 0.96, "shortest while keeping\nneeded files every time",
             transform=ax.transAxes, ha="right", va="top", fontsize=9,
             color=BAND, bbox=dict(facecolor="white", edgecolor=MUTED,
                                   boxstyle="round,pad=0.4"))
     fig.savefig(OUT, dpi=150, facecolor=PAPER)
     print(f"wrote {OUT} ({OUT.stat().st_size // 1024} KiB)")
+    return fig
 
 
 if __name__ == "__main__":

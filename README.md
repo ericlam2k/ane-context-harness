@@ -55,17 +55,21 @@ Evaluated across **30 benchmark tasks** (10 small, 10 typical, 10 difficult) acr
 
 ### Token savings, measured (current main)
 
-![Per-task baseline vs sent tokens with min recall 1.0, plus identical-pack format medians (JSON / markdown / compact)](docs/token-savings.png)
+How to read this chart: every job asked the tool "what should the AI read for this task?". The left panel compares, by job size, how much text you'd send if you sent the whole codebase (grey) versus what the harness picked (green) — the number above each green bar is what you send now and how much smaller that is. Harder jobs need more files, so the green bar grows — but the needed files were kept **every single time**, which is the whole point: smaller is only good if nothing important is missing. The right panel shows the same choice sent three ways — full detail, a readable middle ground, and the shortest wrapping — shorter is cheaper, and the wrapping never changes *what* gets picked.
 
-Measured with public functions only (`scripts/measure_token_savings.py`, frozen eval split, one pinned counter — reproduce with `PYTHONPATH=src python3 scripts/measure_token_savings.py`, draw with `scripts/plot_token_savings.py`). Same evidence, three renderings; rendering never touches selection.
+![Less to read by job size, plus three wrappings of the same answer](docs/token-savings.png)
+
+Measure with `PYTHONPATH=src python3 scripts/measure_token_savings.py`, draw with `scripts/plot_token_savings.py` (frozen eval split, one pinned token counter).
 
 ### Same exercise against real tools (no keys, no accounts)
 
-![One chart, one ruler: median tokens served per task for raw baseline, headroom rewrite, ours in TOON, ours compact — each with its evidence-survival gate](docs/head-to-head.png)
+How to read this chart: it's a race on the same 18 jobs with the same ruler — "how many tokens does the middle job hold, and did anything needed get lost?". The first chart is the headline: sending everything is the costly default, the outside rewrite tool actually sends *more* than needed and once lost a config file the grader required (marked FAIL), while our two modes are shortest and kept the needed files every time (PASS). The second chart shows the details behind it — what selection alone saves, and how the same selection shrinks again just by choosing a shorter wrapping. PASS/FAIL here means exactly one thing: the pieces the benchmark grader says are required came back in the pack.
 
-![Selection medians and identical-pack format medians: harness select vs headroom rewrite vs evidence-JSON / markdown / real TOON / compact](docs/same-exercise-comparison.png)
+![Same 18 jobs: send-everything vs an outside rewrite tool vs ours](docs/head-to-head.png)
 
-The passthrough test any rival can run: 18 eval tasks, one counter. Headroom 0.39.1 and the real TOON encoder run locally (`pip install headroom-ai toon-format`, then `PYTHONPATH=src python3 scripts/bench_same_exercise.py`, draw with `scripts/plot_same_exercise.py`). Task-blind rewriting sends more than selecting and keeps no survival gate; real TOON falls back to per-row mappings on multiline code while our compact keeps CSV headers with verbatim rows.
+![Selection medians and the same pack in four wrappings, with per-job examples](docs/same-exercise-comparison.png)
+
+Reproduce: `pip install headroom-ai toon-format`, then `PYTHONPATH=src python3 scripts/bench_same_exercise.py`, draw with `scripts/plot_same_exercise.py`. Task-blind rewriting sends more than selecting and keeps no survival gate; the real TOON encoder falls back to per-row mappings on multiline code while our compact keeps CSV headers with verbatim rows.
 
 ---
 
