@@ -1,8 +1,8 @@
 # ⚡ ane-context-harness
 
-[English](README.md) · [Tiếng Việt](README.vi.md) · [中文](README.zh.md) · [Français](README.fr.md) · [Español](README.es.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
+[Tiếng Anh](README.md) · [Tiếng Việt](README.vi.md) · [Tiếng Trung](README.zh.md) · [Tiếng Pháp](README.fr.md) · [Tiếng Tây Ban Nha](README.es.md) · [Tiếng Nhật](README.ja.md) · [Tiếng Hàn](README.ko.md)
 
-> **Cắt giảm hơn 60% ngữ cảnh mà tác nhân (agent) của bạn đọc, giữ lại mọi dòng cần thiết và chọn lọc ngữ cảnh trong chưa đầy 4ms — chạy hoàn toàn ngoại tuyến (offline) trên máy cục bộ của bạn.**
+> **Cắt hơn 60% ngữ cảnh mà agent đọc, giữ mọi dòng bắt buộc, và chọn ngữ cảnh dưới 4ms — chạy hoàn toàn offline trên máy local của bạn.**
 
 [![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14-blue.svg)](https://python.org)
 [![Platform](https://img.shields.io/badge/Platform-macOS%20(Apple%20Silicon)%20%7C%20Linux-brightgreen.svg)]()
@@ -13,83 +13,83 @@
 
 ## Đây là gì?
 
-Khi bạn thực hiện "vibe-code" hoặc chạy các tác nhân AI (Cursor, Claude Code, OpenCode, Cline, Windsurf, Aider), việc nạp toàn bộ cơ sở mã nguồn vào cửa sổ ngữ cảnh LLM là **chậm chạp, lãng phí và nguy hiểm**:
-- **Ngữ cảnh cồng kềnh:** Việc nhồi nhét toàn bộ tệp tin vào mỗi lượt hỏi sẽ làm mô hình bị ngộp trong các đoạn boilerplate không liên quan — và nhà cung cấp sẽ tính phí từng token, bất kể chúng có được dùng lại hay không.
-- **Phản hồi chậm hơn:** Thời gian chờ token đầu tiên (TTFT) của LLM sẽ kéo dài khi phải nạp trước hàng ngàn dòng không cần thiết.
-- **Mất phương hướng ở giữa (Lost in the middle):** Các mô hình thường bị "ảo giác" hoặc bỏ sót lỗi khi bị chôn vùi dưới những đoạn boilerplate vô nghĩa.
-- **Rò rỉ bí mật:** Vô tình gửi các tệp bí mật `.env` hoặc thông tin đăng nhập AWS đến các nhà cung cấp mô hình bên thứ ba.
+Khi bạn vibe-code hoặc chạy AI agent (Cursor, Claude Code, OpenCode, Cline, Windsurf, Aider), đưa cả codebase vào cửa sổ ngữ cảnh LLM thì **chậm, lãng phí và nguy hiểm**:
+- **Ngữ cảnh phình to:** Nhét nguyên file vào mọi lượt chat chôn model dưới boilerplate không liên quan — và nhà cung cấp tính mọi token, dù có tái sử dụng hay không.
+- **Phản hồi chậm hơn:** Thời gian tới token đầu của LLM lê thê khi prefill hàng nghìn dòng không cần thiết.
+- **Lạc giữa đoạn giữa:** Model ảo giác hoặc bỏ sót bug khi bị chôn dưới boilerplate không liên quan.
+- **Rò rỉ bí mật:** Vô tình gửi secret `.env` hoặc AWS credentials tới nhà cung cấp model bên thứ ba.
 
-**ane-context-harness** là một công cụ ngữ cảnh gọn nhẹ, ưu tiên cục bộ (local-first), đóng vai trò trung gian giữa cơ sở mã nguồn và tác nhân lập trình của bạn. Trong khoảng **~3 mili giây**, nó lập chỉ mục kho lưu trữ, trích xuất cấu trúc phân cấp biểu tượng (hàm, giao diện, kiểu dữ liệu), loại bỏ các dữ liệu nhiễu, biên tập các thông tin bí mật và chỉ đóng gói những bằng chứng mã nguồn chất lượng cao mà tác nhân thực sự cần để hoàn thành nhiệm vụ.
+**ane-context-harness** là một context engine nhẹ, local-first, nằm giữa codebase và coding agent của bạn. Trong **~3 mili giây**, nó lập chỉ mục repo, trích xuất hệ thống symbol (hàm, interface, type), loại nhiễu, redacted secret, và đóng gói chỉ bằng chứng mã nguồn có giá trị cao mà agent thực sự cần để hoàn thành nhiệm vụ.
 
-> Tên gọi `ane` mang tính lịch sử; nó **không phải** là một phụ thuộc (dependency). Mã nguồn được vận chuyển hoàn toàn là CPU thuần túy và chạy trên macOS Apple Silicon, macOS Intel và Linux. Các tính năng tăng tốc phần cứng nằm trong một bản phân phối riêng tư khác.
+> Tên `ane` mang tính lịch sử; nó **không** phải một dependency. Đường dẫn được ship là thuần CPU và chạy trên macOS Apple Silicon, macOS Intel và Linux. Tăng tốc phần cứng nằm trong một bản phân phối riêng, không công khai.
 
-Không có bất kỳ cuộc gọi mạng bên ngoài nào. 100% riêng tư và ngoại tuyến.
+Không có lời gọi mạng ngoài. 100% riêng tư và offline.
 
 ---
 
-## Kết quả đánh giá thực tế
+## Kết quả benchmark thực tế
 
-Được đánh giá trên **30 tác vụ benchmark** (10 dễ, 10 trung bình, 10 khó) trên các cơ sở mã nguồn Python và TypeScript tổng hợp dựa trên tập đánh giá cố định của chúng tôi (`benchmarks/splits.json`):
+Đánh giá trên **30 nhiệm vụ benchmark** (10 nhỏ, 10 điển hình, 10 khó) trên các codebase Python và TypeScript tổng hợp, theo split đánh giá đóng băng của chúng tôi (`benchmarks/splits.json`):
 
-| Chỉ số | Không dùng Harness (Dump toàn bộ) | Có dùng Harness (Xác định) | Ý nghĩa đối với bạn |
+| Metric | Without Harness (Full Repo Dump) | With Harness (Deterministic) | Ý nghĩa với bạn |
 |---|---|---|---|
-| **Số Token Ngữ cảnh trung bình** | **3,213 tokens** | **782 tokens** | **Gửi ít hơn 60.47% đến LLM** |
-| **Độ nhớ lại (Recall) bằng chứng cần thiết** | 1.0 (100%) | **1.0 (100%)** | **Không bao giờ bỏ sót bất kỳ đoạn mã quan trọng nào** |
-| **Tốc độ chọn lọc ngữ cảnh** | ~0.01 ms (raw dump) | **3.05 ms – 3.83 ms** | **Phản hồi cục bộ dưới 4ms — nhanh gấp 100 lần mạng** |
-| **Tiết kiệm token đỉnh điểm** | 0% | **Lên đến 90.32%** | **Tiết kiệm tới ~90% trên các tác vụ cấu hình & cài đặt** |
-| **Độ chính xác xếp hạng (nDCG@10)** | n/a | **0.849** | **Đưa các hàm quan trọng nhất lên đầu** |
-| **Biên tập bí mật** | 0% (rò rỉ toàn bộ) | **100% biên tập cục bộ** | **`.env`, khóa AWS và chứng chỉ không bao giờ rời khỏi máy** |
-| **Chi phí suy diễn mỗi tác vụ** *(tại $3/M)* | ~$0.0096 / tác vụ | **~$0.0023 / tác vụ** | **Gửi ít hơn ~75% mỗi tác vụ theo mức giá đã nêu — hóa đơn của bạn thay đổi dựa trên lượng dữ liệu nhà cung cấp dùng lại thay vì đọc lại** |
+| **Median Context Tokens** | **3,213 tokens** | **782 tokens** | **Gửi ít hơn 60.47% tới LLM** |
+| **Required-Evidence Recall** | 1.0 (100%) | **1.0 (100%)** | **Không bỏ sót dù chỉ một mảnh mã nguồn then chốt** |
+| **Context Selection Speed** | ~0.01 ms (raw dump) | **3.05 ms – 3.83 ms** | **Phản hồi local dưới 4ms — nhanh hơn mạng 100 lần** |
+| **Peak Token Savings** | 0% | **Up to 90.32%** | **Tiết kiệm tới ~90% trên các nhiệm vụ config & settings có mục tiêu** |
+| **Ranking Accuracy (nDCG@10)**| n/a | **0.849** | **Đặt các hàm then chốt nhất ngay trên cùng** |
+| **Secret Redaction** | 0% (leaks all secrets) | **100% local redaction** | **`.env`, AWS keys và certificate không bao giờ rời máy bạn** |
+| **Derived Cost per Task** *(at $3/M)* | ~$0.0096 / task | **~$0.0023 / task** | **Gửi ít hơn ~75% mỗi nhiệm vụ ở mức giá nêu trên — hóa đơn thực tế phụ thuộc mức nhà cung cấp tái sử dụng thay vì đọc lại** |
 
-*(Độ trễ và bộ nhớ được đo cục bộ trên Apple Silicon / CPU; chi phí và các con số TTFT được suy ra theo mức giá token đã nêu; phương pháp luận và nhật ký có thể tái lập trong `benchmarks/reports/` và `benchmarks/logs/`).*
+*(Độ trễ và bộ nhớ đo local trên Apple Silicon / CPU; chi phí và số liệu TTFT được suy ra theo mức giá token đã nêu; phương pháp và log tái lập được nằm trong `benchmarks/reports/` và `benchmarks/logs/`).*
 
-### Phân tích các tác vụ mẫu
+### Phân rã các nhiệm vụ mẫu
 
-| Loại tác vụ | Tác vụ ví dụ | Token thô | Token Harness | Giảm thiểu | Nhớ lại | Độ trễ chọn lọc |
+| Loại nhiệm vụ | Nhiệm vụ ví dụ | Raw Tokens | Harness Tokens | Reduction | Recall | Select Latency |
 |---|---|---|---|---|---|---|
-| **Cài đặt & Cấu hình** | `hard-settings-001` | 3,213 | **311** | **90.32%** | **100%** | 3.88 ms |
-| **Quy tắc & Logic** | `hard-rules-vs-readme-001` | 3,213 | **445** | **86.15%** | **100%** | 4.22 ms |
-| **Sửa lỗi (Python)** | `py-discount-report-001` | 3,189 | **629** | **80.28%** | **100%** | 3.72 ms |
-| **Kiến trúc TypeScript**| `ts-discount-001` | 1,236 | **369** | **70.15%** | **100%** | 1.84 ms |
-| **Giỏ hàng đa tệp phức tạp** | `hard-cart-apply-001` | 3,213 | **2,146** | **33.21%** | **100%** | 4.38 ms |
+| **Settings & Config** | `hard-settings-001` | 3,213 | **311** | **90.32%** | **100%** | 3.88 ms |
+| **Rules & Logic** | `hard-rules-vs-readme-001` | 3,213 | **445** | **86.15%** | **100%** | 4.22 ms |
+| **Bug Fixes (Python)** | `py-discount-report-001` | 3,189 | **629** | **80.28%** | **100%** | 3.72 ms |
+| **TypeScript Architecture**| `ts-discount-001` | 1,236 | **369** | **70.15%** | **100%** | 1.84 ms |
+| **Complex Multi-file Cart** | `hard-cart-apply-001` | 3,213 | **2,146** | **33.21%** | **100%** | 4.38 ms |
 
-### Mức tiết kiệm token, đã đo lường (nhánh main hiện tại)
+### Tiết kiệm token, đo được (main hiện tại)
 
-![Cơ sở so sánh từng tác vụ với số token gửi đi với độ nhớ lại tối thiểu 1.0, cộng với các định dạng gói giống hệt nhau (JSON / markdown / nén)](docs/token-savings.png)
+![Token baseline so với token gửi theo từng nhiệm vụ với min recall 1.0, cùng median định dạng gói giống nhau (JSON / markdown / compact)](docs/token-savings.png)
 
-Đo lường chỉ với các hàm công khai (`scripts/measure_token_savings.py`, tập eval cố định, một bộ đếm được ghim — tái lập với `PYTHONPATH=src python3 scripts/measure_token_savings.py`, vẽ với `scripts/plot_token_savings.py`). Cùng một bằng chứng, ba cách hiển thị; việc hiển thị không bao giờ tác động đến việc lựa chọn.
+Đo bằng các hàm công khai (`scripts/measure_token_savings.py`, split đánh giá đóng băng, một bộ đếm được ghim — tái lập với `PYTHONPATH=src python3 scripts/measure_token_savings.py`, vẽ với `scripts/plot_token_savings.py`). Cùng bằng chứng, ba cách render; render không bao giờ đụng tới selection.
 
-### Cùng một bài kiểm tra so với các công cụ thực tế (không khóa, không tài khoản)
+### Cùng bài tập đối chiếu công cụ thật (không key, không tài khoản)
 
-![Số trung vị lựa chọn và số trung vị định dạng gói giống hệt nhau: harness select so với headroom rewrite so với evidence-JSON / markdown / TOON thực tế / nén](docs/same-exercise-comparison.png)
+![Median selection và median định dạng gói giống nhau: harness select vs headroom rewrite vs evidence-JSON / markdown / real TOON / compact](docs/same-exercise-comparison.png)
 
-Bài kiểm tra passthrough mà bất kỳ đối thủ nào cũng có thể chạy: 18 tác vụ đánh giá, một bộ đếm. Headroom 0.39.1 và bộ mã hóa TOON thực tế chạy cục bộ (`pip install headroom-ai toon-format`, sau đó `PYTHONPATH=src python3 scripts/bench_same_exercise.py`, vẽ với `scripts/plot_same_exercise.py`). Việc viết lại mù quáng theo tác vụ gửi nhiều hơn việc chọn lọc và không có cổng kiểm soát sinh tồn; TOON thực tế quay về ánh xạ theo hàng trên mã đa dòng trong khi gói nén của chúng tôi giữ nguyên tiêu đề CSV với các hàng nguyên văn.
-
----
-
-## Tại sao các nhà phát triển & người dùng "Vibecode" yêu thích nó
-
-- 💰 **Ít ngữ cảnh hơn mỗi tác vụ, đầu ra ổn định:** Bỏ qua các tệp không liên quan đến yêu cầu — và đầu ra ổn định giúp nhà cung cấp dùng lại những gì đã đọc thay vì tính phí lần nữa. Cut% đo lường mức độ giảm ngữ cảnh cục bộ, không phải hóa đơn của bạn.
-- ⚡ **Độ trễ tức thì (~3ms):** Chạy hoàn toàn bằng Python gốc và các tiện ích mở rộng C cục bộ trên máy Mac hoặc Linux của bạn.
-- 🎯 **Độ chính xác từng điểm:** Kết hợp các khai báo biểu tượng AST (lớp, giao diện TypeScript, enums, hàm) với tìm kiếm từ vựng BM25 và đóng gói theo ngân sách token dựa trên điểm số.
-- 🛡️ **Vệ sinh bí mật không rò rỉ:** Tự động quét và biên tập các khóa AWS, khóa RSA/PEM riêng tư, tệp `.env` và các bí mật có độ entropy cao bằng các trình giữ chỗ ổn định theo yêu cầu trước khi render prompt.
-- 🔌 **Hỗ trợ tác nhân toàn cầu:** Đi kèm với các bộ điều hợp sẵn sàng sử dụng cho **Anthropic Messages** (với các điểm ngắt bộ nhớ đệm prompt), **OpenAI Responses**, **OpenAI-Compatible chat** và **Markdown** sạch sẽ.
+Bài passthrough mà đối thủ nào cũng chạy được: 18 nhiệm vụ eval, một bộ đếm. Headroom 0.39.1 và encoder TOON thật chạy local (`pip install headroom-ai toon-format`, rồi `PYTHONPATH=src python3 scripts/bench_same_exercise.py`, vẽ với `scripts/plot_same_exercise.py`). Rewrite mù nhiệm vụ gửi nhiều hơn select và không có cổng sống sót; TOON thật fallback về mapping từng hàng trên mã nhiều dòng trong khi compact của chúng tôi giữ header CSV với hàng nguyên văn.
 
 ---
 
-## Cách thức hoạt động
+## Vì sao developer & vibecoder thích
 
-![Tổng quan đóng gói ngữ cảnh: những gì LLM nhận được, cách tác vụ viết lại thành các thuật ngữ, quy tắc giữ/bỏ, từ điển lý do, giới hạn đóng gói, lịch sử](docs/context-packing-overview.png)
-
-Poster một trang được tạo từ quy trình thực tế (`scripts/plot_packing_overview.py`): các từ tác vụ được viết lại thành các thuật ngữ có điểm số, các ghim bắt buộc luôn được giữ, các thẻ tùy chọn được đóng gói theo điểm số trước dưới ngân sách, mỗi thẻ được giữ đều mang theo lý do bạn có thể tranh luận. Phần trăm cho biết chúng ta gửi ít hơn bao nhiêu so với tất cả những gì có thể gửi — hóa đơn của bạn thay đổi dựa trên lượng dữ liệu nhà cung cấp dùng lại thay vì đọc lại.
+- 💰 **Ít ngữ cảnh hơn mỗi nhiệm vụ, output ổn định:** Bỏ qua file chẳng liên quan tới prompt — và output ổn định giúp nhà cung cấp tái sử dụng những gì đã đọc thay vì tính phí lại. Cut% đo mức giảm ngữ cảnh local, không phải hóa đơn của bạn.
+- ⚡ **Độ trễ tức thì (~3ms):** Chạy hoàn toàn bằng Python native và C extension local trên Mac hoặc máy Linux của bạn.
+- 🎯 **Độ chính xác điểm trúng:** Kết hợp khai báo symbol AST (class, TypeScript interface, enum, hàm) với tìm kiếm lexical BM25 và packing theo điểm, theo ngân sách token.
+- 🛡️ **Làm sạch secret không rò rỉ:** Tự động quét và redact AWS keys, khóa RSA/PEM riêng, file `.env` và secret entropy cao bằng placeholder ổn định theo phạm vi request trước khi render prompt.
+- 🔌 **Hỗ trợ agent phổ quát:** Ship sẵn adapter cho **Anthropic Messages** (kèm breakpoint prompt-caching), **OpenAI Responses**, chat **OpenAI-Compatible**, và **Markdown** sạch.
 
 ---
 
-## Bắt đầu nhanh (60 Giây)
+## Cách hoạt động
+
+![Tổng quan đóng gói ngữ cảnh: LLM nhận gì, nhiệm vụ rewrite thành term thế nào, quy tắc keep/drop, từ điển reason, giới hạn packing, lịch sử](docs/context-packing-overview.png)
+
+Poster một trang sinh từ pipeline thật (`scripts/plot_packing_overview.py`): từ của nhiệm vụ được rewrite thành term có điểm, pin bắt buộc luôn được gửi, thẻ tùy ý được pack theo điểm trong ngân sách, mọi thẻ giữ lại mang reason bạn có thể tranh luận. Phần trăm nói ta gửi ít hơn bao nhiêu so với mọi thứ có thể gửi — hóa đơn thực tế phụ thuộc mức nhà cung cấp tái sử dụng thay vì đọc lại.
+
+---
+
+## Bắt đầu nhanh (60 giây)
 
 ### 1. Cài đặt
 
-Yêu cầu Python 3.13 hoặc 3.14 trên macOS hoặc Linux:
+Cần Python 3.13 hoặc 3.14 trên macOS hoặc Linux:
 
 ```bash
 git clone https://github.com/ericlam2k/ane-context-harness.git
@@ -97,37 +97,40 @@ cd ane-context-harness
 pip install -e .[test]
 ```
 
-Xác minh cài đặt của bạn:
+Kiểm tra cài đặt:
+
 ```bash
 ane-harness health
 ```
 
-### 1b. Thiết lập một lệnh + kiểm chứng (cổng chấp nhận)
+### 1b. Thiết lập một lệnh + prove-it (cổng adoption)
 
 ```bash
-# lập chỉ mục, cài đặt kỹ năng tác nhân, kiểm tra nhanh (in một dòng tóm tắt)
+# index, install the agent skill, smoke-test (prints one summary line)
 ane-harness setup --repo /path/to/your/project --repo-id my-project --yes
 
-# kiểm chứng: bằng chứng về giảm thiểu/độ trễ trên repo CỦA BẠN (5 tác vụ có sẵn, không cần nhãn)
+# prove-it: reduction/latency proof on YOUR repo (5 canned tasks, no labels needed)
 ane-harness prove --repo /path/to/your/project --repo-id my-project
-# với tác vụ của riêng bạn: --tasks-file prompts.jsonl
-# với thư mục báo cáo: --out /tmp/prove-report
+# with your own tasks: --tasks-file prompts.jsonl
+# with a report dir: --out /tmp/prove-report
 ```
 
-`prove` không có nhãn: nó báo cáo số trung vị giảm thiểu + độ trễ p50 và
-`recall: not_applicable`. Các chứng minh về độ nhớ lại cần các tác vụ được gắn nhãn thủ công (cơ chế `benchmarks/splits.json` cố định); các lần chạy không nhãn không bao giờ khẳng định độ nhớ lại.
+`prove` không gắn nhãn: nó báo median reduction + p50 latency và
+`recall: not_applicable`. Chứng minh recall cần nhiệm vụ gắn nhãn thủ công (cơ chế
+`benchmarks/splits.json` đóng băng); lần chạy không nhãn không bao giờ khẳng định
+recall.
 
-### 2. Lập chỉ mục cơ sở mã nguồn của bạn
+### 2. Lập chỉ mục codebase
 
-Lập chỉ mục bất kỳ thư mục hoặc kho lưu trữ cục bộ nào vào kho lưu trữ SQLite cục bộ (tăng dần và siêu nhanh):
+Lập chỉ mục bất kỳ thư mục hoặc repository local nào vào kho SQLite local (tăng dần và cực nhanh):
 
 ```bash
 ane-harness index --repo /path/to/your/project --repo-id my-project
 ```
 
-### 3. Chọn ngữ cảnh liên quan cho một yêu cầu (Prompt)
+### 3. Chọn ngữ cảnh liên quan cho một prompt
 
-Lấy một gói Markdown nhỏ gọn, theo ngân sách token phù hợp với tác vụ lập trình của bạn:
+Lấy gói Markdown gọn, theo ngân sách token, khớp nhiệm vụ coding của bạn:
 
 ```bash
 ane-harness select \
@@ -136,12 +139,13 @@ ane-harness select \
   --budget 1200
 ```
 
-  ### 3b. Nhật ký trước/sau khi cắt ngữ cảnh trên nhiều yêu cầu (`update`)
+  ### 3b. Ghi log cắt ngữ cảnh trước/sau trên nhiều prompt (`update`)
 
-Chạy chọn lọc trên một loạt các tác vụ (tệp JSONL hoặc stdin) và in + ghi lại ngân sách token trước/sau. Cục bộ, không mạng:
+Chạy selection trên một lô nhiệm vụ (file JSONL hoặc stdin) rồi in + ghi log
+ngân sách token trước/sau. Local, không mạng:
 
 ```bash
-# từ một tệp JSONL (một {"task": "..."} hoặc tác vụ thuần mỗi dòng)
+# from a JSONL file (one {"task": "..."} or bare task per line)
 ane-harness update \
   --repo-id my-project \
   --budget 2000 \
@@ -149,7 +153,7 @@ ane-harness update \
   --log benchmarks/logs/update_session.jsonl
 ```
 
-Đầu ra mẫu:
+Output mẫu:
 
 ```
 repo_id: my-project | tasks: 3 | budget: 2000
@@ -162,19 +166,29 @@ repo_id: my-project | tasks: 3 | budget: 2000
   TOTAL: before 9567 → after 4971 tokens (4596 removed, median reduction 44.87%)
 ```
 
-Các hàng cho từng tác vụ cũng được thêm dưới dạng JSONL vào `--log` (gitignored).
-**Lưu ý trung thực** được in ra stderr trong mỗi lần chạy: *"các phép đo cục bộ trên repo đã cho; việc biên tập không đảm bảo tất cả bí mật đều bị bắt."*
+Mỗi hàng theo nhiệm vụ cũng được append dạng JSONL vào `--log` (gitignored).
+**Lưu ý trung thực** in ra stderr mỗi lần chạy: *"local measurements over the
+given repo; redaction does not guarantee all secrets are caught."*
 
-Mỗi lần chạy cũng in một chân trang cắt ngắn ra stderr (và dòng tương tự dưới dạng khóa `summary` trong JSON stdout), ví dụ:
-`ane-harness: sent 7.1k instead of 211.2k · cut 96.6% in 165 ms`. Chỉ dùng từ ngữ đơn giản — không thuật ngữ, không đánh dấu tiêu đề `#`. Tổng số tích lũy cục bộ (chỉ đếm, không có văn bản tác vụ) — xem chúng bất cứ lúc nào với `ane-harness daily`, hoặc mỗi khi thoát shell với `eval "$(ane-harness shell-init)"` trong `.zshrc`/`.bashrc` của bạn.
+Mỗi lần chạy cũng in một dòng footer cut ra stderr (và cùng
+dòng đó là khóa `summary` trong stdout JSON), ví dụ
+`ane-harness: sent 7.1k instead of 211.2k · cut 96.6% in 165 ms`. Chỉ lời thường —
+không jargon, không markup heading `#`. Tổng cộng dồn local (chỉ đếm, không
+có nội dung nhiệm vụ) — xem bất cứ lúc nào bằng
+`ane-harness daily`, hoặc mỗi khi thoát shell với
+`eval "$(ane-harness shell-init)"` trong `.zshrc`/`.bashrc`.
 
-Các tác nhân nhận được hành vi tương tự không cần phụ thuộc thông qua kỹ năng đi kèm:
-`skills/ane-harness/SKILL.md` — sao chép nó vào thư mục kỹ năng của tác nhân và tổng số cắt giảm sẽ tự động xuất hiện sau mỗi tác vụ, không cần thiết lập khác. Đối với các máy chủ tương thích OpenCode/Claude/tác nhân, nó cũng hoạt động toàn cục, không cần cài đặt mỗi dự án: `~/.config/opencode/skills/`, `~/.claude/skills/`, hoặc `~/.agents/skills/` (các phiên mới sẽ tự nhận diện).
+Agent có cùng hành vi, không phụ thuộc, qua skill đi kèm:
+`skills/ane-harness/SKILL.md` — copy vào thư mục skills của agent
+và tổng cut tự hiện sau mỗi nhiệm vụ, không cần setup khác. Với
+host tương thích OpenCode/Claude/agent nó cũng chạy global, không cần cài theo project:
+`~/.config/opencode/skills/`, `~/.claude/skills/`, hoặc
+`~/.agents/skills/` (session mới sẽ nhận).
 
-### 3c. Chế độ proxy cho các tác nhân không tích hợp sẵn (`proxy`)
+### 3c. Chế độ proxy cho agent không có tích hợp native (`proxy`)
 
-Đưa tác vụ vào stdin (một `{"task": "..."}` hoặc tác vụ thuần mỗi dòng),
-nhận lại bằng chứng Markdown trên stdout — không cần kỹ năng, MCP hay HTTP:
+Đưa nhiệm vụ vào stdin (mỗi dòng một `{"task": "..."}` hoặc nhiệm vụ trần),
+nhận evidence Markdown ra stdout — không cần skill, MCP hay HTTP:
 
 ```bash
 printf '%s\n' '{"task": "Fix the discount bug"}' 'review inventory loader' \
@@ -182,29 +196,38 @@ printf '%s\n' '{"task": "Fix the discount bug"}' 'review inventory loader' \
   > context.md
 ```
 
-Stdout là Markdown thuần túy (một tài liệu mỗi tác vụ, phân tách bởi `---`, với các ranh giới `<!-- ane-harness task N/M ... -->`); chân trang cắt ngắn cho từng tác vụ đi đến stderr. Bỏ qua `--repo` khi repo-id đã được lập chỉ mục.
+Stdout là Markdown thuần (một doc mỗi nhiệm vụ, phân tách bằng `---`, với
+ranh giới `<!-- ane-harness task N/M ... -->`); footer cut
+theo nhiệm vụ ra stderr. Bỏ `--repo` khi repo-id đã được lập chỉ mục.
 
-### 4. Hoặc Chạy như một Máy chủ chạy ngầm cục bộ
+### 4. Hoặc chạy như server nền local
 
-> **Các tác nhân: KHÔNG chạy lệnh này bên trong một lượt tác nhân.** `serve` (giống như `mcp`) không bao giờ thoát — một lệnh gọi công cụ khởi chạy nó sẽ bị chặn vĩnh viễn, vì vậy lượt tác nhân không bao giờ hoàn thành và mọi yêu cầu sau đó sẽ bị xếp hàng phía sau nó. Chỉ `update`/`proxy` không có `--tasks-file` trên thiết bị đầu cuối tương tác thoát 2 với gợi ý thay vì chờ trên stdin. Bên trong các lượt tác nhân chỉ sử dụng các lệnh một lần (`index`, `select`, `prove`, `daily`, `health`). Chạy máy chủ tách biệt khỏi thiết bị đầu cuối thực tế (`nohup ane-harness serve --port 8765 &`) hoặc không chạy gì cả.
+> **Agents: do NOT run this inside an agent turn.** `serve` (like `mcp`)
+> never exits — a tool call that launches it blocks forever, so the turn
+> never completes and every later prompt queues behind it. Bare
+> `update`/`proxy` with no `--tasks-file` on an interactive terminal exit
+> 2 with a hint instead of waiting on stdin. Inside agent turns use only
+> one-shot commands (`index`, `select`, `prove`, `daily`, `health`). Run
+> the server detached from a real terminal
+> (`nohup ane-harness serve --port 8765 &`) or not at all.
 
-Khởi động HTTP API cục bộ (sẵn sàng để kết nối với tác nhân hoặc công cụ của bạn):
+Khởi động HTTP API local (sẵn để móc vào agent hoặc công cụ của bạn):
 
 ```bash
 ane-harness serve --port 8765
 ```
 
-Các endpoint khả dụng:
-- `GET  /v1/health` — Trạng thái hệ thống, chế độ tính toán và các cấu hình
-- `POST /v1/repositories/index` — Lập chỉ mục hoặc cập nhật kho lưu trữ
-- `POST /v1/context/select` — Truy xuất ngữ cảnh tối ưu cho một tác vụ
-- `POST /v1/context/compress-output` — Nén nhật ký kiểm tra/xây dựng dài dòng thành các bản tóm tắt lỗi sạch sẽ
+Các endpoint có sẵn:
+- `GET  /v1/health` — Trạng thái hệ thống, chế độ compute và profile
+- `POST /v1/repositories/index` — Lập chỉ mục hoặc cập nhật repository
+- `POST /v1/context/select` — Lấy ngữ cảnh đã tối ưu cho một nhiệm vụ
+- `POST /v1/context/compress-output` — Nén log test/build dài thành digest lỗi gọn
 
 ---
 
-## Sử dụng trong Python
+## Dùng trong Python
 
-Bạn cũng có thể sử dụng harness trực tiếp trong quy trình làm việc của tác nhân AI của riêng bạn:
+Bạn cũng có thể dùng harness trực tiếp trong workflow AI agent của mình:
 
 ```python
 from ane_context_harness.config import build_config
@@ -212,14 +235,14 @@ from ane_context_harness.pipeline import Pipeline
 from ane_context_harness.schemas import SelectRequest
 from ane_context_harness.providers import serialize
 
-# 1. Khởi tạo đường ống
+# 1. Initialize pipeline
 cfg = build_config()
 pipeline = Pipeline(cfg)
 
-# 2. Lập chỉ mục kho lưu trữ
+# 2. Index repository
 pipeline.register_repository("/path/to/my-repo", repo_id="my-repo")
 
-# 3. Chọn ngữ cảnh theo ngân sách
+# 3. Select budgeted context
 request = SelectRequest(
     repository_id="my-repo",
     task="Update loyalty point rounding logic in payment service",
@@ -227,71 +250,75 @@ request = SelectRequest(
 )
 package = pipeline.select_context(request)
 
-# 4. Serialize trực tiếp cho nhà cung cấp LLM yêu thích của bạn
+# 4. Serialize directly for your favorite LLM provider
 anthropic_payload = serialize("anthropic", package)
 openai_payload    = serialize("openai", package)
 markdown_text     = serialize("markdown", package)
 
-print(f"Đã đóng gói {package.metrics['selected_tokens']} tokens (đã cắt {package.metrics['tokens_removed']} tokens)")
+print(f"Packed {package.metrics['selected_tokens']} tokens (cut {package.metrics['tokens_removed']} tokens)")
 ```
 
 ---
 
-## Cách thức hoạt động
+## Cách nó hoạt động
 
 ```
-                        Cơ sở mã nguồn của bạn
+                        Your Codebase
                              │
-                     AST & Trình phân tích cú pháp biểu tượng
-               (Các hàm Python, giao diện TS)
+                     AST & Symbol Parser
+               (Python functions, TS interfaces)
                              │
-                      Chunker cấp dòng
+                      Line-Level Chunker
                              │
-                      Kho SQLite cục bộ
+                      Local SQLite Store
                              │
-Prompt người dùng  ──────►   Tìm kiếm từ vựng BM25
+User Prompt  ──────►   BM25 Lexical Search
                              │
-                   Đóng gói ngân sách ưu tiên điểm số
-                  (Giữ lại bắt buộc + MMR)
+                   Score-First Budget Packer
+                  (Mandatory Retention + MMR)
                              │
-                  Trình biên tập bí mật cục bộ
-              (Biên tập .env, khóa AWS, chứng chỉ)
+                  Local Secret Sanitizer
+              (Redacts .env, AWS keys, certs)
                              │
-               Bộ điều hợp nhà cung cấp (Anthropic/OpenAI)
+               Provider Adapter (Anthropic/OpenAI)
                              │
-                   Ngữ cảnh chặt chẽ, chính xác
+                   Tight, Accurate Context
 ```
 
-1. **Phân đoạn AST nhận biết biểu tượng:** Thay vì phân tách dòng ngớ ngẩn, các tệp được phân tích cú pháp cho các cấu trúc mã thực (lớp, phương thức, kiểu dữ liệu/giao diện/enums TypeScript).
-2. **Truy xuất xác định:** Truy xuất từ vựng BM25 nhanh được lọc bởi các rào cản thuật ngữ biểu tượng, phân tách subtoken và gộp số nhiều.
-3. **Đóng gói ngân sách ưu tiên điểm số:** Ngữ cảnh được đóng gói tham lam để nằm gọn trong ngân sách token bạn đã chỉ định (ví dụ: 1.200 token), đảm bảo bằng chứng bắt buộc không bao giờ bị cắt bớt.
-4. **Phát hiện bí mật & Hàng rào quyền riêng tư:** Các mẫu loại trừ chính tắc (`.env*`, `.aws/**`, `*.pem`, v.v.) không bao giờ được đọc, và các bộ phân loại regex + entropy thay thế các token nhạy cảm bằng các trình giữ chỗ ổn định.
-5. **Nén nhiễu:** Các đầu ra công cụ dài dòng (vết kiểm tra, nhật ký đầu cuối) được thu gọn thành các bản tóm tắt bảo toàn tín hiệu nhỏ gọn.
+1. **Chunking AST theo symbol:** Thay vì cắt dòng ngây thơ, file được parse theo cấu trúc mã thật (class, method, TypeScript type/interface/enum).
+2. **Truy xuất xác định:** Truy xuất lexical BM25 nhanh, lọc bằng symbol term guard, tách subtoken và gấp số nhiều.
+3. **Packing ngân sách theo điểm:** Ngữ cảnh được pack tham lam để vừa khít ngân sách token bạn chỉ định (ví dụ 1,200 token), bảo đảm bằng chứng bắt buộc không bao giờ bị cắt.
+4. **Phát hiện secret & hàng rào riêng tư:** Pattern loại trừ chuẩn (`.env*`, `.aws/**`, `*.pem`, v.v.) không bao giờ được đọc, và bộ phân loại regex + entropy thay token nhạy cảm bằng placeholder ổn định.
+5. **Nén nhiễu:** Output công cụ dài (trace test, log terminal) được thu gọn thành digest giữ tín hiệu.
 
-### Tăng tốc phần cứng: bản phân phối riêng tư riêng biệt
+### Tăng tốc phần cứng: bản phân phối riêng, không công khai
 
-Tên gọi chứa `ane`, nhưng **không yêu cầu hoặc khẳng định cần silicon chuyên dụng** để chạy harness. Công cụ được vận chuyển là CPU xác định thuần túy (Python + SQLite) và chạy giống hệt nhau trên macOS Apple Silicon, macOS Intel và Linux. Tăng tốc phần cứng thần kinh được duy trì riêng biệt và không phải là một phần của kho lưu trữ này.
+Tên có `ane`, nhưng **không yêu cầu hay khẳng định silicon chuyên dụng** để
+chạy harness. Engine được ship là CPU xác định thuần (Python +
+SQLite) và chạy giống nhau trên macOS Apple Silicon, macOS Intel và Linux.
+Tăng tốc phần cứng neural được duy trì riêng và không thuộc
+repository này.
 
 ---
 
-## Thông số kỹ thuật & Độ nghiêm ngặt
+## Thông số kỹ thuật & độ chặt
 
-Dành cho các nhà nghiên cứu, kiến trúc sư và trưởng nhóm kỹ thuật quan tâm đến độ nghiêm ngặt số học:
+Dành cho researcher, architect và technical lead quan tâm tới độ chặt số liệu:
 
-- **Tập Benchmark cố định:** Tất cả các số liệu phát hành chạy trên tập đánh giá cố định 18 tác vụ (`benchmarks/splits.json`, seed `20261002`). Việc điều chỉnh được cách ly nghiêm ngặt với tập dev.
-- **Trình ước tính token xác định:** Việc đếm token sử dụng trình ước tính đã ghim (`TOKEN_ESTIMATOR_VERSION="2"`) nên các con số có thể tái lập 100% trên các máy và phiên bản Python mà không bị trôi tokenizer bên ngoài.
-- **Chính sách nhúng (Embedding):** Các nhúng được cố tình loại trừ trong v0.1 dựa trên sự đánh đổi chi phí/độ trễ cục bộ. Xem [ADR-002](docs/adr-002-embedding-go-no-go.md).
-- **Gói bằng chứng phát hành:** Bằng chứng phát hành đã kiểm tra tổng kiểm tra (checksum) được xác minh bằng mật mã thông qua `ane-harness evidence verify ane-context-harness-evidence-v0.1`.
+- **Split benchmark đóng băng:** Mọi số liệu phát hành chạy trên split đánh giá 18 nhiệm vụ đóng băng (`benchmarks/splits.json`, seed `20261002`). Tuning bị cách ly nghiêm ngặt sang split dev.
+- **Bộ ước lượng token xác định:** Đếm token dùng estimator được ghim (`TOKEN_ESTIMATOR_VERSION="2"`) nên số liệu tái lập 100% giữa các máy và phiên bản Python, không trôi tokenizer ngoài.
+- **Chính sách embedding:** Embedding cố ý bị loại ở v0.1 dựa trên đánh đổi chi phí/độ trễ local. Xem [ADR-002](docs/adr-002-embedding-go-no-go.md).
+- **Gói bằng chứng phát hành:** Bằng chứng phát hành có checksum được xác minh mật mã qua `ane-harness evidence verify ane-context-harness-evidence-v0.1`.
 
 ---
 
-## Chạy bộ kiểm tra (Test Suite)
+## Chạy bộ test
 
 ```bash
-# Chạy tất cả 258 bài kiểm tra đơn vị, tích hợp và bảo mật
+# Run all 258 unit, integration, and security tests
 python3 -m pytest -q
 
-# Chạy đánh giá benchmark A/B đồng thời
+# Run concurrent A/B benchmark evaluation
 python3 scripts/run_concurrent_ab.py 1 /tmp/eval-run
 ```
 
@@ -299,4 +326,4 @@ python3 scripts/run_concurrent_ab.py 1 /tmp/eval-run
 
 ## Giấy phép
 
-Giấy phép MIT. Được thiết kế cho trí thông minh cục bộ, quyền riêng tư của nhà phát triển và ngân sách token hợp lý.
+Giấy phép MIT. Thiết kế cho trí tuệ local, quyền riêng tư của developer, và ngân sách token hợp lý.

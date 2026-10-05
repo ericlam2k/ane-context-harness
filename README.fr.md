@@ -1,8 +1,8 @@
 # ⚡ ane-context-harness
 
-[English](README.md) · [Tiếng Việt](README.vi.md) · [中文](README.zh.md) · [Français](README.fr.md) · [Español](README.es.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
+[Anglais](README.md) · [Vietnamien](README.vi.md) · [Chinois](README.zh.md) · [Français](README.fr.md) · [Espagnol](README.es.md) · [Japonais](README.ja.md) · [Coréen](README.ko.md)
 
-> **Réduisez le contexte lu par votre agent de plus de 60 %, conservez chaque ligne requise et sélectionnez le contexte en moins de 4 ms — le tout exécuté entièrement hors-ligne sur votre machine locale.**
+> **Réduisez de 60%+ le contexte lu par votre agent, conservez chaque ligne indispensable, et sélectionnez le contexte en moins de 4ms — entièrement hors ligne sur votre machine locale.**
 
 [![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14-blue.svg)](https://python.org)
 [![Platform](https://img.shields.io/badge/Platform-macOS%20(Apple%20Silicon)%20%7C%20Linux-brightgreen.svg)]()
@@ -13,79 +13,79 @@
 
 ## Qu'est-ce que c'est ?
 
-Lorsque vous faites du "vibe-coding" ou utilisez des agents IA (Cursor, Claude Code, OpenCode, Cline, Windsurf, Aider), injecter l'intégralité de votre base de code dans la fenêtre de contexte d'un LLM est **lent, inefficace et dangereux** :
-- **Contexte surchargé :** Envoyer des fichiers entiers à chaque requête noie le modèle sous du code répétitif (boilerplate) inutile — et le fournisseur facture chaque jeton, qu'il soit réutilisé ou non.
-- **Réponses plus lentes :** Le temps d'obtention du premier jeton (TTFT) du LLM devient interminable lorsqu'il doit traiter des milliers de lignes inutiles.
-- **Perdu au milieu :** Les modèles peuvent halluciner ou manquer des bugs lorsqu'ils sont submergés par du code superflu.
-- **Fuites de secrets :** Envoyer involontairement des secrets `.env` ou des identifiants AWS à des fournisseurs de modèles tiers.
+Lorsque vous vibe-codez ou lancez des agents IA (Cursor, Claude Code, OpenCode, Cline, Windsurf, Aider), envoyer l'intégralité de votre dépôt dans la fenêtre de contexte d'un LLM est **lent, gaspilleur et dangereux** :
+- **Contexte gonflé :** Balancer des fichiers entiers à chaque tour noie le modèle sous du boilerplate hors sujet — et le fournisseur compte chaque jeton, réutilisé ou non.
+- **Réponses plus lentes :** Le time-to-first-token du LLM s'effondre quand il préremplit des milliers de lignes inutiles.
+- **Perdu au milieu :** Les modèles hallucinent ou ratent des bugs lorsqu'ils sont ensevelis sous du boilerplate hors sujet.
+- **Fuites de secrets :** Envoyer sans le vouloir des secrets `.env` ou des identifiants AWS à des fournisseurs de modèles tiers.
 
-**ane-context-harness** est un moteur de contexte léger et local qui se place entre votre base de code et votre agent de codage. En **~3 millisecondes**, il indexe votre dépôt, extrait les hiérarchies de symboles (fonctions, interfaces, types), élimine le bruit, caviarde les secrets et ne transmet que les preuves de code essentielles dont votre agent a réellement besoin pour accomplir la tâche.
+**ane-context-harness** est un moteur de contexte léger, local-first, qui s'intercale entre votre dépôt et votre agent de code. En **~3 milliseconds**, il indexe votre dépôt, extrait les hiérarchies de symboles (fonctions, interfaces, types), élimine le bruit, masque les secrets, et packe uniquement les preuves de code à haute valeur dont votre agent a réellement besoin pour terminer la tâche.
 
-> Le nom `ane` est historique ; ce n'est **pas** une dépendance. La version fournie est purement CPU et fonctionne sur macOS Apple Silicon, macOS Intel et Linux. L'accélération matérielle fait l'objet d'une distribution privée séparée.
+> Le nom `ane` est historique ; ce n'est **pas** une dépendance. Le chemin livré est du CPU pur et fonctionne sur macOS Apple Silicon, macOS Intel et Linux. L'accélération matérielle vit dans une distribution privée séparée.
 
-Aucun appel réseau externe. 100 % privé et hors-ligne.
+Zéro appel réseau externe. 100% privé et hors ligne.
 
 ---
 
-## Résultats des benchmarks réels
+## Résultats de benchmark réels
 
-Évalué sur **30 tâches de référence** (10 petites, 10 typiques, 10 difficiles) à travers des bases de code synthétiques Python et TypeScript sur notre jeu d'évaluation figé (`benchmarks/splits.json`) :
+Évalué sur **30 tâches de benchmark** (10 petites, 10 typiques, 10 difficiles) à travers des dépôts Python et TypeScript synthétiques sur notre split d'évaluation figé (`benchmarks/splits.json`) :
 
-| Métrique | Sans Harness (Vidage complet du repo) | Avec Harness (Déterministe) | Ce que cela signifie pour vous |
+| Métrique | Sans harness (dump complet du dépôt) | Avec harness (déterministe) | Ce que cela signifie pour vous |
 |---|---|---|---|
-| **Jetons de contexte médians** | **3 213 jetons** | **782 jetons** | **Envoie 60,47 % de moins au LLM** |
-| **Rappel des preuves requises** | 1,0 (100 %) | **1,0 (100 %)** | **N'a jamais manqué une seule ligne de code critique** |
-| **Vitesse de sélection du contexte** | ~0,01 ms (vidage brut) | **3,05 ms – 3,83 ms** | **Réponse locale sous les 4ms — 100x plus rapide que le réseau** |
-| **Économies de jetons maximales** | 0 % | **Jusqu'à 90,32 %** | **Économise jusqu'à ~90 % sur les tâches de configuration** |
-| **Précision du classement (nDCG@10)**| n/a | **0,849** | **Place les fonctions critiques tout en haut** |
-| **Caviardage de secrets** | 0 % (fuit tous les secrets) | **100 % caviardage local** | **Les `.env`, clés AWS et certificats ne quittent jamais votre machine** |
-| **Coût dérivé par tâche** *(à 3 $/M)* | ~0,0096 $ / tâche | **~0,0023 $ / tâche** | **Envoie ~75 % de moins par tâche au tarif indiqué — votre facture varie selon la réutilisation du modèle plutôt que sa relecture** |
+| **Jetons de contexte médians** | **3,213 tokens** | **782 tokens** | **Envoie 60.47% de moins au LLM** |
+| **Rappel des preuves requises** | 1.0 (100%) | **1.0 (100%)** | **N'a jamais manqué le moindre morceau de code critique** |
+| **Vitesse de sélection du contexte** | ~0.01 ms (raw dump) | **3.05 ms – 3.83 ms** | **Réponse locale sous 4ms — 100x plus rapide que le réseau** |
+| **Économie maximale de jetons** | 0% | **Up to 90.32%** | **Économise jusqu'à ~90% sur les tâches ciblées de config et de paramètres** |
+| **Précision du classement (nDCG@10)**| n/a | **0.849** | **Place les fonctions les plus critiques tout en haut** |
+| **Masquage des secrets** | 0% (leaks all secrets) | **100% local redaction** | **Les `.env`, clés AWS et certificats ne quittent jamais votre machine** |
+| **Coût dérivé par tâche** *(at $3/M)* | ~$0.0096 / task | **~$0.0023 / task** | **Envoie ~75% de moins par tâche au tarif indiqué — votre facture, elle, évolue selon ce que le fournisseur réutilise au lieu de relire** |
 
-*(Latence et mémoire mesurées localement sur Apple Silicon / CPU ; les chiffres de coût et de TTFT sont dérivés selon des tarifs de jetons spécifiques ; méthodologie et journaux reproductibles dans `benchmarks/reports/` et `benchmarks/logs/`).*
+*(Latence et mémoire mesurées localement sur Apple Silicon / CPU ; les chiffres de coût et de TTFT sont dérivés aux tarifs de jetons indiqués ; méthodologie et journaux reproductibles dans `benchmarks/reports/` et `benchmarks/logs/`).*
 
-### Analyse des tâches d'exemple
+### Détail des tâches d'exemple
 
-| Type de tâche | Tâche exemple | Jetons bruts | Jetons Harness | Réduction | Rappel | Latence sélect. |
+| Type de tâche | Tâche d'exemple | Raw Tokens | Harness Tokens | Reduction | Recall | Select Latency |
 |---|---|---|---|---|---|---|
-| **Réglages & Config** | `hard-settings-001` | 3 213 | **311** | **90,32 %** | **100 %** | 3,88 ms |
-| **Règles & Logique** | `hard-rules-vs-readme-001` | 3 213 | **445** | **86,15 %** | **100 %** | 4,22 ms |
-| **Correction de bugs (Python)** | `py-discount-report-001` | 3 189 | **629** | **80,28 %** | **100 %** | 3,72 ms |
-| **Architecture TypeScript**| `ts-discount-001` | 1 236 | **369** | **70,15 %** | **100 %** | 1,84 ms |
-| **Panier multi-fichiers complexe** | `hard-cart-apply-001` | 3 213 | **2 146** | **33,21 %** | **100 %** | 4,38 ms |
+| **Paramètres et config** | `hard-settings-001` | 3,213 | **311** | **90.32%** | **100%** | 3.88 ms |
+| **Règles et logique** | `hard-rules-vs-readme-001` | 3,213 | **445** | **86.15%** | **100%** | 4.22 ms |
+| **Corrections de bugs (Python)** | `py-discount-report-001` | 3,189 | **629** | **80.28%** | **100%** | 3.72 ms |
+| **Architecture TypeScript**| `ts-discount-001` | 1,236 | **369** | **70.15%** | **100%** | 1.84 ms |
+| **Panier complexe multi-fichiers** | `hard-cart-apply-001` | 3,213 | **2,146** | **33.21%** | **100%** | 4.38 ms |
 
-### Économies de jetons mesurées (main actuel)
+### Économies de jetons, mesurées (main actuel)
 
-![Baseline par tâche vs jetons envoyés avec rappel min 1.0, plus médianes des formats identiques (JSON / markdown / compact)](docs/token-savings.png)
+![Baseline par tâche vs jetons envoyés avec rappel min 1.0, plus médianes de format de pack identique (JSON / markdown / compact)](docs/token-savings.png)
 
-Mesuré avec les fonctions publiques uniquement (`scripts/measure_token_savings.py`, jeu d'évaluation figé, un compteur épinglé — reproduire avec `PYTHONPATH=src python3 scripts/measure_token_savings.py`, tracer avec `scripts/plot_token_savings.py`). Même preuve, trois rendus ; le rendu ne touche jamais à la sélection.
+Mesuré avec les fonctions publiques uniquement (`scripts/measure_token_savings.py`, split d'éval figé, un compteur épinglé — reproduisez avec `PYTHONPATH=src python3 scripts/measure_token_savings.py`, tracez avec `scripts/plot_token_savings.py`). Mêmes preuves, trois rendus ; le rendu ne touche jamais la sélection.
 
-### Comparaison avec des outils réels (sans clés, sans comptes)
+### Le même exercice face à de vrais outils (pas de clés, pas de comptes)
 
-![Médianes de sélection et médianes des formats identiques : sélection harness vs réécriture headroom vs preuve JSON / markdown / vrai TOON / compact](docs/same-exercise-comparison.png)
+![Médianes de sélection et médianes de format de pack identique : harness select vs réécriture headroom vs evidence-JSON / markdown / vrai TOON / compact](docs/same-exercise-comparison.png)
 
-Le test de passage que tout rival peut exécuter : 18 tâches d'évaluation, un compteur. Headroom 0.39.1 et l'encodeur TOON réel fonctionnent localement (`pip install headroom-ai toon-format`, puis `PYTHONPATH=src python3 scripts/bench_same_exercise.py`, tracer avec `scripts/plot_same_exercise.py`). La réécriture aveugle aux tâches envoie plus que la sélection et n'a pas de porte de survie ; le TOON réel revient à des mappages par ligne sur du code multiligne, tandis que notre format compact conserve les en-têtes CSV avec les lignes textuelles.
+Le test en passthrough que n'importe quel rival peut lancer : 18 tâches d'éval, un compteur. Headroom 0.39.1 et le vrai encodeur TOON s'exécutent en local (`pip install headroom-ai toon-format`, puis `PYTHONPATH=src python3 scripts/bench_same_exercise.py`, tracez avec `scripts/plot_same_exercise.py`). La réécriture aveugle à la tâche envoie plus que la sélection et n'a aucune porte de survie ; le vrai TOON retombe sur des mappings par ligne pour le code multiligne, tandis que notre compact conserve les en-têtes CSV avec des lignes verbatim.
 
 ---
 
-## Pourquoi les développeurs l'adorent
+## Pourquoi les développeurs et vibecoders l'adorent
 
-- 💰 **Moins de contexte par tâche, sortie stable :** Ignorez les fichiers qui n'ont aucun rapport avec le prompt — une sortie stable permet au fournisseur de réutiliser ce qu'il a déjà lu au lieu de facturer à nouveau. La réduction de contexte locale ne dépend jamais de votre facture.
-- ⚡ **Latence instantanée (~3ms) :** S'exécute entièrement en Python natif et extensions C localement sur votre Mac ou machine Linux.
-- 🎯 **Précision extrême :** Combine les déclarations de symboles AST (classes, interfaces TypeScript, énumérations, fonctions) avec une recherche lexicale BM25 et un empaquetage basé sur un score selon un budget de jetons.
-- 🛡️ **Assainissement des secrets sans fuite :** Analyse et caviarde automatiquement les clés AWS, clés privées RSA/PEM, fichiers `.env` et secrets à haute entropie avec des espaces réservés stables avant le rendu des prompts.
-- 🔌 **Support universel des agents :** Fournit des adaptateurs prêts à l'emploi pour **Anthropic Messages** (avec points d'arrêt de mise en cache), **OpenAI Responses**, **OpenAI-Compatible chat** et **Markdown** propre.
+- 💰 **Moins de contexte par tâche, sortie stable :** Ignorez les fichiers sans rapport avec le prompt — et une sortie stable permet au fournisseur de réutiliser ce qu'il a déjà lu au lieu de facturer à nouveau. Cut% mesure la réduction locale de contexte, jamais votre facture.
+- ⚡ **Latence instantanée (~3ms) :** S'exécute entièrement en Python natif et extensions C, en local sur votre Mac ou votre machine Linux.
+- 🎯 **Précision chirurgicale :** Combine les déclarations de symboles AST (classes, interfaces TypeScript, enums, fonctions) avec une recherche lexicale BM25 et un packing score-first borné par un budget de jetons.
+- 🛡️ **Sanitisation des secrets zéro fuite :** Scanne et masque automatiquement les clés AWS, clés privées RSA/PEM, fichiers `.env` et secrets à haute entropie avec des placeholders stables scoped à la requête, avant le rendu des prompts.
+- 🔌 **Support universel des agents :** Livré avec des adaptateurs prêts à l'emploi pour **Anthropic Messages** (avec breakpoints de prompt-caching), **OpenAI Responses**, chat **OpenAI-Compatible**, et du **Markdown** propre.
 
 ---
 
 ## Comment ça marche
 
-![Vue d'ensemble de l'empaquetage de contexte : ce que le LLM reçoit, comment les tâches réécrivent en termes, règles de conservation/suppression, dictionnaire de raisons, limites d'empaquetage, historique](docs/context-packing-overview.png)
+![Vue d'ensemble du packing de contexte : ce que le LLM reçoit, comment les tâches se réécrivent en termes, règles keep/drop, dictionnaire de raisons, limites de packing, historique](docs/context-packing-overview.png)
 
-Affiche générée à partir du pipeline réel (`scripts/plot_packing_overview.py`) : les mots de la tâche sont réécrits en termes pondérés, les éléments obligatoires sont toujours inclus, les éléments discrétionnaires sont empilés par score sous le budget, et chaque élément conservé comporte les raisons justifiant sa présence. Le pourcentage indique combien nous envoyons de moins par rapport à tout ce que nous pourrions envoyer — votre facture varie selon la réutilisation du modèle plutôt que sa relecture.
+Poster d'une page généré depuis le vrai pipeline (`scripts/plot_packing_overview.py`) : les mots de la tâche se réécrivent en termes scorés, les pins obligatoires passent toujours, les cartes discrétionnaires packent score-first sous budget, chaque carte conservée porte les raisons que vous pouvez contester. Le pourcentage dit de combien nous envoyons moins que tout ce que nous pourrions envoyer — votre facture, elle, évolue selon ce que le fournisseur réutilise au lieu de relire.
 
 ---
 
-## Démarrage rapide (60 secondes)
+## Démarrage rapide (60 Seconds)
 
 ### 1. Installation
 
@@ -102,122 +102,131 @@ Vérifiez votre installation :
 ane-harness health
 ```
 
-### 1b. Configuration en une commande + preuve (portes d'adoption)
+### 1b. Setup en une commande + prove-it (gates d'adoption)
 
 ```bash
-# indexer, installer la compétence agent, test rapide (imprime une ligne de résumé)
-ane-harness setup --repo /chemin/vers/votre/projet --repo-id mon-projet --yes
+# index, install the agent skill, smoke-test (prints one summary line)
+ane-harness setup --repo /path/to/your/project --repo-id my-project --yes
 
-# preuve : preuve de réduction/latence sur VOTRE repo (5 tâches, sans étiquettes)
-ane-harness prove --repo /chemin/vers/votre/projet --repo-id mon-projet
-# avec vos propres tâches : --tasks-file prompts.jsonl
-# avec un répertoire de rapport : --out /tmp/prove-report
+# prove-it: reduction/latency proof on YOUR repo (5 canned tasks, no labels needed)
+ane-harness prove --repo /path/to/your/project --repo-id my-project
+# with your own tasks: --tasks-file prompts.jsonl
+# with a report dir: --out /tmp/prove-report
 ```
 
-`prove` est sans étiquette : il rapporte la réduction médiane + la latence p50 et
-`recall: not_applicable`. Les preuves de rappel nécessitent des tâches étiquetées manuellement (le mécanisme figé `benchmarks/splits.json`) ; les exécutions non étiquetées ne prétendent jamais au rappel.
+`prove` n'est pas labellisé : il rapporte la réduction médiane + la latence p50 et
+`recall: not_applicable`. Les preuves de rappel exigent des tâches labellisées à la main (la
+machinerie figée `benchmarks/splits.json`) ; les runs non labellisés ne revendiquent jamais
+de rappel.
 
-### 2. Indexez votre base de code
+### 2. Indexez votre dépôt
 
-Indexez n'importe quel dossier ou dépôt local dans le magasin SQLite local (incrémental et ultra-rapide) :
+Indexez n'importe quel dossier ou dépôt local dans le store SQLite local (incrémental et super rapide) :
 
 ```bash
-ane-harness index --repo /chemin/vers/votre/projet --repo-id mon-projet
+ane-harness index --repo /path/to/your/project --repo-id my-project
 ```
 
 ### 3. Sélectionnez le contexte pertinent pour un prompt
 
-Récupérez un paquet Markdown compact, budgétisé en jetons et adapté à votre tâche de codage :
+Récupérez un package Markdown compact, borné en jetons, adapté à votre tâche de code :
 
 ```bash
 ane-harness select \
-  --repo-id mon-projet \
-  --task "Corriger le bug de calcul de remise dans le checkout" \
+  --repo-id my-project \
+  --task "Fix the discount calculation bug in checkout" \
   --budget 1200
 ```
 
-### 3b. Journalisez les réductions de contexte avant/après sur plusieurs prompts (`update`)
+  ### 3b. Journalisez les coupes de contexte avant/après sur de nombreux prompts (`update`)
 
-Exécutez la sélection sur un lot de tâches (fichier JSONL ou stdin) et imprimez + journalisez
-les budgets de jetons avant/après. Local, sans réseau :
+Lancez la sélection sur un lot de tâches (un fichier JSONL ou stdin) et affichez + journalisez
+les budgets de jetons avant/après. Local, pas de réseau :
 
 ```bash
-# depuis un fichier JSONL (un {"task": "..."} ou une tâche brute par ligne)
+# from a JSONL file (one {"task": "..."} or bare task per line)
 ane-harness update \
-  --repo-id mon-projet \
+  --repo-id my-project \
   --budget 2000 \
   --tasks-file prompts.jsonl \
   --log benchmarks/logs/update_session.jsonl
 ```
 
-Sortie exemple :
+Exemple de sortie :
 
 ```
-repo_id: mon-projet | tasks: 3 | budget: 2000
+repo_id: my-project | tasks: 3 | budget: 2000
 
-  task                              avant   après   supprimé  réduction
-  Fix the discount calculation      3189    1952    1237       38.79%
-  debug the inventory loader        3189    1758    1431       44.87%
-  review reporting stats output     3189    1261    1928       60.46%
+  task                              before  after   removed  reduction
+  Fix the discount calculation      3189    1952    1237     38.79%
+  debug the inventory loader        3189    1758    1431     44.87%
+  review reporting stats output     3189    1261    1928     60.46%
 
-  TOTAL: avant 9567 → après 4971 jetons (4596 supprimés, réduction médiane 44.87%)
+  TOTAL: before 9567 → after 4971 tokens (4596 removed, median reduction 44.87%)
 ```
 
-Les lignes par tâche sont également ajoutées en JSONL dans `--log` (gitignored).
-**Avertissement honnête** imprimé sur stderr à chaque exécution : *"mesures locales sur le dépôt donné ; le caviardage ne garantit pas que tous les secrets sont détectés."*
+Les lignes par tâche sont aussi ajoutées en JSONL dans `--log` (gitignored).
+**Caveat honnête** imprimé sur stderr à chaque run : *"local measurements over the
+given repo; redaction does not guarantee all secrets are caught."*
 
-Chaque exécution imprime également un pied de page de coupe d'une ligne sur stderr (et la même
-ligne que la clé `summary` dans le JSON de stdout), ex.
-`ane-harness: sent 7.1k instead of 211.2k · cut 96.6% in 165 ms`. Mots simples seulement —
-pas de jargon, pas de balisage d'en-tête `#`. Les totaux s'accumulent localement (comptages uniquement, pas de texte de tâche) — consultez-les
+Chaque run imprime aussi un pied de coupe d'une ligne sur stderr (et la même
+ligne comme clé `summary` du JSON stdout), p. ex.
+`ane-harness: sent 7.1k instead of 211.2k · cut 96.6% in 165 ms`. Des mots simples uniquement —
+pas de jargon, pas de balisage de titre `#`. Les totaux s'accumulent en local (compteurs uniquement, pas de
+texte de tâche) — consultez-les
 à tout moment avec `ane-harness daily`, ou à chaque sortie de shell avec
 `eval "$(ane-harness shell-init)"` dans votre `.zshrc`/`.bashrc`.
 
-Les agents obtiennent le même comportement sans dépendance via la compétence fournie :
-`skills/ane-harness/SKILL.md` — copiez-le dans le répertoire de compétences de votre agent
-et les totaux de réduction apparaîtront automatiquement après chaque tâche, sans autre configuration. Pour
-OpenCode/Claude/hôtes compatibles, cela fonctionne aussi globalement, sans installation par projet : `~/.config/opencode/skills/`, `~/.claude/skills/`, ou
-`~/.agents/skills/` (les nouvelles sessions le détectent).
+Les agents obtiennent le même comportement sans dépendance via le skill bundlé :
+`skills/ane-harness/SKILL.md` — copiez-le dans le répertoire de skills de votre agent
+et les totaux de coupe apparaissent automatiquement après chaque tâche, sans autre setup. Pour
+les hôtes compatibles OpenCode/Claude/agent, cela fonctionne aussi globalement, sans install par projet :
+`~/.config/opencode/skills/`, `~/.claude/skills/`, ou
+`~/.agents/skills/` (les nouvelles sessions le prennent en compte).
 
-### 3c. Mode proxy pour agents sans intégration native (`proxy`)
+### 3c. Mode proxy pour les agents sans intégration native (`proxy`)
 
-Pipez les tâches dans stdin (un `{"task": "..."}` ou une tâche brute par ligne),
-récupérez le Markdown des preuves sur stdout — sans compétence, MCP ou HTTP requis :
+Pipez les tâches sur stdin (une `{"task": "..."}` ou une tâche brute par ligne),
+récupérez le Markdown de preuves sur stdout — pas de skill, MCP, ni HTTP nécessaire :
 
 ```bash
-printf '%s\n' '{"task": "Corriger le bug de remise"}' 'revoir le chargeur d'inventaire' \
-  | ane-harness proxy --repo /chemin/vers/votre/projet --repo-id mon-projet --budget 2000 \
+printf '%s\n' '{"task": "Fix the discount bug"}' 'review inventory loader' \
+  | ane-harness proxy --repo /path/to/your/project --repo-id my-project --budget 2000 \
   > context.md
 ```
 
 Stdout est du Markdown pur (un doc par tâche, séparé par `---`, avec
-des frontières `<!-- ane-harness task N/M ... -->`) ; les pieds de page de coupe
+des bornes `<!-- ane-harness task N/M ... -->`) ; les pieds de coupe
 par tâche vont sur stderr. Omettez `--repo` lorsque le repo-id est déjà indexé.
 
-### 4. Ou exécutez comme serveur d'arrière-plan local
+### 4. Ou lancez-le comme serveur local en arrière-plan
 
-> **Agents : n'exécutez PAS ceci à l'intérieur d'un tour d'agent.** `serve` (comme `mcp`)
-> ne s'arrête jamais — un appel d'outil qui le lance bloquerait indéfiniment, donc le tour
-> ne se terminerait jamais et chaque prompt suivant serait mis en file d'attente. `update`/`proxy` sans `--tasks-file` sur un terminal interactif se terminent avec un code 2 et un indice au lieu d'attendre sur stdin. À l'intérieur des tours d'agent, utilisez uniquement des commandes one-shot (`index`, `select`, `prove`, `daily`, `health`). Exécutez le serveur détaché d'un terminal réel
+> **Agents : ne lancez PAS ceci dans un tour d'agent.** `serve` (comme `mcp`)
+> ne se termine jamais — un appel d'outil qui le lance bloque indéfiniment, donc le tour
+> ne se termine jamais et chaque prompt suivant s'empile derrière. Un `update`/`proxy`
+> nu sans `--tasks-file` sur un terminal interactif quitte
+> avec le code 2 et un indice, au lieu d'attendre sur stdin. Dans les tours d'agent, n'utilisez que
+> des commandes one-shot (`index`, `select`, `prove`, `daily`, `health`). Lancez
+> le serveur détaché depuis un vrai terminal
 > (`nohup ane-harness serve --port 8765 &`) ou pas du tout.
 
-Démarrez l'API HTTP locale (prête à être connectée à votre agent ou vos outils) :
+Démarrez l'API HTTP locale (prête à être branchée sur votre agent ou vos outils) :
 
 ```bash
 ane-harness serve --port 8765
 ```
 
 Endpoints disponibles :
-- `GET  /v1/health` — État du système, mode de calcul et profils
+- `GET  /v1/health` — Statut système, mode de calcul et profils
 - `POST /v1/repositories/index` — Indexer ou mettre à jour un dépôt
 - `POST /v1/context/select` — Récupérer le contexte optimisé pour une tâche
-- `POST /v1/context/compress-output` — Compresser des journaux verbeux de test/build en résumés d'échec propres
+- `POST /v1/context/compress-output` — Compresser les logs verbeux de tests/build en digests d'échec propres
 
 ---
 
 ## Utilisation en Python
 
-Vous pouvez également utiliser le harness directement dans vos propres flux de travail d'agent IA :
+Vous pouvez aussi utiliser le harness directement dans vos propres workflows d'agents IA :
 
 ```python
 from ane_context_harness.config import build_config
@@ -225,86 +234,90 @@ from ane_context_harness.pipeline import Pipeline
 from ane_context_harness.schemas import SelectRequest
 from ane_context_harness.providers import serialize
 
-# 1. Initialiser le pipeline
+# 1. Initialize pipeline
 cfg = build_config()
 pipeline = Pipeline(cfg)
 
-# 2. Indexer le dépôt
+# 2. Index repository
 pipeline.register_repository("/path/to/my-repo", repo_id="my-repo")
 
-# 3. Sélectionner le contexte budgétisé
+# 3. Select budgeted context
 request = SelectRequest(
     repository_id="my-repo",
-    task="Mettre à jour la logique d'arrondi des points de fidélité dans le service de paiement",
+    task="Update loyalty point rounding logic in payment service",
     token_budget=1500,
 )
 package = pipeline.select_context(request)
 
-# 4. Sérialiser directement pour votre fournisseur LLM préféré
+# 4. Serialize directly for your favorite LLM provider
 anthropic_payload = serialize("anthropic", package)
 openai_payload    = serialize("openai", package)
 markdown_text     = serialize("markdown", package)
 
-print(f"Empaqueté {package.metrics['selected_tokens']} jetons (réduit de {package.metrics['tokens_removed']} jetons)")
+print(f"Packed {package.metrics['selected_tokens']} tokens (cut {package.metrics['tokens_removed']} tokens)")
 ```
 
 ---
 
-## Comment ça marche
+## Comment ça fonctionne
 
 ```
-                        Votre base de code
-                                │
-                     Analyseur AST & Symboles
-              (fonctions Python, interfaces TS)
-                                │
-                      Découpage par ligne
-                                │
-                      Magasin SQLite local
-                                │
-Prompt utilisateur ──────►  Recherche lexicale BM25
-                                │
-                Empaqueteur par score selon budget
-                  (Rétention obligatoire + MMR)
-                                │
-                  Assainisseur de secrets local
-              (Caviarde .env, clés AWS, certificats)
-                                │
-               Adaptateur fournisseur (Anthropic/OpenAI)
-                                │
-                   Contexte serré et précis
+                        Your Codebase
+                             │
+                     AST & Symbol Parser
+               (Python functions, TS interfaces)
+                             │
+                      Line-Level Chunker
+                             │
+                      Local SQLite Store
+                             │
+User Prompt  ──────►   BM25 Lexical Search
+                             │
+                   Score-First Budget Packer
+                  (Mandatory Retention + MMR)
+                             │
+                  Local Secret Sanitizer
+              (Redacts .env, AWS keys, certs)
+                             │
+               Provider Adapter (Anthropic/OpenAI)
+                             │
+                   Tight, Accurate Context
 ```
 
-1. **Découpage AST conscient des symboles :** Au lieu d'un découpage bête par ligne, les fichiers sont analysés pour des constructions de code réelles (classes, méthodes, types/interfaces/enums TypeScript).
-2. **Récupération déterministe :** Recherche lexicale BM25 rapide filtrée par garde de termes de symboles, découpage par sous-jetons et repliement du pluriel.
-3. **Empaqueteur budgétaire par score :** Le contexte est empaqueté de manière gourmande pour s'insérer strictement dans votre budget de jetons spécifié (ex. 1 200 jetons), garantissant que les preuves obligatoires ne sont jamais tronquées.
-4. **Détection de secrets et barrière de confidentialité :** Les modèles d'exclusion canoniques (`.env*`, `.aws/**`, `*.pem`, etc.) ne sont jamais lus, et les classificateurs regex + entropie remplacent les jetons sensibles par des espaces réservés stables.
-5. **Compression du bruit :** Les sorties d'outils verbeuses (traces de test, journaux de terminal) sont réduites en résumés compacts préservant le signal.
+1. **Chunking AST conscient des symboles :** Au lieu d'un découpage bête par lignes, les fichiers sont parsés pour de vrais construits de code (classes, méthodes, types/interfaces/enums TypeScript).
+2. **Récupération déterministe :** Récupération lexicale BM25 rapide, filtrée par des gardes de termes de symboles, un découpage en sous-tokens, et un repli des pluriels.
+3. **Packing de budget score-first :** Le contexte est packé de façon gloutonne pour tenir strictement dans votre budget de jetons (p. ex. 1,200 jetons), en garantissant que les preuves obligatoires ne sont jamais tronquées.
+4. **Détection de secrets et barrière de confidentialité :** Les motifs d'exclusion canoniques (`.env*`, `.aws/**`, `*.pem`, etc.) ne sont jamais lus, et des classifieurs regex + entropie remplacent les jetons sensibles par des placeholders stables.
+5. **Compression du bruit :** Les sorties d'outils verbeuses (traces de tests, logs de terminal) sont repliées en digests compacts qui préservent le signal.
 
 ### Accélération matérielle : distribution privée séparée
 
-Le nom contient `ane`, mais **aucun silicium spécialisé n'est requis ou nécessaire** pour exécuter le harness. Le moteur fourni est purement déterministe sur CPU (Python + SQLite) et fonctionne identiquement sur macOS Apple Silicon, macOS Intel et Linux. L'accélération matérielle neuronale est maintenue séparément et ne fait pas partie de ce dépôt.
+Le nom contient `ane`, mais **aucun silicium spécialisé n'est requis ni revendiqué** pour
+faire tourner le harness. Le moteur livré est du CPU déterministe pur (Python +
+SQLite) et fonctionne à l'identique sur macOS Apple Silicon, macOS Intel et Linux.
+L'accélération neural-hardware est maintenue séparément et ne fait pas partie de
+ce dépôt.
 
 ---
 
 ## Spécifications techniques et rigueur
 
-Pour les chercheurs, architectes et responsables techniques attachés à la rigueur numérique :
+Pour les chercheurs, architectes et responsables techniques qui tiennent à la rigueur numérique :
 
-- **Jeu de référence figé :** Tous les numéros de version sont exécutés sur un jeu d'évaluation figé de 18 tâches (`benchmarks/splits.json`, graine `20261002`). Le réglage est strictement mis en quarantaine sur le split de développement.
-- **Estimateur de jetons déterministe :** Le comptage des jetons utilise un estimateur épinglé (`TOKEN_ESTIMATOR_VERSION="2"`) afin que les chiffres soient reproductibles à 100 % sur différentes machines et versions de Python sans dérive de tokeniseur externe.
-- **Politique d'embeddings :** Les embeddings sont intentionnellement exclus dans la v0.1 en raison de compromis coût/latence locaux. Voir [ADR-002](docs/adr-002-embedding-go-no-go.md).
-- **Bundle de preuves de version :** Les preuves de version avec checksum sont vérifiées cryptographiquement via `ane-harness evidence verify ane-context-harness-evidence-v0.1`.
+- **Split de benchmark figé :** Tous les chiffres de release tournent sur un split d'évaluation figé de 18 tâches (`benchmarks/splits.json`, seed `20261002`). Le tuning est strictement quarantiné sur le split de dev.
+- **Estimateur de jetons déterministe :** Le comptage de jetons utilise un estimateur épinglé (`TOKEN_ESTIMATOR_VERSION="2"`) afin que les chiffres soient 100% reproductibles d'une machine et d'une version de Python à l'autre, sans dérive de tokenizer externe.
+- **Politique d'embeddings :** Les embeddings sont volontairement exclus en v0.1 d'après les compromis coût/latence locaux. Voir [ADR-002](docs/adr-002-embedding-go-no-go.md).
+- **Bundle de preuves de release :** Les preuves de release checksummées sont vérifiées cryptographiquement via `ane-harness evidence verify ane-context-harness-evidence-v0.1`.
 
 ---
 
-## Exécution de la suite de tests
+## Lancer la suite de tests
 
 ```bash
-# Exécuter les 258 tests unitaires, d'intégration et de sécurité
+# Run all 258 unit, integration, and security tests
 python3 -m pytest -q
 
-# Exécuter l'évaluation de benchmark A/B concurrente
+# Run concurrent A/B benchmark evaluation
 python3 scripts/run_concurrent_ab.py 1 /tmp/eval-run
 ```
 
@@ -312,4 +325,4 @@ python3 scripts/run_concurrent_ab.py 1 /tmp/eval-run
 
 ## Licence
 
-Licence MIT. Conçu pour l'intelligence locale, la confidentialité des développeurs et des budgets de jetons sains.
+Licence MIT. Conçu pour l'intelligence locale, la vie privée des développeurs, et des budgets de jetons sains.
