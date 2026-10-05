@@ -1,0 +1,235 @@
+{
+  "label": "token-savings",
+  "split": "eval",
+  "n_tasks": 18,
+  "ruler": "pinned regex-heuristic counter (TOKEN_ESTIMATOR_VERSION=2)",
+  "medians": {
+    "baseline": 3213.0,
+    "sent": 782.0,
+    "reduction_pct": 63.1
+  },
+  "min_recall": 1.0,
+  "median_format_tokens": {
+    "json": 1353.5,
+    "markdown": 1035.0,
+    "compact": 890.0
+  },
+  "tasks": [
+    {
+      "task_id": "hard-apply-discount-001",
+      "baseline": 3213,
+      "sent": 1031,
+      "reduction_pct": 67.91,
+      "recall": 1.0,
+      "formats": {
+        "json": 1760,
+        "markdown": 1334,
+        "compact": 1168
+      }
+    },
+    {
+      "task_id": "hard-buried-quote-001",
+      "baseline": 3213,
+      "sent": 1459,
+      "reduction_pct": 54.59,
+      "recall": 1.0,
+      "formats": {
+        "json": 2371,
+        "markdown": 1793,
+        "compact": 1606
+      }
+    },
+    {
+      "task_id": "hard-cart-apply-001",
+      "baseline": 3213,
+      "sent": 1945,
+      "reduction_pct": 39.46,
+      "recall": 1.0,
+      "formats": {
+        "json": 3172,
+        "markdown": 2368,
+        "compact": 2139
+      }
+    },
+    {
+      "task_id": "hard-doc-concession-001",
+      "baseline": 3213,
+      "sent": 1820,
+      "reduction_pct": 43.36,
+      "recall": 1.0,
+      "formats": {
+        "json": 2891,
+        "markdown": 2200,
+        "compact": 1992
+      }
+    },
+    {
+      "task_id": "hard-rules-vs-readme-001",
+      "baseline": 3213,
+      "sent": 445,
+      "reduction_pct": 86.15,
+      "recall": 1.0,
+      "formats": {
+        "json": 700,
+        "markdown": 622,
+        "compact": 519
+      }
+    },
+    {
+      "task_id": "hard-settings-001",
+      "baseline": 3213,
+      "sent": 311,
+      "reduction_pct": 90.32,
+      "recall": 1.0,
+      "formats": {
+        "json": 574,
+        "markdown": 483,
+        "compact": 380
+      }
+    },
+    {
+      "task_id": "hard-similarnames-001",
+      "baseline": 3213,
+      "sent": 1480,
+      "reduction_pct": 53.94,
+      "recall": 1.0,
+      "formats": {
+        "json": 2410,
+        "markdown": 1815,
+        "compact": 1628
+      }
+    },
+    {
+      "task_id": "hard-stock-clearance-001",
+      "baseline": 3213,
+      "sent": 1251,
+      "reduction_pct": 61.06,
+      "recall": 1.0,
+      "formats": {
+        "json": 2055,
+        "markdown": 1586,
+        "compact": 1399
+      }
+    },
+    {
+      "task_id": "hard-types-line-001",
+      "baseline": 3213,
+      "sent": 720,
+      "reduction_pct": 77.59,
+      "recall": 1.0,
+      "formats": {
+        "json": 1275,
+        "markdown": 980,
+        "compact": 835
+      }
+    },
+    {
+      "task_id": "hard-vat-apply-001",
+      "baseline": 3213,
+      "sent": 1350,
+      "reduction_pct": 57.98,
+      "recall": 1.0,
+      "formats": {
+        "json": 2119,
+        "markdown": 1646,
+        "compact": 1480
+      }
+    },
+    {
+      "task_id": "py-calculator-001",
+      "baseline": 3189,
+      "sent": 844,
+      "reduction_pct": 73.53,
+      "recall": 1.0,
+      "formats": {
+        "json": 1432,
+        "markdown": 1090,
+        "compact": 945
+      }
+    },
+    {
+      "task_id": "py-discount-001",
+      "baseline": 3189,
+      "sent": 1112,
+      "reduction_pct": 65.13,
+      "recall": 1.0,
+      "formats": {
+        "json": 1958,
+        "markdown": 1429,
+        "compact": 1242
+      }
+    },
+    {
+      "task_id": "py-discount-report-001",
+      "baseline": 3189,
+      "sent": 629,
+      "reduction_pct": 80.28,
+      "recall": 1.0,
+      "formats": {
+        "json": 1102,
+        "markdown": 847,
+        "compact": 723
+      }
+    },
+    {
+      "task_id": "py-inventory-sku-001",
+      "baseline": 3189,
+      "sent": 606,
+      "reduction_pct": 81.0,
+      "recall": 1.0,
+      "formats": {
+        "json": 959,
+        "markdown": 781,
+        "compact": 678
+      }
+    },
+    {
+      "task_id": "ts-discount-001",
+      "baseline": 1236,
+      "sent": 369,
+      "reduction_pct": 70.15,
+      "recall": 1.0,
+      "formats": {
+        "json": 636,
+        "markdown": 548,
+        "compact": 445
+      }
+    },
+    {
+      "task_id": "ts-inventory-reconcile-001",
+      "baseline": 1236,
+      "sent": 583,
+      "reduction_pct": 52.83,
+      "recall": 1.0,
+      "formats": {
+        "json": 854,
+        "markdown": 762,
+        "compact": 659
+      }
+    },
+    {
+      "task_id": "ts-math-total-001",
+      "baseline": 1236,
+      "sent": 643,
+      "reduction_pct": 47.98,
+      "recall": 1.0,
+      "formats": {
+        "json": 1043,
+        "markdown": 848,
+        "compact": 724
+      }
+    },
+    {
+      "task_id": "ts-reporting-stats-001",
+      "baseline": 1236,
+      "sent": 496,
+      "reduction_pct": 59.87,
+      "recall": 1.0,
+      "formats": {
+        "json": 741,
+        "markdown": 669,
+        "compact": 566
+      }
+    }
+  ]
+}

@@ -51,6 +51,12 @@ Evaluated across **30 benchmark tasks** (10 small, 10 typical, 10 difficult) acr
 | **TypeScript Architecture**| `ts-discount-001` | 1,236 | **369** | **70.15%** | **100%** | 1.84 ms |
 | **Complex Multi-file Cart** | `hard-cart-apply-001` | 3,213 | **2,146** | **33.21%** | **100%** | 4.38 ms |
 
+### Token savings, measured (current main)
+
+![Per-task baseline vs sent tokens with min recall 1.0, plus identical-pack format medians (JSON / markdown / compact)](docs/token-savings.png)
+
+Measured with public functions only (`scripts/measure_token_savings.py`, frozen eval split, one pinned counter — reproduce with `PYTHONPATH=src python3 scripts/measure_token_savings.py`, draw with `scripts/plot_token_savings.py`). Same evidence, three renderings; rendering never touches selection.
+
 ---
 
 ## Why Developers & Vibecoders Love It
