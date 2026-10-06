@@ -10,7 +10,7 @@
   },
   "min_recall": 1.0,
   "median_format_tokens": {
-    "json": 1353.5,
+    "json": 1417.5,
     "markdown": 1035.0,
     "compact": 890.0
   },
@@ -22,7 +22,7 @@
       "reduction_pct": 67.91,
       "recall": 1.0,
       "formats": {
-        "json": 1760,
+        "json": 1840,
         "markdown": 1334,
         "compact": 1168
       }
@@ -34,7 +34,7 @@
       "reduction_pct": 54.59,
       "recall": 1.0,
       "formats": {
-        "json": 2371,
+        "json": 2467,
         "markdown": 1793,
         "compact": 1606
       }
@@ -46,7 +46,7 @@
       "reduction_pct": 39.46,
       "recall": 1.0,
       "formats": {
-        "json": 3172,
+        "json": 3300,
         "markdown": 2368,
         "compact": 2139
       }
@@ -58,7 +58,7 @@
       "reduction_pct": 43.36,
       "recall": 1.0,
       "formats": {
-        "json": 2891,
+        "json": 3003,
         "markdown": 2200,
         "compact": 1992
       }
@@ -70,7 +70,7 @@
       "reduction_pct": 86.15,
       "recall": 1.0,
       "formats": {
-        "json": 700,
+        "json": 732,
         "markdown": 622,
         "compact": 519
       }
@@ -82,7 +82,7 @@
       "reduction_pct": 90.32,
       "recall": 1.0,
       "formats": {
-        "json": 574,
+        "json": 606,
         "markdown": 483,
         "compact": 380
       }
@@ -94,7 +94,7 @@
       "reduction_pct": 53.94,
       "recall": 1.0,
       "formats": {
-        "json": 2410,
+        "json": 2506,
         "markdown": 1815,
         "compact": 1628
       }
@@ -106,7 +106,7 @@
       "reduction_pct": 61.06,
       "recall": 1.0,
       "formats": {
-        "json": 2055,
+        "json": 2151,
         "markdown": 1586,
         "compact": 1399
       }
@@ -118,7 +118,7 @@
       "reduction_pct": 77.59,
       "recall": 1.0,
       "formats": {
-        "json": 1275,
+        "json": 1339,
         "markdown": 980,
         "compact": 835
       }
@@ -130,7 +130,7 @@
       "reduction_pct": 57.98,
       "recall": 1.0,
       "formats": {
-        "json": 2119,
+        "json": 2199,
         "markdown": 1646,
         "compact": 1480
       }
@@ -142,7 +142,7 @@
       "reduction_pct": 73.53,
       "recall": 1.0,
       "formats": {
-        "json": 1432,
+        "json": 1496,
         "markdown": 1090,
         "compact": 945
       }
@@ -154,7 +154,7 @@
       "reduction_pct": 65.13,
       "recall": 1.0,
       "formats": {
-        "json": 1958,
+        "json": 2054,
         "markdown": 1429,
         "compact": 1242
       }
@@ -166,7 +166,7 @@
       "reduction_pct": 80.28,
       "recall": 1.0,
       "formats": {
-        "json": 1102,
+        "json": 1150,
         "markdown": 847,
         "compact": 723
       }
@@ -178,7 +178,7 @@
       "reduction_pct": 81.0,
       "recall": 1.0,
       "formats": {
-        "json": 959,
+        "json": 991,
         "markdown": 781,
         "compact": 678
       }
@@ -190,7 +190,7 @@
       "reduction_pct": 70.15,
       "recall": 1.0,
       "formats": {
-        "json": 636,
+        "json": 668,
         "markdown": 548,
         "compact": 445
       }
@@ -202,7 +202,7 @@
       "reduction_pct": 52.83,
       "recall": 1.0,
       "formats": {
-        "json": 854,
+        "json": 886,
         "markdown": 762,
         "compact": 659
       }
@@ -214,7 +214,7 @@
       "reduction_pct": 47.98,
       "recall": 1.0,
       "formats": {
-        "json": 1043,
+        "json": 1091,
         "markdown": 848,
         "compact": 724
       }
@@ -226,7 +226,7 @@
       "reduction_pct": 59.87,
       "recall": 1.0,
       "formats": {
-        "json": 741,
+        "json": 773,
         "markdown": 669,
         "compact": 566
       }

@@ -313,3 +313,88 @@ def _collapse_blank_runs(lines, roles):
             blanks = 0
         out_l.append(l); out_r.append(r)
     return out_l, out_r
+
+
+def compact_generic_text(content: str, source: str, token_budget: int = 2000,
+                         context_lines: int = 3) -> dict:
+    """Deterministic collapse for evidence text (router COMPACT handler).
+
+    Same tested primitives as :func:`compress_tool_output` with the
+    ``kind="terminal"`` flow (no test/build failure windowing, no passing-test
+    stripping — evidence is not a tool invocation, so neither applies). The
+    header names the evidence ``source`` and carries the removal summary;
+    no command or exit code is fabricated. Returns the same shape with
+    ``kind="evidence"`` and no ``command``/``exit_code`` keys.
+    """
+    if token_budget <= 0:
+        raise ValueError("token_budget must be positive")
+    original = content if isinstance(content, str) else str(content)
+    digest = hashlib.sha256(original.encode("utf-8")).hexdigest()
+    original_tokens = estimate(original)
+
+    lines = [_strip_ansi(l).split("\r")[-1].rstrip() for l in original.splitlines()]
+    roles = [_classify(l) for l in lines]
+    removed = {"progress": 0, "install": 0, "duplicate_frames": 0,
+               "repeated_warnings": 0, "successful_tests": 0, "trimmed_to_budget": 0}
+
+    lines, roles, orig = lines, roles, list(range(len(lines)))
+    lines, roles, orig = _collapse_runs(
+        lines, roles, _INSTALL_R, "[install] {n} dependency-install lines collapsed",
+        "install", removed)
+    lines, roles, orig = _collapse_runs(
+        lines, roles, _PROGRESS_R, "[progress] {n} progress lines collapsed",
+        "progress", removed)
+    lines, roles, orig = _dedupe(
+        lines, roles, orig, _FRAME_R, "duplicate_frames", removed)
+    lines, roles, orig = _dedupe(
+        lines, roles, orig, _WARNING_R, "repeated_warnings", removed,
+        normalize=lambda l: re.sub(r"\d+", "#", _norm(l)))
+    lines, roles = _collapse_blank_runs(lines, roles)
+
+    kept = {"errors": sum(1 for r in roles if r == _ERROR_R),
+            "failed_tests": sum(1 for r in roles if r == _TEST_FAIL_R),
+            "warnings": sum(1 for r in roles if r == _WARNING_R),
+            "stack_frames": sum(1 for r in roles if r == _FRAME_R)}
+
+    def _count(n, singular, plural):
+        return f"{n} {singular if n == 1 else plural}"
+
+    summary_parts = [_count(kept["errors"], "error", "errors"),
+                     _count(kept["failed_tests"], "failed test", "failed tests"),
+                     _count(kept["warnings"], "warning", "warnings")] if any(
+        kept[k] for k in ("errors", "failed_tests", "warnings")) else []
+    collapsed = [_count(removed["progress"], "progress line", "progress lines")
+                 if removed["progress"] else "",
+                 _count(removed["install"], "install line", "install lines")
+                 if removed["install"] else "",
+                 _count(removed["duplicate_frames"], "duplicate frame", "duplicate frames")
+                 if removed["duplicate_frames"] else "",
+                 _count(removed["repeated_warnings"], "repeated warning", "repeated warnings")
+                 if removed["repeated_warnings"] else ""]
+    collapsed = [c for c in collapsed if c]
+    summary_line = "summary: " + (
+        ("; ".join(summary_parts) if summary_parts else "no errors")
+        + ("; collapsed " + ", ".join(collapsed) if collapsed else ""))
+
+    header = [f"source: {source}", summary_line]
+    out_lines = header + lines
+    out_roles = [_SUMMARY_R] * len(header) + roles
+    trimmed = _trim_to_budget(out_lines, out_roles, len(header), token_budget)
+    removed["trimmed_to_budget"] = trimmed
+
+    text = "\n".join(out_lines)
+    compressed_tokens = estimate(text)
+    reduction = (round((1 - compressed_tokens / original_tokens) * 100, 1)
+                 if original_tokens else 0.0)
+    return {
+        "kind": "evidence",
+        "source": source,
+        "content_sha256": f"sha256:{digest}",
+        "original_tokens": original_tokens,
+        "compressed_tokens": compressed_tokens,
+        "reduction_percent": reduction,
+        "within_budget": compressed_tokens <= token_budget,
+        "compressed": text,
+        "kept": kept,
+        "removed": removed,
+    }

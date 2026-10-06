@@ -356,6 +356,13 @@ class Pipeline:
             "model_version": classifier.model_version if classifier else "none",
         }
 
+        from .routing import route_evidence
+        routing_counts = route_evidence(pkg.evidence)
+        from .routing import compact_evidence
+        compaction = compact_evidence(pkg.evidence)
+        diag["routing"] = {"strategies": routing_counts,
+                           "compaction": compaction}
+
         sel_tokens = sum(tokens_mod.count(e["content"]) for e in pkg.evidence)
         reduction = ((cand_tokens - sel_tokens) / cand_tokens * 100.0) if cand_tokens else 0.0
         # Required-coverage floor: mandatory (required-evidence) chunks are

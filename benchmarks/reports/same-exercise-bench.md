@@ -8,4 +8,4 @@ median baseline 3213.0 | ours 782.0 (min recall 1.0) | headroom 3633.0 (min symb
 
 ## Format (identical pack rendered)
 
-json 1353.5 | markdown 1035.0 | compact 890.0 | toon 1134.0 (round-trip: True)
+json 1417.5 | markdown 1035.0 | compact 890.0 | toon 1134.0 (round-trip: True)

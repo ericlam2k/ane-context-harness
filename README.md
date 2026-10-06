@@ -71,6 +71,16 @@ How to read this chart: it's a race on the same 18 jobs with the same ruler — 
 
 Reproduce: `pip install headroom-ai toon-format`, then `PYTHONPATH=src python3 scripts/bench_same_exercise.py`, draw with `scripts/plot_same_exercise.py`. Task-blind rewriting sends more than selecting and keeps no survival gate; the real TOON encoder falls back to per-row mappings on multiline code while our compact keeps CSV headers with verbatim rows.
 
+### Conversation savings, measured
+
+How to read this: one job is never one question — the agent asks, then follows up, then verifies. This bench replays the same 3-turn conversation per job three ways: sending the whole codebase every turn (149,490 tokens), one trimmed pack (17,094), and three carried packs where each follow-up keeps everything the earlier turns found (51,940). The carried conversation sends **about a third** of the no-harness cost — 97,550 fewer tokens, 65.3% less — and the needed files survived all 72 turns (recall 1.0 every turn; a turn that loses a needed file derails the conversation, so that gate is load-bearing, not decorative).
+
+Reproduce: `PYTHONPATH=src python3 scripts/bench_conversation.py` (frozen eval split, one pinned token counter; writes `benchmarks/reports/conversation-bench-eval.json`). Boundary, stated plainly: no model reads these packs, follow-ups are fixed strings rather than real agent reactions, nothing is billed, no job is actually completed. It measures the half we feed — the picking and carrying — not the loop itself.
+
+### What happens to each file
+
+Four documented rules, no model involved, no exceptions: files you pin (or the grader requires) travel **byte-exact, always**. Code, config, and diffs keep their structure — the picker selects whole symbols, never rewrites them. Only **logs and noisy tool output** get collapsed (repeated progress lines, duplicate tracebacks, install spam fold into a summary line that says what was removed). Prose travels as picked, never reworded — there is no neural rewriter, so nothing can paraphrase your docs into something they didn't say. Every pack lists, per file, which rule applied — check `diagnostics.routing` in any report and argue with it.
+
 ---
 
 ## Why Developers & Vibecoders Love It
