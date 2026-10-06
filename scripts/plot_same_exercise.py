@@ -40,7 +40,9 @@ def main():
     fig = plt.figure(figsize=(13, 6.4), facecolor=PAPER)
     # Generous outer margins: y-tick labels live left of the axes and value
     # annotations live right of the bars — both must clear the figure edge.
-    gs = fig.add_gridspec(2, 2, height_ratios=[12, 88], hspace=0.05,
+    # Header row is 20 units so the band (24 units tall) fully contains the
+    # title and the two-line brief fits under it without touching anything.
+    gs = fig.add_gridspec(2, 2, height_ratios=[20, 80], hspace=0.05,
                           wspace=0.30, left=0.20, right=0.74, top=0.93,
                           bottom=0.10)
 
@@ -48,27 +50,39 @@ def main():
     axh.set_xlim(0, 100)
     axh.set_ylim(0, 100)
     axh.axis("off")
-    axh.add_patch(Rectangle((0, 82), 100, 18, facecolor=BAND,
+    axh.add_patch(Rectangle((0, 76), 100, 24, facecolor=BAND,
                             edgecolor="none", zorder=1))
-    axh.add_patch(Rectangle((2, 84.5), 9, 13, facecolor="white",
+    axh.add_patch(Rectangle((2, 79), 9, 18, facecolor="white",
                             edgecolor="none", zorder=2))
-    axh.text(6.5, 91, "C", ha="center", va="center", fontsize=11,
+    axh.text(6.5, 88, "C", ha="center", va="center", fontsize=10,
              fontweight="bold", color=BAND, zorder=3)
-    axh.text(14, 91, "Same 18 jobs, same measuring stick",
-             ha="left", va="center", fontsize=10, fontweight="bold",
+    axh.text(14, 88, "Same 18 jobs, same measuring stick",
+             ha="left", va="center", fontsize=11, fontweight="bold",
              color="white", zorder=3)
-    axh.text(98, 91, "outside tools run here, no accounts",
+    axh.text(98, 88, "outside tools run here, no accounts",
              ha="right", va="center", fontsize=8, color="white", zorder=3)
+    # Caption: how the two panels relate, in plain words.
+    axh.text(2, 58, "Left: how much each tool sends for the same 18 jobs. "
+                    "Right: our pick from the left, written four ways.",
+             ha="left", va="center", fontsize=9, color=MUTED, zorder=3)
+    axh.text(2, 42, "Same files in, same answer out — the wrapping never "
+                    "changes the pick. We kept every needed file 18/18.",
+             ha="left", va="center", fontsize=9, color=MUTED, zorder=3)
 
     # Panel A: selection medians.
     ax = fig.add_subplot(gs[1, 0])
     ax.set_facecolor(PAPER)
+    ax.text(0.02, 0.98, "How much each tool sends", transform=ax.transAxes,
+            ha="left", va="top", fontsize=9.5, fontweight="bold", color=BAND)
     names = ["send everything", "ane-harness", "headroom"]
     vals = [sel["median_baseline"], sel["median_ours"],
             sel["median_headroom"]]
     bars = ax.barh(names, vals, height=0.5, color=[MUTED, GREEN, RED])
     ax.set_xlabel("middle job, in tokens", fontsize=9)
     ax.set_xlim(0, max(vals) * 2.0)  # room for value + gate notes
+    # Headroom above the tallest bar so the in-panel title never touches it.
+    lo, hi = ax.get_ylim()
+    ax.set_ylim(lo, hi + 0.05 * (hi - lo))
     ax.tick_params(axis="y", labelsize=9)
     notes = ["everything, uncut",
              "needed files kept every time",
@@ -83,6 +97,8 @@ def main():
     # Panel B: format medians on the identical pack.
     bx = fig.add_subplot(gs[1, 1])
     bx.set_facecolor(PAPER)
+    bx.text(0.02, 0.98, "Our files, four wrappings", transform=bx.transAxes,
+            ha="left", va="top", fontsize=9.5, fontweight="bold", color=BAND)
     fnames = ["full detail", "readable", "TOON", "short"]
     fvals = [fmt["evidence_json"], fmt["markdown"], fmt["toon_real"],
              fmt["compact_ours"]]
@@ -90,6 +106,8 @@ def main():
                     color=[MUTED, BLUE, "#6a1b9a", ORANGE])
     bx.set_xlabel("middle job, in tokens", fontsize=9)
     bx.set_xlim(0, max(fvals) * 1.6)  # room for "1134 (−16%)"
+    lo, hi = bx.get_ylim()
+    bx.set_ylim(lo, hi + 0.05 * (hi - lo))
     bx.tick_params(axis="y", labelsize=9)
     base = fvals[0]
     for bar, v in zip(fbars, fvals):
@@ -98,9 +116,6 @@ def main():
         bx.text(v + max(fvals) * 0.02,
                 bar.get_y() + bar.get_height() / 2, label,
                 va="center", fontsize=8.5, color=BAND)
-    bx.text(0.02, 0.96, "same answer back out —\nwrapping never changes the pick",
-            transform=bx.transAxes, ha="left", va="top", fontsize=8,
-            color=MUTED)
 
     fig.savefig(OUT, dpi=150, facecolor=PAPER)
     print(f"wrote {OUT} ({OUT.stat().st_size // 1024} KiB)")

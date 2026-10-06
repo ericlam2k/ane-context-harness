@@ -46,7 +46,9 @@ def main():
         groups.append((key, ts))
 
     fig = plt.figure(figsize=(13, 6.6), facecolor=PAPER)
-    gs = fig.add_gridspec(2, 2, height_ratios=[14, 86], hspace=0.06,
+    # Header row is 20 units so the band (24 units tall) fully contains the
+    # title and the two-line brief fits under it without touching anything.
+    gs = fig.add_gridspec(2, 2, height_ratios=[20, 80], hspace=0.06,
                           wspace=0.28, left=0.08, right=0.78, top=0.93,
                           bottom=0.10)
 
@@ -55,21 +57,32 @@ def main():
     axh.set_xlim(0, 100)
     axh.set_ylim(0, 100)
     axh.axis("off")
-    axh.add_patch(Rectangle((0, 82), 100, 18, facecolor=BAND,
+    axh.add_patch(Rectangle((0, 76), 100, 24, facecolor=BAND,
                             edgecolor="none", zorder=1))
-    axh.add_patch(Rectangle((2, 84.5), 9, 13, facecolor="white",
+    axh.add_patch(Rectangle((2, 79), 9, 18, facecolor="white",
                             edgecolor="none", zorder=2))
-    axh.text(6.5, 91, "S", ha="center", va="center", fontsize=11,
+    axh.text(6.5, 88, "S", ha="center", va="center", fontsize=10,
              fontweight="bold", color=BAND, zorder=3)
-    axh.text(14, 91, "Less to read, nothing important lost",
-             ha="left", va="center", fontsize=10, fontweight="bold",
+    axh.text(14, 88, "Less to read, nothing important lost",
+             ha="left", va="center", fontsize=11, fontweight="bold",
              color="white", zorder=3)
-    axh.text(98, 91, "18 jobs measured", ha="right", va="center",
+    axh.text(98, 88, "18 jobs measured", ha="right", va="center",
              fontsize=8, color="white", zorder=3)
+    # Caption: how the two panels relate, in plain words.
+    axh.text(2, 58, "Left: how much less you send per job size — whole "
+                    "codebase (grey) vs only the files the job needs "
+                    "(green), kept every time.",
+             ha="left", va="center", fontsize=9, color=MUTED, zorder=3)
+    axh.text(2, 42, "Right: those same chosen files, written three ways — "
+                    "a shorter wrapping never changes what gets picked.",
+             ha="left", va="center", fontsize=9, color=MUTED, zorder=3)
 
     # Panel A: by job size — whole codebase vs needed parts.
     ax = fig.add_subplot(gs[1, 0])
     ax.set_facecolor(PAPER)
+    ax.text(0.02, 0.98, "Whole codebase vs needed parts, by job size",
+            transform=ax.transAxes, ha="left", va="top", fontsize=9.5,
+            fontweight="bold", color=BAND)
     names, send_all, sent, cuts = [], [], [], []
     for key, ts in groups:
         names.append(f"{PLAIN_NAMES[key]}\n({len(ts)} jobs)")
@@ -86,26 +99,31 @@ def main():
     ax.set_xticklabels(names, fontsize=9)
     ax.set_ylabel("middle job, in tokens", fontsize=9)
     ax.set_xlim(-0.6, len(names) - 0.4)
-    ax.set_ylim(0, max(send_all) * 1.32)
+    # 1.32 leaves room above the tallest bar; the extra 5% keeps the
+    # in-panel title and legend clear of the value labels.
+    ax.set_ylim(0, max(send_all) * 1.386)
     for i, (s, c) in enumerate(zip(sent, cuts)):
         ax.text(i + w / 2, s + max(send_all) * 0.03, f"{s:.0f}\n−{c:.0f}%",
                 ha="center", fontsize=9, fontweight="bold", color=BAND)
-    ax.legend(frameon=False, fontsize=9, loc="upper right")
-    ax.text(0.02, 0.96,
-            "Harder jobs need more sent — but the saving holds,\n"
-            "and the needed files were kept every single time.",
-            transform=ax.transAxes, ha="left", va="top", fontsize=8,
-            color=MUTED)
+    # Sits just under the in-panel title row so the two never touch.
+    ax.legend(frameon=False, fontsize=9, loc="upper right",
+              bbox_to_anchor=(1.0, 0.90))
 
     # Panel B: same answer, three wrappings.
     bx = fig.add_subplot(gs[1, 1])
     bx.set_facecolor(PAPER)
+    bx.text(0.02, 0.98, "The same chosen files, three wrappings",
+            transform=bx.transAxes, ha="left", va="top", fontsize=9.5,
+            fontweight="bold", color=BAND)
     fmts = rep["median_format_tokens"]
     fnames = ["full detail", "readable", "short"]
     fvals = [fmts["json"], fmts["markdown"], fmts["compact"]]
     fbars = bx.barh(fnames, fvals, height=0.5, color=[MUTED, BLUE, ORANGE])
     bx.set_xlabel("middle job, in tokens", fontsize=9)
     bx.set_xlim(0, max(fvals) * 1.6)
+    # Headroom above the tallest bar so the in-panel title never touches it.
+    lo, hi = bx.get_ylim()
+    bx.set_ylim(lo, hi + 0.05 * (hi - lo))
     bx.tick_params(axis="y", labelsize=9)
     base = fvals[0]
     for bar, v in zip(fbars, fvals):
@@ -114,10 +132,6 @@ def main():
         bx.text(v + max(fvals) * 0.02,
                 bar.get_y() + bar.get_height() / 2, label,
                 va="center", fontsize=8.5, color=BAND)
-    bx.text(0.02, 0.96, "Shorter wrapping, same answer —\n"
-                        "it never changes what gets picked.",
-            transform=bx.transAxes, ha="left", va="top", fontsize=8,
-            color=MUTED)
 
     fig.savefig(OUT, dpi=150, facecolor=PAPER)
     print(f"wrote {OUT} ({OUT.stat().st_size // 1024} KiB)")

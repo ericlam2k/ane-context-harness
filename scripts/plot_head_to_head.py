@@ -58,29 +58,45 @@ def main():
              "PASS — needed files\nkept every time"]
 
     fig = plt.figure(figsize=(11, 6.0), facecolor=PAPER)
-    gs = fig.add_gridspec(2, 1, height_ratios=[13, 87], hspace=0.05,
+    # Header row is 20 units so the band (24 units tall) fully contains the
+    # title and the two-line brief fits under it without touching anything.
+    gs = fig.add_gridspec(2, 1, height_ratios=[20, 80], hspace=0.05,
                           left=0.08, right=0.96, top=0.92, bottom=0.12)
     axh = fig.add_subplot(gs[0])
     axh.set_xlim(0, 100)
     axh.set_ylim(0, 100)
     axh.axis("off")
-    axh.add_patch(Rectangle((0, 82), 100, 18, facecolor=BAND,
+    axh.add_patch(Rectangle((0, 76), 100, 24, facecolor=BAND,
                             edgecolor="none", zorder=1))
-    axh.add_patch(Rectangle((2, 84.5), 9, 13, facecolor="white",
+    axh.add_patch(Rectangle((2, 79), 9, 18, facecolor="white",
                             edgecolor="none", zorder=2))
-    axh.text(6.5, 91, "VS", ha="center", va="center", fontsize=11,
+    axh.text(6.5, 88, "VS", ha="center", va="center", fontsize=10,
              fontweight="bold", color=BAND, zorder=3)
-    axh.text(14, 91, "Same 18 jobs, one measuring stick",
-             ha="left", va="center", fontsize=10, fontweight="bold",
+    axh.text(14, 88, "Same 18 jobs, one measuring stick",
+             ha="left", va="center", fontsize=11, fontweight="bold",
              color="white", zorder=3)
-    axh.text(98, 91, "median job, in tokens", ha="right", va="center",
+    axh.text(98, 88, "median job, in tokens", ha="right", va="center",
              fontsize=8, color="white", zorder=3)
+    # Caption: what the bars mean and how the verdict is read.
+    axh.text(2, 58, "How much text each approach sends for the same middle "
+                    "job — plus the verdict: did every file the grader "
+                    "requires come back?",
+             ha="left", va="center", fontsize=9, color=MUTED, zorder=3)
+    axh.text(2, 42, "Lower is cheaper, and only ours are both cheap and "
+                    "pass every time. The rewrite tool sends even more than "
+                    "sending everything.",
+             ha="left", va="center", fontsize=9, color=MUTED, zorder=3)
 
     ax = fig.add_subplot(gs[1])
     ax.set_facecolor(PAPER)
+    ax.text(0.02, 0.98, "Four ways to serve the same job",
+            transform=ax.transAxes, ha="left", va="top", fontsize=9.5,
+            fontweight="bold", color=BAND)
     bars = ax.bar(names, vals, width=0.55, color=colors)
     ax.set_ylabel("middle job, in tokens", fontsize=10)
-    ax.set_ylim(0, max(vals) * 1.35)
+    # 1.35 leaves room for the gate notes above the bars; the extra 5%
+    # keeps the in-panel title clear of the tallest one.
+    ax.set_ylim(0, max(vals) * 1.4175)
     for bar, v, g in zip(bars, vals, gates):
         ax.text(bar.get_x() + bar.get_width() / 2, v + max(vals) * 0.02,
                 f"{v:.0f}", ha="center", fontsize=12, fontweight="bold",
