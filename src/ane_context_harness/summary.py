@@ -61,10 +61,9 @@ def select_footer(metrics: dict[str, Any], execution: dict[str, Any] | None,
     sel = metrics.get("selected_tokens", 0)
     red = metrics.get("reduction_percent", 0.0)
     lat = metrics.get("total_latency_ms", 0.0)
-    disc = metrics.get("discretionary_tokens", 0)
     line = (f"ane-harness: sent {fmt_tokens(sel)} instead of {fmt_tokens(cand)} "
             f"· cut {red}% in {round(lat)} ms")
-    if disc - budget > 0:
+    if sel - budget > 0:
         line += " — too big, narrow the task"
     if pinned_changed:
         names = ", ".join(p.split("/")[-1] for p in pinned_changed[:2])

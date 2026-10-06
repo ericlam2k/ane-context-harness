@@ -33,7 +33,7 @@ def test_select_footer_plain_words_only():
          "reduction_percent": 91.1, "total_latency_ms": 141.29,
          "required_tokens": 16794, "discretionary_tokens": 2000,
          "diagnostics": {"budget_exceeded": True}}
-    foot = select_footer(m, {"reranker": "cpu_deterministic"}, 61, 2000)
+    foot = select_footer(m, {"reranker": "cpu_deterministic"}, 61, 20000)
     assert foot == ("ane-harness: sent 18.8k instead of 211.2k · cut 91.1% in 141 ms")
     assert not foot.startswith("#")
     for jargon in ("required", "discretionary", "chunk", "cpu_deterministic",
@@ -47,6 +47,14 @@ def test_select_footer_flags_oversize_plainly():
          "reduction_percent": 4.0, "total_latency_ms": 5.0,
          "required_tokens": 800, "discretionary_tokens": 4000}
     foot = select_footer(m, {"reranker": "cpu_deterministic"}, 9, 2000)
+    assert foot.endswith("too big, narrow the task")
+
+
+def test_select_footer_flags_mandatory_overflow():
+    m = {"candidate_tokens": 443247, "selected_tokens": 9803,
+         "reduction_percent": 97.79, "total_latency_ms": 437.0,
+         "required_tokens": 7957, "discretionary_tokens": 1846}
+    foot = select_footer(m, {"reranker": "cpu_deterministic"}, 33, 2000)
     assert foot.endswith("too big, narrow the task")
 
 
