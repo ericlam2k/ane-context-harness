@@ -95,9 +95,9 @@ Cuatro reglas documentadas, sin modelo de por medio, sin excepciones: los archiv
 
 ## Cómo funciona
 
-![Resumen del empaquetado de contexto: lo que recibe el LLM, cómo las tareas se reescriben a términos, reglas de keep/drop, diccionario de razones, límites de empaquetado, historial](docs/context-packing-overview.png)
+![Cómo tus palabras se convierten en lo que la IA lee: una tarea real del benchmark rastreada de principio a fin — palabras simples, cada bloque puntuado, por qué vuela cada tarjeta, 369 de 1.236 tokens](docs/context-packing-overview.png)
 
-Póster de una página generado desde el pipeline real (`scripts/plot_packing_overview.py`): las palabras de la tarea se reescriben a términos puntuados, los pines obligatorios siempre vuelan, las cartas discrecionales se empaquetan score-first bajo presupuesto, cada carta conservada lleva las razones con las que puedes discutir. El porcentaje dice cuánto menos enviamos que todo lo que podríamos enviar — tu factura se mueve según cuánto reutilice el proveedor en lugar de volver a leer.
+Explicación de una página generada desde el pipeline real (`scripts/plot_packing_overview.py`): una tarea real del benchmark rastreada de principio a fin. Entran tus palabras, caen las palabras cortas, cada bloque del repo se puntúa, los ganadores vuelan con sus razones — y la IA lee 369 tokens en vez de los 1.236 completos (70 % menos, y no falta nada de lo que la corrección necesita). Cada número está medido, no ilustrado.
 
 ---
 

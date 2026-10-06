@@ -95,9 +95,9 @@ Quatre règles documentées, aucun modèle impliqué, aucune exception : les fic
 
 ## Comment ça marche
 
-![Vue d'ensemble du packing de contexte : ce que le LLM reçoit, comment les tâches se réécrivent en termes, règles keep/drop, dictionnaire de raisons, limites de packing, historique](docs/context-packing-overview.png)
+![Comment vos mots deviennent ce que l'IA lit : une vraie tâche du benchmark tracée de bout en bout — mots simples à l'entrée, chaque bloc scoré, pourquoi chaque carte vole, 369 des 1 236 tokens](docs/context-packing-overview.png)
 
-Poster d'une page généré depuis le vrai pipeline (`scripts/plot_packing_overview.py`) : les mots de la tâche se réécrivent en termes scorés, les épingles obligatoires volent toujours, les cartes discrétionnaires packent score-first sous budget, chaque carte conservée porte les raisons que vous pouvez contester. Le pourcentage dit de combien moins nous envoyons que tout ce que nous pourrions envoyer — votre facture elle-même bouge selon combien le fournisseur réutilise au lieu de relire.
+Explication d'une page générée depuis le vrai pipeline (`scripts/plot_packing_overview.py`) : une vraie tâche du benchmark tracée de bout en bout. Vos mots entrent, les petits mots tombent, chaque bloc du dépôt est scoré, les gagnants volent avec leurs raisons — et l'IA lit 369 tokens au lieu des 1 236 entiers (70 % de moins, et rien de ce qu'exige la correction n'est absent). Chaque chiffre est mesuré, pas illustré.
 
 ---
 

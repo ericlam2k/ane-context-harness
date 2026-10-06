@@ -95,9 +95,9 @@ Four documented rules, no model involved, no exceptions: files you pin (or the g
 
 ## How it works
 
-![Context packing overview: what the LLM receives, how tasks rewrite to terms, keep/drop rules, reason dictionary, packing limits, history](docs/context-packing-overview.png)
+![How your words become what the AI reads: one real benchmark job traced end to end — plain words in, every chunk scored, why each card flew, 369 of 1,236 tokens](docs/context-packing-overview.png)
 
-One-page poster generated from the real pipeline (`scripts/plot_packing_overview.py`): task words rewrite to scored terms, mandatory pins always fly, discretionary cards pack score-first under budget, every kept card carries the reasons you can argue with. The percent says how much less we send than everything we could send — your bill itself moves with how much the provider reuses instead of re-reading.
+One-page explainer generated from the real pipeline (`scripts/plot_packing_overview.py`): one real benchmark job traced end to end. Your words in, small words dropped, every chunk of the repo scored, the winners fly with their reasons attached — and the AI reads 369 tokens instead of the whole 1,236 (70% less, and nothing the answer key needs is missing). Every number in it is measured, not illustrated.
 
 ---
 

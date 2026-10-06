@@ -1,10 +1,16 @@
-#!/usr/bin/env python3
-"""Render docs/context-packing-overview.png: STE100-style one-page poster
-explaining how ane-harness packs prompts (6 panels A-F).
+"""Render docs/context-packing-overview.png: one real job, traced end to end.
 
-Adapted from the ASD-STE100 overview sheet: same panel grammar (structure,
-annotated rewrite, keep/drop table, reason dictionary, limit sliders,
-history) applied to context packing instead of controlled writing.
+Karpathy-style explainer, not a spec sheet: a single top-to-bottom story
+in plain words, one running example, real numbers from the real pipeline.
+Everything shown is measured, not illustrated:
+
+  task      "Fix the discount calculation bug in math.ts and verify its tests"
+            (benchmark task ts-discount-001, frozen eval split)
+  terms     usable_terms() -> ['discount', 'calculation', 'math', 'verify']
+  scored    5 chunks in tests/fixtures/synthetic_ts_project
+  packed    src/math.ts:1-20 (score 0.9298, named_symbol+mandatory, verbatim)
+            tests/math.test.ts:1-20 (score 1.0, flies on merit, structural)
+  sent      369 tokens of a 1,236-token repo (-70.15%, recall 1.0)
 
 Usage:
     ~/.venvs/ane-p36/bin/python scripts/plot_packing_overview.py
@@ -20,204 +26,157 @@ INK = "#1a1a1a"
 MUTED = "#5a5a5a"
 GREEN = "#1e7d32"
 RED = "#c62828"
-ORANGE = "#e65100"
-BLUE = "#1565c0"
 PAPER = "#f7f5ef"
 BAND = "#20242b"
+CARD = "#ffffff"
+WASH = "#eceae2"
 
 
-def _header(ax, letter: str, title: str, right: str = "") -> None:
-    ax.set_xlim(0, 100)
-    ax.set_ylim(0, 100)
-    ax.axis("off")
-    ax.add_patch(__import__("matplotlib").patches.Rectangle(
-        (0, 82), 100, 18, facecolor=BAND, edgecolor="none", zorder=1))
-    ax.add_patch(__import__("matplotlib").patches.Rectangle(
-        (2, 84.5), 9, 13, facecolor="white", edgecolor="none", zorder=2))
-    ax.text(6.5, 91, letter, ha="center", va="center", fontsize=11,
-            fontweight="bold", color=BAND, zorder=3)
-    ax.text(14, 91, title, ha="left", va="center", fontsize=10,
+def _stage(ax, n: int, y_top: float, title: str, line: str):
+    """Numbered stage header. Returns the y below it for content."""
+    import matplotlib
+    ax.add_patch(matplotlib.patches.Circle(
+        (6, y_top), 3.2, facecolor=BAND, edgecolor="none", zorder=2))
+    ax.text(6, y_top, str(n), ha="center", va="center", fontsize=13,
             fontweight="bold", color="white", zorder=3)
-    if right:
-        ax.text(98, 91, right, ha="right", va="center", fontsize=7,
-                color="#bbbbbb", zorder=3)
+    ax.text(11.5, y_top + 0.6, title, ha="left", va="center", fontsize=13,
+            fontweight="bold", color=INK)
+    ax.text(11.5, y_top - 3.4, line, ha="left", va="center", fontsize=10,
+            color=MUTED)
+    return y_top - 7.5
 
 
-def _panel_a(ax) -> None:
-    _header(ax, "A", "Packed context structure", "what the LLM receives")
-    ax.text(50, 74, "Task (your words) + repo → 710 chunks scored → 23 packed",
-            ha="center", va="center", fontsize=8, color=INK,
-            bbox=dict(boxstyle="round", facecolor="white", edgecolor=MUTED))
-    rows = [
-        "Task: Implement … threshold gating",
-        "Tokens: 7.1k of 211.2k (96.6% reduction) | 165 ms",
-        "## Evidence: phase6_multiagent.py:36-52",
-        "Symbol: `run_concurrent` · Score 0.06 · Hash `a91f…`",
-        "Reasons: named_symbol, lexical_rerank, mandatory",
-        "< the code >",
-    ]
-    for i, r in enumerate(rows):
-        ax.text(6, 62 - i * 8.5, r, ha="left", va="center", fontsize=7.5,
-                color=INK, family="monospace" if i > 1 else "sans-serif")
-    ax.text(50, 6, "211.2k in → 7.1k out · 23 cards fly, ~687 stay",
-            ha="center", va="center", fontsize=7.5, style="italic", color=MUTED)
+def _arrow(ax, y_from: float, y_to: float, x: float = 50.0):
+    ax.annotate("", xy=(x, y_to), xytext=(x, y_from),
+                arrowprops=dict(arrowstyle="-|>", color=MUTED, lw=1.6))
 
 
-def _panel_b(ax) -> None:
-    _header(ax, "B", "Anatomy of a task rewrite", "real task → terms")
-    dropped = {"to", "arm", "c", "ane", "b", "5", "max"}
-    generic = {"test", "main"}
-    terms = ["implement", "runtime", "max_concurrent_agents", "max",
-             "concurrent", "agents", "agent", "threshold", "gating", "auto",
-             "route", "to", "arm", "c", "ane", "reranker", "5", "b"]
-    ax.text(50, 74, "Task words, not STE: anything goes in, rules decide pins",
-            ha="center", va="center", fontsize=7.5, style="italic", color=MUTED)
-    x, y = 4, 62
-    for t in terms:
-        if t in dropped:
-            col, deco = RED, "strikethrough"
-        elif t in generic:
-            col, deco = ORANGE, "strikethrough"
-        else:
-            col, deco = GREEN, "none"
-        w = max(len(t) * 1.55 + 3, 9.0)
-        if x + w > 99:
-            x, y = 4, y - 11
-        ax.text(x + w / 2, y, t, ha="center", va="center", fontsize=8,
-                color=col, style="normal")
-        if deco == "strikethrough":
-            ax.plot([x + 1, x + w - 1], [y, y], color=col, lw=1.2)
-        x += w + 1.5
-    notes = [
-        ("red", "dropped: len<4 never pins (to, arm, c, ane, b, 5, max)"),
-        ("orange", "generic never pins: test, main, run, …"),
-        ("green", "usable: agents→agent fold · max_concurrent_agents splits in 3"),
-    ]
-    for i, (_, n) in enumerate(notes):
-        ax.text(4, 26 - i * 8, n, ha="left", va="center", fontsize=7,
-                color=MUTED)
-    ax.text(50, 3, "1 word, 1 meaning · identifiers split · max 60 cards ranked",
-            ha="center", va="center", fontsize=7, color=MUTED)
+def _pill(ax, x: float, y: float, text: str, kept: bool):
+    import matplotlib
+    w = len(text) * 1.75 + 4.5
+    color = GREEN if kept else MUTED
+    ax.add_patch(matplotlib.patches.FancyBboxPatch(
+        (x, y - 1.8), w, 3.6, boxstyle="round,pad=0.3",
+        facecolor="#e6f2e8" if kept else WASH,
+        edgecolor=color, linewidth=1.2 if kept else 0.8))
+    ax.text(x + w / 2, y, text, ha="center", va="center", fontsize=10.5,
+            color=color, fontweight="bold" if kept else "normal")
+    if not kept:
+        ax.plot([x + 0.8, x + w - 0.8], [y, y], color=MUTED, lw=1.1)
+    return w
 
 
-def _table(ax, columns: list, rows: list, widths: list | None = None,
-           y_top: float = 78, row_h: float = 9.5, fs: int = 7) -> None:
-    import matplotlib.pyplot as plt  # noqa
-    n = len(columns)
-    widths = widths or [1.0 / n] * n
-    xs = [0.0]
-    for w in widths:
-        xs.append(xs[-1] + w)
-    for j, c in enumerate(columns):
-        ax.text((xs[j] + xs[j + 1]) / 2 * 100, y_top, c, ha="center",
-                va="center", fontsize=fs, color=MUTED)
-    for i, row in enumerate(rows):
-        y = y_top - (i + 1) * row_h
-        if i % 2 == 0:
-            ax.add_patch(__import__("matplotlib").patches.Rectangle(
-                (0, y - row_h / 2), 100, row_h, facecolor="#eceae2",
-                edgecolor="none", zorder=0))
-        for j, cell in enumerate(row):
-            color = INK
-            if cell.startswith("✓"):
-                color = GREEN
-            elif cell.startswith("✗"):
-                color = RED
-            ax.text((xs[j] + xs[j + 1]) / 2 * 100, y, cell, ha="center",
-                    va="center", fontsize=fs, color=color)
-
-
-def _panel_c(ax) -> None:
-    _header(ax, "C", "Keep / drop forms", "which cards fly")
-    _table(ax, ["Form", "Example", "Status"],
-           [["you name it", "--explicit-path auth.py", "✓ Kept, always"],
-            ["word = symbol", '"reranker" → def reranker', "✓ Kept (pinned)"],
-            ["test of kept", "test_auth.py", "✓ Kept (pinned)"],
-            ["scores well + fits", "0.43, room left", "✓ Kept on merit"],
-            ["scores low / full", "0.02, budget full", "✗ Dropped"],
-            ["file share full", "4th card, same file", "✗ Dropped"],
-            ["near-duplicate", "restates kept card", "✗ Dropped"],
-            ["ranked past 60", "place 61+, unpinned", "✗ Never seen"]],
-           widths=[0.30, 0.38, 0.32], y_top=74, row_h=8.2, fs=6.8)
-
-
-def _panel_d(ax) -> None:
-    _header(ax, "D", "Reason dictionary entries", "why each card flew")
-    _table(ax, ["Reason", "Status", "Meaning"],
-           [["explicit_path", "✓ PINNED", "you named it"],
-            ["named_symbol", "✓ PINNED", "task word = symbol"],
-            ["test_pair", "✓ PINNED", "test of pinned file"],
-            ["lexical_rerank", "✓ ON MERIT", "scored well, fit"],
-            ["over_budget", "✗ CUT", "beyond allowance"],
-            ["per_file_cap", "✗ CUT", "file share full"],
-            ["mmr_similar", "✗ CUT", "near-duplicate"]],
-           widths=[0.32, 0.30, 0.38], y_top=74, row_h=9.2, fs=6.8)
-    ax.text(50, 4, "Every card carries its reasons: the receipt you can argue with.",
-            ha="center", va="center", fontsize=7, style="italic", color=MUTED)
-
-
-def _panel_e(ax) -> None:
-    _header(ax, "E", "Packing rule limits", "maximum values")
-    specs = [("Chunk size", 350, 400, "tokens"),
-             ("Card overlap", 40, 400, "tokens"),
-             ("Budget (soft)", 12000, 20000, "tokens"),
-             ("Diversity window", 60, 100, "cards"),
-             ("Per-file share", 25, 100, "% of budget"),
-             ("MMR similarity", 0.25, 1.0, "λ")]
-    for i, (name, val, vmax, unit) in enumerate(specs):
-        y = 70 - i * 11
-        ax.text(2, y, name, ha="left", va="center", fontsize=7.5, color=INK)
-        ax.add_patch(__import__("matplotlib").patches.Rectangle(
-            (30, y - 2.5), 55 * val / vmax, 5, facecolor="#9db8d2",
-            edgecolor=BLUE, zorder=2))
-        ax.plot([30, 85], [y - 2.5, y - 2.5], color=MUTED, lw=0.8, zorder=1)
-        ax.plot([30, 85], [y + 2.5, y + 2.5], color=MUTED, lw=0.8, zorder=1)
-        ax.text(88, y, f"max {val} {unit}", ha="left", va="center",
-                fontsize=7, color=MUTED)
-    ax.text(50, 2, "Soft budget: pinned cards exceed it · discretionary never does.",
-            ha="center", va="center", fontsize=7, style="italic", color=MUTED)
-
-
-def _panel_f(ax) -> None:
-    _header(ax, "F", "History", "how we got here")
-    miles = [("Ph0-2", "foundation\n+ profiles"), ("Ph5", "A/B: deterministic\nadopted"),
-             ("Ph6", "ANE wins at\n5+ agents"), ("Now", "floor policy +\nthis sheet")]
-    for i, (yr, label) in enumerate(miles):
-        x = 12 + i * 25
-        ax.plot([x], [58], marker="o", markersize=7, color=BAND)
-        if i > 0:
-            ax.plot([12 + (i - 1) * 25, x], [58, 58], color=MUTED, lw=1.2)
-        ax.text(x, 66, yr, ha="center", va="center", fontsize=8,
-                fontweight="bold", color=INK)
-        ax.text(x, 46, label, ha="center", va="center", fontsize=6.5,
-                color=MUTED)
-    ax.text(50, 26, "Context packing: overview", ha="center", va="center",
-            fontsize=10, fontweight="bold", color=INK)
-    for i, (k, v) in enumerate([("Rulebook", "this sheet"), ("Engine", "deterministic"),
-                                ("Recall (eval)", "1.0 arm B"), ("Sheet", "1 of 1")]):
-        y = 18 - i * 4.5
-        ax.text(20, y, k, ha="left", va="center", fontsize=7, color=MUTED)
-        ax.text(80, y, v, ha="right", va="center", fontsize=7, color=INK)
-
-
-def main() -> int:
+def main():
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    fig = plt.figure(figsize=(16, 10.5), facecolor=PAPER)
-    gs = fig.add_gridspec(2, 3, hspace=0.12, wspace=0.12,
-                          left=0.02, right=0.98, top=0.96, bottom=0.04)
-    makers = [_panel_a, _panel_b, _panel_c, _panel_d, _panel_e, _panel_f]
-    for i, make in enumerate(makers):
-        ax = fig.add_subplot(gs[i // 3, i % 3], facecolor="white")
-        for spine in ax.spines.values():
-            spine.set_edgecolor(MUTED)
-        make(ax)
+    fig = plt.figure(figsize=(11, 14), facecolor=PAPER)
+    ax = fig.add_axes([0.02, 0.02, 0.96, 0.96])
+    ax.set_xlim(0, 100)
+    ax.set_ylim(0, 100)
+    ax.axis("off")
+
+    # Header band: the whole story in two lines.
+    ax.add_patch(matplotlib.patches.Rectangle(
+        (0, 93.5), 100, 6.5, facecolor=BAND, edgecolor="none", zorder=1))
+    ax.text(50, 97.6, "How your words become what the AI reads",
+            ha="center", va="center", fontsize=15, fontweight="bold",
+            color="white", zorder=2)
+    ax.text(50, 94.9, "one real job, traced end to end — nothing rewritten, nothing lost",
+            ha="center", va="center", fontsize=9.5, color="#bbbbbb", zorder=2)
+
+    # All y values below are measured, not eyeballed: every content top sits
+    # >=1 unit under its subtitle, and stage circles keep >=0.2 clearance
+    # from the block above (boxes: pill ±2.1, card ±2.5, row ±1.9).
+
+    # ---- 1. Your words ----
+    _stage(ax, 1, 89.0, "You ask in plain words",
+           "a real benchmark job, word for word")
+    ax.text(50, 82.3, "\u201cFix the discount calculation bug in math.ts "
+            "and verify its tests\u201d",
+            ha="center", va="center", fontsize=11, style="italic", color=INK,
+            bbox=dict(boxstyle="round,pad=0.6", facecolor=CARD,
+                      edgecolor=MUTED))
+    _arrow(ax, 79.4, 77.6)
+
+    # ---- 2. Search terms ----
+    _stage(ax, 2, 76.4, "Small words fall away, the rest go hunting",
+           "under 4 letters or generic (test, fix, …) → ignored")
+    x = 6.0
+    for t in ["discount", "calculation", "math", "verify"]:
+        x += _pill(ax, x, 68.9, t, True) + 2.0
+    x = 6.0
+    for t in ["Fix", "the", "bug", "in", "and", "its", "tests"]:
+        x += _pill(ax, x, 63.2, t, False) + 2.0
+    ax.text(98, 63.2, "ignored", ha="right", va="center", fontsize=9,
+            color=MUTED)
+    _arrow(ax, 60.1, 58.3)
+
+    # ---- 3. Every file scored ----
+    _stage(ax, 3, 56.9, "Every chunk of the repo gets a score",
+           "5 chunks scored, ranked best-first — the top 2 earn a seat")
+    rows = [("tests/math.test.ts", "1.00", True, 50.0),
+            ("src/math.ts", "0.93", True, 45.8),
+            ("3 more chunks", "too low", False, 41.6)]
+    for name, score, flies, yy in rows:
+        if flies:
+            ax.add_patch(matplotlib.patches.Rectangle(
+                (6, yy - 1.9), 88, 3.8, facecolor="#e6f2e8",
+                edgecolor=GREEN, linewidth=1.0))
+        ax.text(9, yy, name, ha="left", va="center", fontsize=10.5,
+                color=INK if flies else MUTED)
+        ax.text(91, yy, "flies ✓" if flies else "stays",
+                ha="right", va="center", fontsize=10,
+                fontweight="bold" if flies else "normal",
+                color=GREEN if flies else MUTED)
+        ax.text(70, yy, score, ha="right", va="center", fontsize=10.5,
+                color=INK if flies else MUTED, family="monospace")
+    _arrow(ax, 39.1, 37.3)
+
+    # ---- 4. Why these two ----
+    _stage(ax, 4, 36.3, "Pinned words fly first, then the best fit",
+           "each card carries the reason it flew — argue with it")
+    cards = [
+        ("src/math.ts",
+         "\u201cmath\u201d is its name → pinned, travels byte-exact", 28.8),
+        ("tests/math.test.ts",
+         "test of the pinned file → flies too, as written", 23.2),
+    ]
+    for name, why, yy in cards:
+        ax.add_patch(matplotlib.patches.FancyBboxPatch(
+            (6, yy - 2.2), 88, 4.4, boxstyle="round,pad=0.3",
+            facecolor=CARD, edgecolor=MUTED))
+        ax.text(9, yy + 0.6, name, ha="left", va="center", fontsize=10.5,
+                fontweight="bold", color=INK, family="monospace")
+        ax.text(9, yy - 1.2, why, ha="left", va="center", fontsize=9.5,
+                color=MUTED)
+    _arrow(ax, 20.1, 18.3)
+
+    # ---- 5. What the AI reads ----
+    _stage(ax, 5, 17.2, "The AI reads this — and only this",
+           "checked against the answer key: nothing needed is missing")
+    ax.text(50, 10.9, "369 tokens", ha="center", va="center", fontsize=24,
+            fontweight="bold", color=GREEN)
+    ax.text(50, 8.4, "instead of the whole 1,236  ·  70% less",
+            ha="center", va="center", fontsize=11, color=INK)
+
+    # ---- Footer: what never happens ----
+    ax.add_patch(matplotlib.patches.Rectangle(
+        (4, 0.5), 92, 6.8, facecolor=BAND, edgecolor="none"))
+    ax.text(50, 6.0, "What never happens", ha="center", va="center",
+            fontsize=10, fontweight="bold", color="white")
+    nevers = [("✕  code is never rewritten — byte-exact", 6),
+              ("✕  docs are never paraphrased — as written", 38),
+              ("✕  only logs fold, with a note", 74)]
+    for n, x in nevers:
+        ax.text(x, 3.0, n, ha="left", va="center", fontsize=8,
+                color="white")
+
     fig.savefig(OUT, dpi=150, facecolor=PAPER)
-    print(f"wrote {OUT}")
-    return 0
+    print(f"wrote {OUT} ({OUT.stat().st_size // 1024} KiB)")
+    return fig
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

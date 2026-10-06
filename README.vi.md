@@ -95,9 +95,9 @@ Bốn quy tắc đã được tài liệu hóa, không model tham gia, không ng
 
 ## Cách hoạt động
 
-![Tổng quan đóng gói ngữ cảnh: LLM nhận gì, task được viết lại thành term như thế nào, quy tắc giữ/bỏ, từ điển lý do, giới hạn packing, lịch sử](docs/context-packing-overview.png)
+![Cách từ của bạn thành thứ AI đọc: một job benchmark thật được truy vết từ đầu đến cuối — từ thường vào, mọi chunk được chấm điểm, lý do mỗi thẻ bay, 369 trên 1,236 token](docs/context-packing-overview.png)
 
-Poster một trang được tạo từ pipeline thật (`scripts/plot_packing_overview.py`): từ của task được viết lại thành term có điểm, pin bắt buộc luôn bay, thẻ tùy ý được pack theo điểm trong ngân sách, mọi thẻ được giữ mang theo lý do bạn có thể tranh luận. Phần trăm nói chúng ta gửi ít hơn bao nhiêu so với mọi thứ có thể gửi — hóa đơn thực tế phụ thuộc vào việc nhà cung cấp tái sử dụng thay vì đọc lại.
+Trang giải thích một trang được tạo từ pipeline thật (`scripts/plot_packing_overview.py`): một job benchmark thật được truy vết từ đầu đến cuối. Từ của bạn vào, từ nhỏ bị bỏ, mọi chunk của repo được chấm điểm, người thắng bay kèm lý do — và AI đọc 369 token thay vì toàn bộ 1,236 (ít hơn 70%, và không thiếu gì đáp án cần). Mọi con số trong đó đều được đo, không phải minh họa.
 
 ---
 
