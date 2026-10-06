@@ -33,33 +33,33 @@ Evaluado en **30 benchmark tasks** (10 small, 10 typical, 10 difficult) sobre co
 
 | Métrica | Sin Harness (volcado completo del repo) | Con Harness (determinista) | Qué significa esto para ti |
 |---|---|---|---|
-| **Median Context Tokens** | **3,213 tokens** | **782 tokens** | **Envía 60.47% menos al LLM** |
-| **Required-Evidence Recall** | 1.0 (100%) | **1.0 (100%)** | **No se perdió ni una sola pieza de código crítico** |
-| **Context Selection Speed** | ~0.01 ms (raw dump) | **3.05 ms – 3.83 ms** | **Respuesta local sub-4ms — 100x más rápida que la red** |
-| **Peak Token Savings** | 0% | **Up to 90.32%** | **Ahorra hasta ~90% en tareas de config y settings** |
-| **Ranking Accuracy (nDCG@10)**| n/a | **0.849** | **Coloca las funciones más críticas justo arriba** |
-| **Secret Redaction** | 0% (leaks all secrets) | **100% local redaction** | **`.env`, claves AWS y certificados nunca salen de tu máquina** |
-| **Derived Cost per Task** *(at $3/M)* | ~$0.0096 / task | **~$0.0023 / task** | **Envía ~75% menos por tarea a la tarifa indicada — tu factura se mueve según cuánto reutilice el proveedor en lugar de volver a leer** |
+| **Mediana de tokens de contexto** | **3,213 tokens** | **782 tokens** | **Envía 60.47% menos al LLM** |
+| **Recall de evidencia requerida** | 1.0 (100%) | **1.0 (100%)** | **No se perdió ni una sola pieza de código crítico** |
+| **Velocidad de selección de contexto** | ~0.01 ms (volcado en crudo) | **3.05 ms – 3.83 ms** | **Respuesta local sub-4ms — 100x más rápida que la red** |
+| **Ahorro máximo de tokens** | 0% | **Hasta 90.32%** | **Ahorra hasta ~90% en tareas de configuración y ajustes** |
+| **Precisión de ranking (nDCG@10)**| n/a | **0.849** | **Coloca las funciones más críticas justo arriba** |
+| **Ocultación de secrets** | 0% (filtra todos los secrets) | **Ocultación 100% local** | **`.env`, claves AWS y certificados nunca salen de tu máquina** |
+| **Coste derivado por tarea** *(a $3/M)* | ~$0.0096 / task | **~$0.0023 / task** | **Envía ~75% menos por tarea a la tarifa indicada — tu factura se mueve según cuánto reutilice el proveedor en lugar de volver a leer** |
 
 *(Latencia y memoria medidas localmente en Apple Silicon / CPU; las cifras de coste y TTFT se derivan con las tarifas de tokens indicadas; metodología y logs reproducibles en `benchmarks/reports/` y `benchmarks/logs/`).*
 
 ### Desglose de tareas de ejemplo
 
-| Tipo de tarea | Tarea de ejemplo | Raw Tokens | Harness Tokens | Reduction | Recall | Select Latency |
+| Tipo de tarea | Tarea de ejemplo | Tokens en crudo | Tokens del harness | Reducción | Recall | Latencia de selección |
 |---|---|---|---|---|---|---|
-| **Settings & Config** | `hard-settings-001` | 3,213 | **311** | **90.32%** | **100%** | 3.88 ms |
-| **Rules & Logic** | `hard-rules-vs-readme-001` | 3,213 | **445** | **86.15%** | **100%** | 4.22 ms |
-| **Bug Fixes (Python)** | `py-discount-report-001` | 3,189 | **629** | **80.28%** | **100%** | 3.72 ms |
-| **TypeScript Architecture**| `ts-discount-001` | 1,236 | **369** | **70.15%** | **100%** | 1.84 ms |
-| **Complex Multi-file Cart** | `hard-cart-apply-001` | 3,213 | **2,146** | **33.21%** | **100%** | 4.38 ms |
+| **Ajustes y configuración** | `hard-settings-001` | 3,213 | **311** | **90.32%** | **100%** | 3.88 ms |
+| **Reglas y lógica** | `hard-rules-vs-readme-001` | 3,213 | **445** | **86.15%** | **100%** | 4.22 ms |
+| **Corrección de bugs (Python)** | `py-discount-report-001` | 3,189 | **629** | **80.28%** | **100%** | 3.72 ms |
+| **Arquitectura TypeScript**| `ts-discount-001` | 1,236 | **369** | **70.15%** | **100%** | 1.84 ms |
+| **Carrito complejo multiarchivo** | `hard-cart-apply-001` | 3,213 | **2,146** | **33.21%** | **100%** | 4.38 ms |
 
-### Ahorro de tokens, medido (current main)
+### Ahorro de tokens, medido (main actual)
 
 Cómo leer este gráfico: cada job le preguntó a la herramienta "¿qué debería leer la IA para esta tarea?". El panel izquierdo compara, por tamaño de job, cuánto texto enviarías si enviaras todo el código (gris) frente a lo que eligió el harness (verde) — el número encima de cada barra verde es lo que envías ahora y cuánto más pequeño es. Los jobs más difíciles necesitan más archivos, así que la barra verde crece — pero los archivos necesarios se conservaron **todas las veces**, que es el punto: más pequeño solo es bueno si no falta nada importante. El panel derecho muestra la misma elección enviada de tres formas — detalle completo, un punto medio legible y el wrapping más corto — más corto es más barato, y el wrapping nunca cambia *qué* se elige.
 
 ![Menos que leer por tamaño de job, más tres wrappings de la misma respuesta](docs/token-savings.png)
 
-Mide con `PYTHONPATH=src python3 scripts/measure_token_savings.py`, dibuja con `scripts/plot_token_savings.py` (frozen eval split, un contador de tokens fijado).
+Mide con `PYTHONPATH=src python3 scripts/measure_token_savings.py`, dibuja con `scripts/plot_token_savings.py` (split de eval congelado, un contador de tokens fijado).
 
 ### El mismo ejercicio contra herramientas reales (sin claves, sin cuentas)
 
@@ -75,7 +75,7 @@ Reproduce: `pip install headroom-ai toon-format`, then `PYTHONPATH=src python3 s
 
 Cómo leer esto: un job nunca es una sola pregunta — el agente pregunta, luego hace follow-up, luego verifica. Este bench reproduce la misma conversación de 3 turnos por job de tres formas: enviando todo el código en cada turno (149,490 tokens), un pack recortado (17,094), y tres packs acumulados donde cada follow-up conserva todo lo que encontraron los turnos anteriores (51,940). La conversación acumulada envía **alrededor de un tercio** del coste sin harness — 97,550 tokens menos, 65.3% menos — y los archivos necesarios sobrevivieron los 72 turnos (recall 1.0 en cada turno; un turno que pierde un archivo necesario descarrila la conversación, así que esa puerta es estructural, no decorativa).
 
-Reproduce: `PYTHONPATH=src python3 scripts/bench_conversation.py` (frozen eval split, un contador de tokens fijado; writes `benchmarks/reports/conversation-bench-eval.json`). Límite, dicho claro: ningún modelo lee estos packs, los follow-ups son cadenas fijas en lugar de reacciones reales del agente, no se factura nada, ningún job se completa de verdad. Mide la mitad que alimentamos — la selección y el acarreo — no el bucle en sí.
+Reproduce: `PYTHONPATH=src python3 scripts/bench_conversation.py` (split de eval congelado, un contador de tokens fijado; escribe `benchmarks/reports/conversation-bench-eval.json`). Límite, dicho claro: ningún modelo lee estos packs, los follow-ups son cadenas fijas en lugar de reacciones reales del agente, no se factura nada, ningún job se completa de verdad. Mide la mitad que alimentamos — la selección y el acarreo — no el bucle en sí.
 
 ### Qué le ocurre a cada archivo
 
@@ -101,7 +101,7 @@ Explicación de una página generada desde el pipeline real (`scripts/plot_packi
 
 ---
 
-## Inicio rápido (60 Seconds)
+## Inicio rápido (60 segundos)
 
 ### 1. Instalar
 
@@ -118,7 +118,7 @@ Verifica tu instalación:
 ane-harness health
 ```
 
-### 1b. Setup en un comando + prove-it (adoption gates)
+### 1b. Configuración en un comando + prove-it (puertas de adopción)
 
 ```bash
 # index, install the agent skill, smoke-test (prints one summary line)

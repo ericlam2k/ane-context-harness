@@ -33,19 +33,19 @@
 
 | 指标 | 无 Harness（完整仓库转储） | 有 Harness（确定性） | 对你意味着什么 |
 |---|---|---|---|
-| **Median Context Tokens** | **3,213 tokens** | **782 tokens** | **发给 LLM 的量少 60.47%** |
-| **Required-Evidence Recall** | 1.0 (100%) | **1.0 (100%)** | **从未漏掉任何一段关键代码** |
-| **Context Selection Speed** | ~0.01 ms (raw dump) | **3.05 ms – 3.83 ms** | **本地亚 4ms 响应 —— 比网络快 100 倍** |
-| **Peak Token Savings** | 0% | **Up to 90.32%** | **在针对性的配置与设置任务上最多节省约 90%** |
-| **Ranking Accuracy (nDCG@10)**| n/a | **0.849** | **把最关键的函数放在最前面** |
-| **Secret Redaction** | 0% (leaks all secrets) | **100% local redaction** | **`.env`、AWS 密钥和证书永远不会离开你的机器** |
-| **Derived Cost per Task** *(at $3/M)* | ~$0.0096 / task | **~$0.0023 / task** | **按所述费率每任务少发送约 75% —— 账单本身随提供商复用而非重读的程度而变化** |
+| **上下文 token 中位数** | **3,213 个 token** | **782 个 token** | **发给 LLM 的量少 60.47%** |
+| **必需证据 recall** | 1.0 (100%) | **1.0 (100%)** | **从未漏掉任何一段关键代码** |
+| **上下文选择速度** | ~0.01 ms（原始 dump） | **3.05 ms – 3.83 ms** | **本地亚 4ms 响应 —— 比网络快 100 倍** |
+| **峰值 token 节省** | 0% | **最高 90.32%** | **在针对性的配置与设置任务上最多节省约 90%** |
+| **排序准确率 (nDCG@10)**| n/a | **0.849** | **把最关键的函数放在最前面** |
+| **secret 脱敏** | 0%（泄露所有 secret） | **100% local 脱敏** | **`.env`、AWS 密钥和证书永远不会离开你的机器** |
+| **每 task 折算成本** *(按 $3/M 计)* | ~$0.0096 / task | **~$0.0023 / task** | **按所述费率每任务少发送约 75% —— 账单本身随提供商复用而非重读的程度而变化** |
 
 *（延迟与内存在 Apple Silicon / CPU 上本地测得；成本与 TTFT 数字按所述 token 费率推导；方法与可复现日志见 `benchmarks/reports/` 和 `benchmarks/logs/`）。*
 
 ### 示例任务分解
 
-| 任务类型 | 示例任务 | Raw Tokens | Harness Tokens | Reduction | Recall | Select Latency |
+| 任务类型 | 示例任务 | 原始 token | Harness token | 缩减比例 | recall | 选择延迟 |
 |---|---|---|---|---|---|---|
 | **设置与配置** | `hard-settings-001` | 3,213 | **311** | **90.32%** | **100%** | 3.88 ms |
 | **规则与逻辑** | `hard-rules-vs-readme-001` | 3,213 | **445** | **86.15%** | **100%** | 4.22 ms |

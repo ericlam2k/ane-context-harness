@@ -33,25 +33,25 @@ Zéro appel réseau externe. 100 % privé et hors ligne.
 
 | Métrique | Sans harness (dump complet du dépôt) | Avec harness (déterministe) | Ce que cela signifie pour vous |
 |---|---|---|---|
-| **Median Context Tokens** | **3,213 tokens** | **782 tokens** | **Sends 60.47% less to the LLM** |
-| **Required-Evidence Recall** | 1.0 (100%) | **1.0 (100%)** | **Never missed a single piece of critical code** |
-| **Context Selection Speed** | ~0.01 ms (raw dump) | **3.05 ms – 3.83 ms** | **Sub-4ms local response — 100x faster than network** |
-| **Peak Token Savings** | 0% | **Up to 90.32%** | **Saves up to ~90% on targeted config & settings tasks** |
-| **Ranking Accuracy (nDCG@10)**| n/a | **0.849** | **Places the most critical functions right at the top** |
-| **Secret Redaction** | 0% (leaks all secrets) | **100% local redaction** | **`.env`, AWS keys, and certificates never leave your machine** |
-| **Derived Cost per Task** *(at $3/M)* | ~$0.0096 / task | **~$0.0023 / task** | **Sends ~75% less per task at the stated rate — your bill itself moves with how much the provider reuses instead of re-reading** |
+| **Tokens de contexte médians** | **3,213 tokens** | **782 tokens** | **Envoie 60.47% de moins au LLM** |
+| **Recall des preuves requises** | 1.0 (100%) | **1.0 (100%)** | **N'a jamais manqué un seul élément de code critique** |
+| **Vitesse de sélection du contexte** | ~0.01 ms (dump brut) | **3.05 ms – 3.83 ms** | **Réponse locale en moins de 4 ms — 100x plus rapide que le réseau** |
+| **Économies de tokens maximales** | 0% | **Jusqu'à 90.32%** | **Économise jusqu'à ~90% sur les tâches ciblées de config & paramètres** |
+| **Précision du classement (nDCG@10)**| n/a | **0.849** | **Place les fonctions les plus critiques tout en haut** |
+| **Masquage des secrets** | 0% (fuite de tous les secrets) | **Masquage 100% local** | **`.env`, clés AWS et certificats ne quittent jamais votre machine** |
+| **Coût dérivé par tâche** *(à $3/M)* | ~$0.0096 / task | **~$0.0023 / task** | **Envoie ~75% de moins par tâche au tarif indiqué — votre facture elle-même varie selon ce que le provider réutilise au lieu de le relire** |
 
 *(Latence et mémoire mesurées localement sur Apple Silicon / CPU ; les chiffres de coût et de TTFT sont dérivés aux tarifs de tokens indiqués ; méthodologie et journaux reproductibles dans `benchmarks/reports/` et `benchmarks/logs/`).*
 
 ### Détail d'un échantillon de tâches
 
-| Type de tâche | Exemple de tâche | Raw Tokens | Harness Tokens | Reduction | Recall | Select Latency |
+| Type de tâche | Exemple de tâche | Tokens bruts | Tokens harness | Réduction | Recall | Latence de sélection |
 |---|---|---|---|---|---|---|
-| **Settings & Config** | `hard-settings-001` | 3,213 | **311** | **90.32%** | **100%** | 3.88 ms |
-| **Rules & Logic** | `hard-rules-vs-readme-001` | 3,213 | **445** | **86.15%** | **100%** | 4.22 ms |
-| **Bug Fixes (Python)** | `py-discount-report-001` | 3,189 | **629** | **80.28%** | **100%** | 3.72 ms |
-| **TypeScript Architecture**| `ts-discount-001` | 1,236 | **369** | **70.15%** | **100%** | 1.84 ms |
-| **Complex Multi-file Cart** | `hard-cart-apply-001` | 3,213 | **2,146** | **33.21%** | **100%** | 4.38 ms |
+| **Paramètres & Config** | `hard-settings-001` | 3,213 | **311** | **90.32%** | **100%** | 3.88 ms |
+| **Règles & Logique** | `hard-rules-vs-readme-001` | 3,213 | **445** | **86.15%** | **100%** | 4.22 ms |
+| **Corrections de bugs (Python)** | `py-discount-report-001` | 3,189 | **629** | **80.28%** | **100%** | 3.72 ms |
+| **Architecture TypeScript**| `ts-discount-001` | 1,236 | **369** | **70.15%** | **100%** | 1.84 ms |
+| **Panier multi-fichiers complexe** | `hard-cart-apply-001` | 3,213 | **2,146** | **33.21%** | **100%** | 4.38 ms |
 
 ### Économies de tokens, mesurées (main actuelle)
 
@@ -101,7 +101,7 @@ Explication d'une page générée depuis le vrai pipeline (`scripts/plot_packing
 
 ---
 
-## Démarrage rapide (60 Seconds)
+## Démarrage rapide (60 secondes)
 
 ### 1. Installer
 
@@ -118,7 +118,7 @@ Vérifiez votre installation :
 ane-harness health
 ```
 
-### 1b. Setup en une commande + prove-it (portes d'adoption)
+### 1b. Configuration en une commande + prove-it (portes d'adoption)
 
 ```bash
 # index, install the agent skill, smoke-test (prints one summary line)
