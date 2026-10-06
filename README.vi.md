@@ -21,7 +21,7 @@ Khi bạn vibe-code hoặc chạy AI agent (Cursor, Claude Code, OpenCode, Cline
 
 **ane-context-harness** là một context engine nhẹ, local-first, nằm giữa codebase và coding agent của bạn. Trong **~3 milliseconds**, nó index repo, trích xuất phân cấp symbol (hàm, interface, type), loại nhiễu, redact secret, và đóng gói chỉ evidence code giá trị cao mà agent thực sự cần để hoàn thành task.
 
-> Tên `ane` mang tính lịch sử; nó **không** phải một dependency. Đường đi được ship là thuần CPU và chạy trên macOS Apple Silicon, macOS Intel, và Linux. Tăng tốc phần cứng nằm trong một bản phân phối private riêng.
+> Tên `ane` mang tính lịch sử; nó **không** phải một dependency. Đường đi được ship là thuần CPU và chạy trên macOS Apple Silicon, macOS Intel, và Linux. Tăng tốc phần cứng nằm trong một bản phân phối private tách riêng.
 
 Không có gọi mạng bên ngoài. 100% riêng tư và offline.
 
@@ -31,37 +31,37 @@ Không có gọi mạng bên ngoài. 100% riêng tư và offline.
 
 Đánh giá trên **30 benchmark tasks** (10 nhỏ, 10 điển hình, 10 khó) trên các codebase Python và TypeScript tổng hợp, theo split đánh giá đóng băng của chúng tôi (`benchmarks/splits.json`):
 
-| Metric | Without Harness (Full Repo Dump) | With Harness (Deterministic) | Ý nghĩa với bạn |
+| Chỉ số | Không dùng harness (dump toàn bộ repo) | Có harness (deterministic) | Ý nghĩa với bạn |
 |---|---|---|---|
-| **Median Context Tokens** | **3,213 tokens** | **782 tokens** | **Gửi ít hơn 60.47% tới LLM** |
-| **Required-Evidence Recall** | 1.0 (100%) | **1.0 (100%)** | **Không bao giờ bỏ sót một mảnh code quan trọng nào** |
-| **Context Selection Speed** | ~0.01 ms (raw dump) | **3.05 ms – 3.83 ms** | **Phản hồi local dưới 4ms — nhanh hơn mạng 100x** |
-| **Peak Token Savings** | 0% | **Up to 90.32%** | **Tiết kiệm tới ~90% trên các task config & settings có mục tiêu** |
-| **Ranking Accuracy (nDCG@10)**| n/a | **0.849** | **Đặt các hàm quan trọng nhất ngay trên cùng** |
-| **Secret Redaction** | 0% (leaks all secrets) | **100% local redaction** | **`.env`, AWS keys, và certificates không bao giờ rời máy bạn** |
-| **Derived Cost per Task** *(at $3/M)* | ~$0.0096 / task | **~$0.0023 / task** | **Gửi ít hơn ~75% mỗi task ở mức giá đã nêu — hóa đơn thực tế phụ thuộc vào việc nhà cung cấp tái sử dụng thay vì đọc lại** |
+| **Token ngữ cảnh trung vị** | **3,213 token** | **782 token** | **Gửi ít hơn 60.47% tới LLM** |
+| **Recall bằng chứng bắt buộc** | 1.0 (100%) | **1.0 (100%)** | **Không bao giờ bỏ sót một mảnh code quan trọng nào** |
+| **Tốc độ chọn ngữ cảnh** | ~0.01 ms (dump thô) | **3.05 ms – 3.83 ms** | **Phản hồi local dưới 4ms — nhanh hơn mạng 100x** |
+| **Tiết kiệm token tối đa** | 0% | **Lên đến 90.32%** | **Tiết kiệm tới ~90% trên các task cấu hình & cài đặt có mục tiêu** |
+| **Độ chính xác xếp hạng (nDCG@10)**| n/a | **0.849** | **Đặt các hàm quan trọng nhất ngay trên cùng** |
+| **Che secret** | 0% (lộ toàn bộ secret) | **Che 100% trên máy local** | **`.env`, khóa AWS, và chứng chỉ không bao giờ rời máy bạn** |
+| **Chi phí suy ra mỗi task** *(ở mức $3/M)* | ~$0.0096 / task | **~$0.0023 / task** | **Gửi ít hơn ~75% mỗi task ở mức giá đã nêu — hóa đơn thực tế phụ thuộc vào việc nhà cung cấp tái sử dụng thay vì đọc lại** |
 
-*(Latency và memory đo local trên Apple Silicon / CPU; các số cost và TTFT được suy ra theo mức giá token đã nêu; phương pháp và log tái lập được nằm trong `benchmarks/reports/` và `benchmarks/logs/`).*
+*(Độ trễ và bộ nhớ được đo local trên Apple Silicon / CPU; các số liệu chi phí và TTFT được suy ra theo mức giá token đã nêu; phương pháp và log có thể tái lập nằm trong `benchmarks/reports/` và `benchmarks/logs/`).*
 
 ### Phân tích các task mẫu
 
-| Task Type | Example Task | Raw Tokens | Harness Tokens | Reduction | Recall | Select Latency |
+| Loại task | Task ví dụ | Token thô | Token qua harness | Mức giảm | Recall | Độ trễ select |
 |---|---|---|---|---|---|---|
-| **Settings & Config** | `hard-settings-001` | 3,213 | **311** | **90.32%** | **100%** | 3.88 ms |
-| **Rules & Logic** | `hard-rules-vs-readme-001` | 3,213 | **445** | **86.15%** | **100%** | 4.22 ms |
-| **Bug Fixes (Python)** | `py-discount-report-001` | 3,189 | **629** | **80.28%** | **100%** | 3.72 ms |
-| **TypeScript Architecture**| `ts-discount-001` | 1,236 | **369** | **70.15%** | **100%** | 1.84 ms |
-| **Complex Multi-file Cart** | `hard-cart-apply-001` | 3,213 | **2,146** | **33.21%** | **100%** | 4.38 ms |
+| **Cài đặt & cấu hình** | `hard-settings-001` | 3,213 | **311** | **90.32%** | **100%** | 3.88 ms |
+| **Quy tắc & logic** | `hard-rules-vs-readme-001` | 3,213 | **445** | **86.15%** | **100%** | 4.22 ms |
+| **Sửa bug (Python)** | `py-discount-report-001` | 3,189 | **629** | **80.28%** | **100%** | 3.72 ms |
+| **Kiến trúc TypeScript**| `ts-discount-001` | 1,236 | **369** | **70.15%** | **100%** | 1.84 ms |
+| **Giỏ hàng phức tạp nhiều file** | `hard-cart-apply-001` | 3,213 | **2,146** | **33.21%** | **100%** | 4.38 ms |
 
-### Tiết kiệm token, đã đo (current main)
+### Tiết kiệm token, đã đo (main hiện tại)
 
 Cách đọc biểu đồ này: mỗi job hỏi tool "AI nên đọc gì cho task này?". Panel trái so sánh, theo kích thước job, lượng text bạn sẽ gửi nếu gửi cả codebase (xám) versus những gì harness chọn (xanh) — số phía trên mỗi thanh xanh là lượng bạn gửi bây giờ và nhỏ hơn bao nhiêu. Job khó hơn cần nhiều file hơn, nên thanh xanh lớn hơn — nhưng các file cần thiết được giữ **mọi lần**, đó chính là điểm mấu chốt: nhỏ hơn chỉ tốt nếu không thiếu thứ quan trọng. Panel phải cho thấy cùng một lựa chọn được gửi theo ba cách — đầy đủ chi tiết, mức giữa dễ đọc, và wrapping ngắn nhất — ngắn hơn thì rẻ hơn, và wrapping không bao giờ thay đổi *những gì* được chọn.
 
 ![Ít nội dung cần đọc hơn theo kích thước job, cộng ba cách gói cùng một câu trả lời](docs/token-savings.png)
 
-Đo bằng `PYTHONPATH=src python3 scripts/measure_token_savings.py`, vẽ bằng `scripts/plot_token_savings.py` (frozen eval split, một bộ đếm token được pin).
+Đo bằng `PYTHONPATH=src python3 scripts/measure_token_savings.py`, vẽ bằng `scripts/plot_token_savings.py` (split đánh giá đóng băng, một bộ đếm token được pin).
 
-### Cùng bài tập đối chiếu với tool thật (không key, không account)
+### Cùng bài tập đối chiếu với tool thật (không cần key, không cần tài khoản)
 
 Cách đọc biểu đồ này: đó là một cuộc đua trên cùng 18 jobs với cùng một thước đo — "job giữa giữ bao nhiêu token, và có thứ cần thiết nào bị mất không?". Biểu đồ đầu là headline: gửi hết mọi thứ là mặc định đắt đỏ, tool rewrite bên ngoài thực tế gửi *nhiều hơn* mức cần và từng làm mất một file config mà grader yêu cầu (đánh dấu FAIL), trong khi hai mode của chúng tôi là ngắn nhất và giữ các file cần thiết mọi lần (PASS). Biểu đồ thứ hai cho thấy chi tiết phía sau — riêng việc chọn lọc tiết kiệm được gì, và cùng một lựa chọn co lại lần nữa chỉ bằng cách chọn wrapping ngắn hơn. PASS/FAIL ở đây có đúng một nghĩa: các mảnh mà benchmark grader nói là bắt buộc đã xuất hiện trong pack.
 
@@ -75,7 +75,7 @@ Tái lập: `pip install headroom-ai toon-format`, rồi `PYTHONPATH=src python3
 
 Cách đọc: một job không bao giờ là một câu hỏi — agent hỏi, rồi follow-up, rồi verify. Bench này phát lại cùng cuộc hội thoại 3-turn mỗi job theo ba cách: gửi cả codebase mỗi turn (149,490 tokens), một pack đã cắt (17,094), và ba pack được mang theo trong đó mỗi follow-up giữ mọi thứ các turn trước đã tìm thấy (51,940). Hội thoại mang theo gửi **khoảng một phần ba** chi phí không-harness — ít hơn 97,550 tokens, ít hơn 65.3% — và các file cần thiết sống sót cả 72 turns (recall 1.0 mọi turn; một turn làm mất file cần thiết sẽ làm trật cuộc hội thoại, nên cổng đó mang tính chịu tải, không phải trang trí).
 
-Tái lập: `PYTHONPATH=src python3 scripts/bench_conversation.py` (frozen eval split, một bộ đếm token được pin; ghi `benchmarks/reports/conversation-bench-eval.json`). Ranh giới, nói thẳng: không model nào đọc các pack này, follow-up là chuỗi cố định chứ không phải phản ứng agent thật, không gì bị tính phí, không job nào thực sự được hoàn thành. Nó đo nửa chúng ta đưa vào — việc chọn và mang theo — không phải bản thân vòng lặp.
+Tái lập: `PYTHONPATH=src python3 scripts/bench_conversation.py` (split đánh giá đóng băng, một bộ đếm token được pin; ghi `benchmarks/reports/conversation-bench-eval.json`). Ranh giới, nói thẳng: không model nào đọc các pack này, follow-up là chuỗi cố định chứ không phải phản ứng agent thật, không gì bị tính phí, không job nào thực sự được hoàn thành. Nó đo nửa chúng ta đưa vào — việc chọn và mang theo — không phải bản thân vòng lặp.
 
 ### Điều gì xảy ra với từng file
 
@@ -101,7 +101,7 @@ Trang giải thích một trang được tạo từ pipeline thật (`scripts/pl
 
 ---
 
-## Bắt đầu nhanh (60 Seconds)
+## Bắt đầu nhanh (60 giây)
 
 ### 1. Cài đặt
 
@@ -118,7 +118,7 @@ Xác minh cài đặt của bạn:
 ane-harness health
 ```
 
-### 1b. Setup một lệnh + prove-it (cổng adoption)
+### 1b. Cài đặt một lệnh + prove-it (cổng tiếp nhận)
 
 ```bash
 # index, install the agent skill, smoke-test (prints one summary line)
@@ -135,7 +135,7 @@ ane-harness prove --repo /path/to/your/project --repo-id my-project
 frozen `benchmarks/splits.json`); các lần chạy không gắn nhãn không bao giờ tuyên bố
 recall.
 
-### 2. Index codebase của bạn
+### 2. Lập chỉ mục codebase của bạn
 
 Index bất kỳ thư mục hoặc repository local nào vào store SQLite local (incremental và cực nhanh):
 
@@ -200,7 +200,7 @@ host tương thích OpenCode/Claude/agent nó cũng chạy global, không cần 
 `~/.config/opencode/skills/`, `~/.claude/skills/`, hoặc
 `~/.agents/skills/` (session mới sẽ nhận).
 
-### 3c. Chế độ proxy cho agent không có tích hợp native (`proxy`)
+### 3c. Chế độ proxy cho agent không có tích hợp sẵn (`proxy`)
 
 Pipe task vào stdin (một `{"task": "..."}` hoặc task trần mỗi dòng),
 nhận evidence Markdown ra stdout — không cần skill, MCP, hay HTTP:
@@ -215,16 +215,16 @@ Stdout là Markdown thuần (một doc mỗi task, phân tách bằng `---`, v�
 ranh giới `<!-- ane-harness task N/M ... -->`); footer cắt
 theo task đi ra stderr. Bỏ `--repo` khi repo-id đã được index.
 
-### 4. Hoặc chạy như local background server
+### 4. Hoặc chạy như một server chạy nền local
 
-> **Agents: do NOT run this inside an agent turn.** `serve` (like `mcp`)
-> never exits — a tool call that launches it blocks forever, so the turn
-> never completes and every later prompt queues behind it. Bare
-> `update`/`proxy` with no `--tasks-file` on an interactive terminal exit
-> 2 with a hint instead of waiting on stdin. Inside agent turns use only
-> one-shot commands (`index`, `select`, `prove`, `daily`, `health`). Run
-> the server detached from a real terminal
-> (`nohup ane-harness serve --port 8765 &`) or not at all.
+> **Agent: KHÔNG chạy lệnh này bên trong một turn của agent.** `serve` (giống `mcp`)
+> không bao giờ thoát — một tool call khởi chạy nó sẽ block mãi mãi, nên turn đó
+> không bao giờ xong và mọi prompt tới sau đều kẹt lại phía sau. Các lệnh
+> `update`/`proxy` không kèm `--tasks-file` mà chạy trên terminal tương tác sẽ thoát
+> với mã 2 kèm gợi ý thay vì ngồi chờ stdin. Trong turn của agent chỉ dùng
+> các lệnh one-shot (`index`, `select`, `prove`, `daily`, `health`). Hãy chạy
+> server tách khỏi terminal thật
+> (`nohup ane-harness serve --port 8765 &`) hoặc đừng chạy gì cả.
 
 Khởi động HTTP API local (sẵn sàng móc vào agent hoặc tool của bạn):
 
@@ -306,7 +306,7 @@ User Prompt  ──────►   BM25 Lexical Search
 4. **Phát hiện secret & hàng rào riêng tư:** Các pattern loại trừ chuẩn (`.env*`, `.aws/**`, `*.pem`, v.v.) không bao giờ được đọc, và bộ phân loại regex + entropy thay token nhạy cảm bằng placeholder ổn định.
 5. **Nén nhiễu:** Output tool dài (test traces, terminal logs) được thu thành digest gọn, vẫn giữ tín hiệu.
 
-### Tăng tốc phần cứng: bản phân phối private riêng
+### Tăng tốc phần cứng: bản phân phối private tách riêng
 
 Tên có chứa `ane`, nhưng **không yêu cầu hay tuyên bố silicon chuyên dụng** để
 chạy harness. Engine được ship là CPU xác định thuần (Python +
@@ -327,7 +327,7 @@ Dành cho researcher, architect, và technical lead quan tâm tới độ nghiê
 
 ---
 
-## Chạy bộ test
+## Chạy bộ kiểm thử
 
 ```bash
 # Run all 258 unit, integration, and security tests
