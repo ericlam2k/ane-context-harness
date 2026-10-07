@@ -2,11 +2,11 @@
 
 [Tiếng Anh](README.md) · [Tiếng Việt](README.vi.md) · [Tiếng Trung](README.zh.md) · [Tiếng Pháp](README.fr.md) · [Tiếng Tây Ban Nha](README.es.md) · [Tiếng Nhật](README.ja.md) · [Tiếng Hàn](README.ko.md)
 
-> **Cắt hơn 60% ngữ cảnh mà agent đọc, giữ mọi dòng bắt buộc, và chọn ngữ cảnh dưới 4ms — chạy hoàn toàn offline trên máy local của bạn.**
+> **Cắt giảm 60%+ ngữ cảnh mà agent của bạn phải đọc, giữ lại trọn vẹn từng dòng code cần thiết, chọn lọc ngữ cảnh dưới 4ms — vận hành hoàn toàn offline ngay trên máy cục bộ.**
 
 [![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14-blue.svg)](https://python.org)
 [![Platform](https://img.shields.io/badge/Platform-macOS%20(Apple%20Silicon)%20%7C%20Linux-brightgreen.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-258%20passed-success.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-265%20passed-success.svg)]()
 [![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)]()
 
 ---
@@ -14,9 +14,9 @@
 ## Đây là gì?
 
 Khi bạn vibe-code hoặc chạy AI agent (Cursor, Claude Code, OpenCode, Cline, Windsurf, Aider), nhồi cả codebase vào cửa sổ ngữ cảnh LLM là **chậm, lãng phí, và nguy hiểm**:
-- **Ngữ cảnh phình to:** Nhét cả file vào mọi lượt trò chuyện chôn model dưới boilerplate không liên quan — và nhà cung cấp đếm mọi token, dù có tái sử dụng hay không.
-- **Phản hồi chậm hơn:** Thời gian ra token đầu của LLM bò chậm khi prefilling hàng nghìn dòng không cần thiết.
-- **Lạc giữa đống ngữ cảnh:** Model ảo giác hoặc bỏ sót bug khi bị chôn dưới boilerplate không liên quan.
+- **Ngữ cảnh phình to (bloated context):** Nhét cả file vào mọi lượt trò chuyện chôn model dưới boilerplate không liên quan — và nhà cung cấp đếm mọi token, dù có tái sử dụng hay không.
+- **Phản hồi chậm hơn (time-to-first-token):** Thời gian ra token đầu của LLM bò chậm khi prefilling hàng nghìn dòng không cần thiết.
+- **Lạc giữa đống ngữ cảnh (lost in the middle):** Model ảo giác hoặc bỏ sót bug khi bị chôn dưới boilerplate không liên quan.
 - **Rò rỉ secret:** Vô tình gửi secret trong `.env` hoặc AWS credentials tới nhà cung cấp model bên thứ ba.
 
 **ane-context-harness** là một context engine nhẹ, local-first, nằm giữa codebase và coding agent của bạn. Trong **~3 milliseconds**, nó index repo, trích xuất phân cấp symbol (hàm, interface, type), loại nhiễu, redact secret, và đóng gói chỉ evidence code giá trị cao mà agent thực sự cần để hoàn thành task.
@@ -81,6 +81,10 @@ Tái lập: `PYTHONPATH=src python3 scripts/bench_conversation.py` (split đánh
 
 Bốn quy tắc đã được tài liệu hóa, không model tham gia, không ngoại lệ: file bạn pin (hoặc grader yêu cầu) đi **đúng từng byte, luôn luôn**. Code, config, và diffs giữ cấu trúc — picker chọn cả symbol, không bao giờ viết lại chúng. Chỉ **logs và output tool nhiễu** bị thu gọn (các dòng tiến trình lặp, traceback trùng, spam cài đặt gập thành một dòng tóm tắt nói những gì đã bị loại). Prose đi như đã chọn, không bao giờ diễn lại — không có neural rewriter, nên không gì có thể paraphrase docs của bạn thành điều chúng không nói. Mọi pack liệt kê, theo từng file, quy tắc nào được áp dụng — kiểm tra `diagnostics.routing` trong bất kỳ report nào và tranh luận với nó.
 
+![Minh họa khái niệm: so sánh các cách lấy ngữ cảnh trên cùng thước đo — gửi hết, cửa sổ ngây thơ, tóm tắt, và chọn lọc dẫn dắt bởi AST](docs/ane-benchmark-concept.jpg)
+
+*Hình minh họa khái niệm, không phải kết quả đo — thang token và các con số trong hình là minh họa. Mọi số đo thực tế nằm ở các bảng và biểu đồ đã đo phía trên.*
+
 ---
 
 ## Vì sao developer & vibecoder yêu thích
@@ -91,6 +95,10 @@ Bốn quy tắc đã được tài liệu hóa, không model tham gia, không ng
 - 🛡️ **Khử trùng secret zero-leak:** Tự động quét và redact AWS keys, private RSA/PEM keys, file `.env`, và secret entropy cao bằng placeholder ổn định theo request trước khi render prompt.
 - 🔌 **Hỗ trợ agent phổ quát:** Ship sẵn adapter dùng được cho **Anthropic Messages** (với breakpoint prompt-caching), **OpenAI Responses**, chat **OpenAI-Compatible**, và **Markdown** sạch.
 
+![Minh họa khái niệm: baseline nặng nề so với harness gọn nhẹ — ít token hơn, giữ trọn độ chính xác](docs/ane-concept-dashboard.jpg)
+
+*Hình minh họa khái niệm — thang token và bảng số trong hình là minh họa. Số đo thực tế: trung vị 782 so với 3,213 token (giảm 60.47%), recall 1.0, xem bảng benchmark phía trên.*
+
 ---
 
 ## Cách hoạt động
@@ -98,6 +106,10 @@ Bốn quy tắc đã được tài liệu hóa, không model tham gia, không ng
 ![Cách từ của bạn thành thứ AI đọc: một job benchmark thật được truy vết từ đầu đến cuối — từ thường vào, mọi chunk được chấm điểm, lý do mỗi thẻ bay, 369 trên 1,236 token](docs/context-packing-overview.png)
 
 Trang giải thích một trang được tạo từ pipeline thật (`scripts/plot_packing_overview.py`): một job benchmark thật được truy vết từ đầu đến cuối. Từ của bạn vào, từ nhỏ bị bỏ, mọi chunk của repo được chấm điểm, người thắng bay kèm lý do — và AI đọc 369 token thay vì toàn bộ 1,236 (ít hơn 70%, và không thiếu gì đáp án cần). Mọi con số trong đó đều được đo, không phải minh họa.
+
+![Minh họa khái niệm: cắt ngắn thô phá vỡ AST, import và reference — harness giữ chữ ký code, cấu trúc AST và dependency thiết yếu](docs/ane-concept-generic.jpg)
+
+*Hình minh họa khái niệm cho ý tưởng trên — code trong hình là minh họa đồ họa, không phải trace thật. Trace đo thực tế là biểu đồ ngay phía trên.*
 
 ---
 
@@ -305,6 +317,10 @@ User Prompt  ──────►   BM25 Lexical Search
 3. **Packing ngân sách theo điểm:** Ngữ cảnh được pack tham lam để vừa khít trong token budget bạn chỉ định (ví dụ 1,200 tokens), bảo đảm evidence bắt buộc không bao giờ bị cắt cụt.
 4. **Phát hiện secret & hàng rào riêng tư:** Các pattern loại trừ chuẩn (`.env*`, `.aws/**`, `*.pem`, v.v.) không bao giờ được đọc, và bộ phân loại regex + entropy thay token nhạy cảm bằng placeholder ổn định.
 5. **Nén nhiễu:** Output tool dài (test traces, terminal logs) được thu thành digest gọn, vẫn giữ tín hiệu.
+
+![Minh họa khái niệm: system prompt và payload qua bộ lọc thành payload sạch — pipeline lọc của harness](docs/ane-proxy-tracker-concept.jpg)
+
+*Hình minh họa khái niệm cho pipeline trên — dashboard trong hình là minh họa đồ họa, không phải ảnh chụp công cụ thật.*
 
 ### Tăng tốc phần cứng: bản phân phối private tách riêng
 
