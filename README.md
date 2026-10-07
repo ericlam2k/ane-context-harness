@@ -81,6 +81,10 @@ Reproduce: `PYTHONPATH=src python3 scripts/bench_conversation.py` (frozen eval s
 
 Four documented rules, no model involved, no exceptions: files you pin (or the grader requires) travel **byte-exact, always**. Code, config, and diffs keep their structure — the picker selects whole symbols, never rewrites them. Only **logs and noisy tool output** get collapsed (repeated progress lines, duplicate tracebacks, install spam fold into a summary line that says what was removed). Prose travels as picked, never reworded — there is no neural rewriter, so nothing can paraphrase your docs into something they didn't say. Every pack lists, per file, which rule applied — check `diagnostics.routing` in any report and argue with it.
 
+![Concept illustration: comparing context-fetching approaches on one yardstick — send-everything, naive window, summarizer, and AST-guided selection](docs/ane-benchmark-concept.jpg)
+
+*Concept illustration, not measured results — the token scale and figures inside are illustrative. All real measurements are in the tables and measured charts above.*
+
 ---
 
 ## Why Developers & Vibecoders Love It
@@ -91,6 +95,10 @@ Four documented rules, no model involved, no exceptions: files you pin (or the g
 - 🛡️ **Zero-Leak Secret Sanitization:** Automatically scans and redacts AWS keys, private RSA/PEM keys, `.env` files, and high-entropy secrets with stable request-scoped placeholders before prompts are rendered.
 - 🔌 **Universal Agent Support:** Ships ready-to-use adapters for **Anthropic Messages** (with prompt-caching breakpoints), **OpenAI Responses**, **OpenAI-Compatible chat**, and clean **Markdown**.
 
+![Concept illustration: heavy baseline versus lean harness — fewer tokens, full accuracy kept](docs/ane-concept-dashboard.jpg)
+
+*Concept illustration — the token scale and table figures inside are illustrative. Real measurements: 782 vs 3,213 median tokens (60.47% cut), recall 1.0, see the benchmark tables above.*
+
 ---
 
 ## How it works
@@ -98,6 +106,10 @@ Four documented rules, no model involved, no exceptions: files you pin (or the g
 ![How your words become what the AI reads: one real benchmark job traced end to end — plain words in, every chunk scored, why each card flew, 369 of 1,236 tokens](docs/context-packing-overview.png)
 
 One-page explainer generated from the real pipeline (`scripts/plot_packing_overview.py`): one real benchmark job traced end to end. Your words in, small words dropped, every chunk of the repo scored, the winners fly with their reasons attached — and the AI reads 369 tokens instead of the whole 1,236 (70% less, and nothing the answer key needs is missing). Every number in it is measured, not illustrated.
+
+![Concept illustration: raw truncation breaks ASTs, imports, and references — the harness keeps code signatures, AST structure, and essential dependencies](docs/ane-concept-generic.jpg)
+
+*Concept illustration for the idea above — the code inside is graphic art, not a real trace. The measured real trace is the chart directly above.*
 
 ---
 
@@ -305,6 +317,10 @@ User Prompt  ──────►   BM25 Lexical Search
 3. **Score-First Budget Packing:** Context is greedily packed to fit strictly within your specified token budget (e.g., 1,200 tokens), guaranteeing mandatory evidence is never truncated.
 4. **Secret Detection & Privacy Fence:** Canonical exclusion patterns (`.env*`, `.aws/**`, `*.pem`, etc.) are never read, and regex + entropy classifiers replace sensitive tokens with stable placeholders.
 5. **Noise Compression:** Verbose tool outputs (test traces, terminal logs) are collapsed into compact signal-preserving digests.
+
+![Concept illustration: system prompt and payload through the filter into a clean payload — the harness filtering pipeline](docs/ane-proxy-tracker-concept.jpg)
+
+*Concept illustration for the pipeline above — the dashboard inside is graphic art, not a screenshot of a real tool.*
 
 ### Hardware acceleration: separate private distribution
 

@@ -81,6 +81,11 @@ Reproduisez : `PYTHONPATH=src python3 scripts/bench_conversation.py` (split d'é
 
 Quatre règles documentées, aucun modèle impliqué, aucune exception : les fichiers que vous épinglez (ou que le grader exige) voyagent **octet pour octet, toujours**. Le code, la config et les diffs gardent leur structure — le sélecteur choisit des symboles entiers, ne les réécrit jamais. Seuls **les logs et les sorties d'outils bruyantes** sont compactés (lignes de progression répétées, tracebacks dupliqués, spam d'install se plient en une ligne de résumé qui dit ce qui a été retiré). La prose voyage telle que choisie, jamais reformulée — il n'y a pas de réécrivain neuronal, donc rien ne peut paraphraser vos docs en quelque chose qu'elles n'ont pas dit. Chaque pack liste, par fichier, quelle règle s'est appliquée — consultez `diagnostics.routing` dans n'importe quel rapport et discutez-en.
 
+![Illustration conceptuelle : comparer les approches de récupération de contexte sur une même échelle](docs/ane-benchmark-concept.jpg)
+
+*Illustration conceptuelle, pas un résultat mesuré — l'échelle des tokens et les chiffres de l'image sont illustratifs. Toutes les vraies mesures sont dans les tableaux et graphiques mesurés ci-dessus.*
+
+
 ---
 
 ## Pourquoi les développeurs et les vibecoders l'adorent
@@ -91,6 +96,11 @@ Quatre règles documentées, aucun modèle impliqué, aucune exception : les fic
 - 🛡️ **Sanitisation des secrets zéro fuite :** Scanne et masque automatiquement les clés AWS, les clés privées RSA/PEM, les fichiers `.env` et les secrets à haute entropie avec des placeholders stables scopés à la requête, avant le rendu des prompts.
 - 🔌 **Support universel des agents :** Livré avec des adaptateurs prêts à l'emploi pour **Anthropic Messages** (avec breakpoints de prompt-caching), **OpenAI Responses**, le chat **OpenAI-Compatible**, et du **Markdown** propre.
 
+![Illustration conceptuelle : baseline lourde contre harness léger — moins de tokens, précision intacte](docs/ane-concept-dashboard.jpg)
+
+*Illustration conceptuelle — l'échelle et les chiffres du tableau sont illustratifs. Mesures réelles : 782 contre 3 213 tokens médians (réduction de 60,47 %), recall 1,0, voir les tableaux ci-dessus.*
+
+
 ---
 
 ## Comment ça marche
@@ -98,6 +108,11 @@ Quatre règles documentées, aucun modèle impliqué, aucune exception : les fic
 ![Comment vos mots deviennent ce que l'IA lit : une vraie tâche du benchmark tracée de bout en bout — mots simples à l'entrée, chaque bloc scoré, pourquoi chaque carte vole, 369 des 1 236 tokens](docs/context-packing-overview.png)
 
 Explication d'une page générée depuis le vrai pipeline (`scripts/plot_packing_overview.py`) : une vraie tâche du benchmark tracée de bout en bout. Vos mots entrent, les petits mots tombent, chaque bloc du dépôt est scoré, les gagnants volent avec leurs raisons — et l'IA lit 369 tokens au lieu des 1 236 entiers (70 % de moins, et rien de ce qu'exige la correction n'est absent). Chaque chiffre est mesuré, pas illustré.
+
+![Illustration conceptuelle : la troncature brute casse les AST, les imports et les références — le harness garde les signatures, la structure AST et les dépendances essentielles](docs/ane-concept-generic.jpg)
+
+*Illustration conceptuelle de l'idée ci-dessus — le code dans l'image est un visuel, pas une vraie trace. La vraie trace mesurée est le graphique juste au-dessus.*
+
 
 ---
 
@@ -305,6 +320,11 @@ User Prompt  ──────►   BM25 Lexical Search
 3. **Packing budgétaire score-first :** Le contexte est packé goulûment pour tenir strictement dans votre budget de tokens spécifié (p. ex. 1,200 tokens), garantissant que les preuves obligatoires ne sont jamais tronquées.
 4. **Détection de secrets et barrière de confidentialité :** Les motifs d'exclusion canoniques (`.env*`, `.aws/**`, `*.pem`, etc.) ne sont jamais lus, et des classifieurs regex + entropie remplacent les tokens sensibles par des placeholders stables.
 5. **Compression du bruit :** Les sorties d'outils verbeuses (traces de tests, logs de terminal) sont compactées en digests compacts qui préservent le signal.
+
+![Illustration conceptuelle : prompt système et payload à travers le filtre vers un payload propre — le pipeline de filtrage du harness](docs/ane-proxy-tracker-concept.jpg)
+
+*Illustration conceptuelle du pipeline ci-dessus — le tableau de bord dans l'image est un visuel, pas une capture d'un vrai outil.*
+
 
 ### Accélération matérielle : distribution privée séparée
 

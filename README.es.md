@@ -81,6 +81,11 @@ Reproduce: `PYTHONPATH=src python3 scripts/bench_conversation.py` (split de eval
 
 Cuatro reglas documentadas, sin modelo de por medio, sin excepciones: los archivos que fijas (o que el grader exige) viajan **byte a byte, siempre**. El código, la config y los diffs conservan su estructura — el picker selecciona símbolos enteros, nunca los reescribe. Solo **logs y salida ruidosa de herramientas** se colapsan (líneas de progreso repetidas, tracebacks duplicados, spam de install se pliegan en una línea de resumen que dice qué se eliminó). La prosa viaja tal como se eligió, nunca reescrita — no hay rewriter neuronal, así que nada puede parafrasear tus docs en algo que no dijeran. Cada pack lista, por archivo, qué regla se aplicó — comprueba `diagnostics.routing` en cualquier informe y discútelo.
 
+![Ilustración conceptual: comparar enfoques de recuperación de contexto con la misma vara](docs/ane-benchmark-concept.jpg)
+
+*Ilustración conceptual, no un resultado medido — la escala de tokens y las cifras de la imagen son ilustrativas. Todas las mediciones reales están en las tablas y gráficos medidos de arriba.*
+
+
 ---
 
 ## Por qué lo quieren los desarrolladores y vibecoders
@@ -91,6 +96,11 @@ Cuatro reglas documentadas, sin modelo de por medio, sin excepciones: los archiv
 - 🛡️ **Sanitización de secretos Zero-Leak:** Escanea y redacta automáticamente claves AWS, claves privadas RSA/PEM, archivos `.env` y secretos de alta entropía con placeholders estables acotados a la petición antes de renderizar los prompts.
 - 🔌 **Soporte universal de agentes:** Incluye adaptadores listos para usar para **Anthropic Messages** (con breakpoints de prompt-caching), **OpenAI Responses**, chat **OpenAI-Compatible** y **Markdown** limpio.
 
+![Ilustración conceptual: baseline pesado frente a harness ligero — menos tokens, precisión intacta](docs/ane-concept-dashboard.jpg)
+
+*Ilustración conceptual — la escala y las cifras de la tabla son ilustrativas. Mediciones reales: 782 frente a 3.213 tokens medianos (recorte del 60,47 %), recall 1,0, ver las tablas de arriba.*
+
+
 ---
 
 ## Cómo funciona
@@ -98,6 +108,11 @@ Cuatro reglas documentadas, sin modelo de por medio, sin excepciones: los archiv
 ![Cómo tus palabras se convierten en lo que la IA lee: una tarea real del benchmark rastreada de principio a fin — palabras simples, cada bloque puntuado, por qué vuela cada tarjeta, 369 de 1.236 tokens](docs/context-packing-overview.png)
 
 Explicación de una página generada desde el pipeline real (`scripts/plot_packing_overview.py`): una tarea real del benchmark rastreada de principio a fin. Entran tus palabras, caen las palabras cortas, cada bloque del repo se puntúa, los ganadores vuelan con sus razones — y la IA lee 369 tokens en vez de los 1.236 completos (70 % menos, y no falta nada de lo que la corrección necesita). Cada número está medido, no ilustrado.
+
+![Ilustración conceptual: el truncado bruto rompe AST, imports y referencias — el harness conserva firmas, estructura AST y dependencias esenciales](docs/ane-concept-generic.jpg)
+
+*Ilustración conceptual de la idea anterior — el código de la imagen es arte gráfico, no una traza real. La traza real medida es el gráfico de justo arriba.*
+
 
 ---
 
@@ -305,6 +320,11 @@ User Prompt  ──────►   BM25 Lexical Search
 3. **Empaquetado score-first con presupuesto:** El contexto se empaqueta de forma greedy para caber estrictamente en tu presupuesto de tokens (p. ej., 1,200 tokens), garantizando que la evidencia obligatoria nunca se trunque.
 4. **Detección de secretos y valla de privacidad:** Los patrones canónicos de exclusión (`.env*`, `.aws/**`, `*.pem`, etc.) nunca se leen, y clasificadores de regex + entropía reemplazan tokens sensibles con placeholders estables.
 5. **Compresión de ruido:** Salidas verbosas de herramientas (trazas de test, logs de terminal) se colapsan en digestos compactos que conservan la señal.
+
+![Ilustración conceptual: system prompt y payload a través del filtro hacia un payload limpio — el pipeline de filtrado del harness](docs/ane-proxy-tracker-concept.jpg)
+
+*Ilustración conceptual del pipeline anterior — el panel de la imagen es arte gráfico, no una captura de una herramienta real.*
+
 
 ### Aceleración por hardware: distribución privada aparte
 
