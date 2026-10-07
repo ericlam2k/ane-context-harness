@@ -103,9 +103,9 @@ Bốn quy tắc đã được tài liệu hóa, không model tham gia, không ng
 
 ## Cách hoạt động
 
-![Cách từ của bạn thành thứ AI đọc: một job benchmark thật được truy vết từ đầu đến cuối — từ thường vào, mọi chunk được chấm điểm, lý do mỗi thẻ bay, 369 trên 1,236 token](docs/context-packing-overview.png)
+![Cách từ của bạn thành thứ AI đọc: một job benchmark thật được truy vết từ đầu đến cuối — từ thường vào, mọi chunk được chấm điểm, lý do mỗi thẻ bay, 369 trên 1,236 token](docs/how-it-works-neon.jpg)
 
-Trang giải thích một trang được tạo từ pipeline thật (`scripts/plot_packing_overview.py`): một job benchmark thật được truy vết từ đầu đến cuối. Từ của bạn vào, từ nhỏ bị bỏ, mọi chunk của repo được chấm điểm, người thắng bay kèm lý do — và AI đọc 369 token thay vì toàn bộ 1,236 (ít hơn 70%, và không thiếu gì đáp án cần). Mọi con số trong đó đều được đo, không phải minh họa.
+Trang giải thích một job benchmark thật được truy vết từ đầu đến cuối (cùng trace đo mà pipeline script vẽ — bản gốc được tạo ở `scripts/plot_packing_overview.py`). Từ của bạn vào, từ nhỏ bị bỏ, mọi chunk của repo được chấm điểm, người thắng bay kèm lý do — và AI đọc 369 token thay vì toàn bộ 1,236 (ít hơn 70%, và không thiếu gì đáp án cần). Mọi con số trong đó đều được đo, không phải minh họa.
 
 ![Minh họa khái niệm: cắt ngắn thô phá vỡ AST, import và reference — harness giữ chữ ký code, cấu trúc AST và dependency thiết yếu](docs/ane-concept-generic.jpg)
 
