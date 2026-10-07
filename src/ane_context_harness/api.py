@@ -64,7 +64,8 @@ class _Handler(BaseHTTPRequestHandler):
             req = _parse_select(body)
             pkg = self.pipeline.select_context(req)
             if not pkg.markdown:
-                pkg.markdown = render_markdown(pkg)
+                pkg.markdown = render_markdown(
+                    pkg, conversation=req.conversation_summary or "")
             out = pkg.__dict__ if hasattr(pkg, "__dict__") else pkg
             self._send(200, out)
             return

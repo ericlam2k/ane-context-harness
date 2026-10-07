@@ -45,23 +45,35 @@ def _select_human(pkg: schemas.EvidencePackage, budget: int) -> str:
 
 
 async def select_context_tool(repo_id: str, task: str, budget: int = 12000,
-                              include_content: bool = True) -> str:
+                              include_content: bool = True,
+                              explicit_paths: list[str] | None = None,
+                              exclude_paths: list[str] | None = None,
+                              conversation_summary: str | None = None) -> str:
     """MCP tool: select context for a single task (Arm B deterministic).
 
     Unlike the old stats-only shape, this delivers the evidence package:
     per-chunk path/lines/symbol/score/content plus rendered markdown, so a
     calling agent receives usable context, not just cut totals.
     Pass include_content=False for the legacy stats-only report.
+
+    ``conversation_summary`` carries compacted prior context (rendered in its
+    own section, never scored or pinned — never stuff it into ``task``).
+    ``exclude_paths`` drops those files after ranking; pass explicit paths to
+    pin.
     """
     cfg = build_config()
     pipe = Pipeline(cfg)
     req = schemas.SelectRequest(repository_id=repo_id, task=task,
-                                token_budget=budget, explicit_paths=[])
+                                 token_budget=budget,
+                                 explicit_paths=explicit_paths or [],
+                                 exclude_paths=exclude_paths or [],
+                                 conversation_summary=conversation_summary)
     pkg = pipe.select_context(req)
     out = _select_summary(pkg)
     out["summary"] = _select_human(pkg, budget)
     if include_content:
-        pkg.markdown = render_markdown(pkg)
+        pkg.markdown = render_markdown(pkg,
+                                       conversation=req.conversation_summary or "")
         out["evidence"] = [dict(e) for e in pkg.evidence]
         out["markdown"] = pkg.markdown
         out["markdown_length"] = len(pkg.markdown)
@@ -137,13 +149,23 @@ def build_server() -> Any:
 
     @server.tool()
     async def select(repo_id: str, task: str, budget: int = 12000,
-                     include_content: bool = True) -> str:
+                     include_content: bool = True,
+                     explicit_paths: list[str] | None = None,
+                     exclude_paths: list[str] | None = None,
+                     conversation_summary: str | None = None) -> str:
         """Select context for a single task (Arm B deterministic).
 
         Returns the evidence package (chunks + markdown) by default;
-        pass include_content=False for stats only."""
+        pass include_content=False for stats only. Provide
+        ``conversation_summary`` for compacted prior context (rendered last,
+        never scored). Use ``exclude_paths`` to drop specific files, and
+        ``explicit_paths`` to pin.
+        """
         return await select_context_tool(repo_id, task, budget,
-                                         include_content)
+                                         include_content,
+                                         explicit_paths=explicit_paths,
+                                         exclude_paths=exclude_paths,
+                                         conversation_summary=conversation_summary)
 
     @server.tool()
     async def update(repo_id: str, budget: int, tasks: list[str]) -> str:

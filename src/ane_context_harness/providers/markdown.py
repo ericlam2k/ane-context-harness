@@ -29,7 +29,7 @@ def render_prompt_markdown(package, *, instructions: str = "",
     return "\n".join(lines).rstrip() + "\n"
 
 
-def render_markdown(package: EvidencePackage) -> str:
+def render_markdown(package: EvidencePackage, *, conversation: str = "") -> str:
     lines = []
     lines.append(f"# Selected repository context")
     lines.append("")
@@ -54,5 +54,9 @@ def render_markdown(package: EvidencePackage) -> str:
         lines.append("```")
         lines.append(ev.get("content", ""))
         lines.append("```")
+        lines.append("")
+    if conversation and conversation.strip():
+        lines.append("## Conversation state")
+        lines.append(conversation.strip())
         lines.append("")
     return "\n".join(lines)

@@ -389,7 +389,8 @@ class Pipeline:
             "diagnostics": diag,
         }
         pkg.metrics = metrics
-        pkg.markdown = "" if cleared else render_markdown(pkg)
+        pkg.markdown = "" if cleared else render_markdown(
+            pkg, conversation=request.conversation_summary or "")
         from .integrity import verify_package
         diag["integrity"] = verify_package(pkg.evidence, [pkg.markdown])
         return pkg
