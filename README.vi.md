@@ -97,7 +97,7 @@ Bốn quy tắc đã được tài liệu hóa, không model tham gia, không ng
 
 ![Minh họa khái niệm: baseline nặng nề so với harness gọn nhẹ — ít token hơn, giữ trọn độ chính xác](docs/ane-concept-dashboard.jpg)
 
-*Hình minh họa khái niệm — thang token và bảng số trong hình là minh họa. Số đo thực tế: trung vị 782 so với 3,213 token (giảm 60.47%), recall 1.0, xem bảng benchmark phía trên.*
+*Hình tóm tắt đã đo — các trung vị từ `benchmarks/reports/phase5-ab-evaluation.json` (frozen eval split, 18 task, Arm B deterministic): 3,213 → 782 token (giảm 60.47%), min required recall 1.0.*
 
 ---
 

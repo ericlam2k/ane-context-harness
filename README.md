@@ -97,7 +97,7 @@ Four documented rules, no model involved, no exceptions: files you pin (or the g
 
 ![Concept illustration: heavy baseline versus lean harness — fewer tokens, full accuracy kept](docs/ane-concept-dashboard.jpg)
 
-*Concept illustration — the token scale and table figures inside are illustrative. Real measurements: 782 vs 3,213 median tokens (60.47% cut), recall 1.0, see the benchmark tables above.*
+*Measured summary figure — medians from `benchmarks/reports/phase5-ab-evaluation.json` (frozen eval split, 18 tasks, Arm B deterministic): 3,213 → 782 tokens (60.47% cut), min required recall 1.0.*
 
 ---
 

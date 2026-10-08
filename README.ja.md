@@ -152,7 +152,7 @@ print(f"Packed {package.metrics['selected_tokens']} tokens (cut {package.metrics
 
 ![概念イラスト: 重いベースラインと軽量ハーネス——トークンは少なく、精度はそのまま](docs/ane-concept-dashboard.jpg)
 
-*概念イラスト——図中の規模や表の数値はイメージです。実測値: 中央値 782 対 3,213 トークン（60.47% 削減）、recall 1.0、詳しくは上記の表をご覧ください。*
+*实測サマリー図——中央値は `benchmarks/reports/phase5-ab-evaluation.json` より（frozen eval split、18 タスク、Arm B deterministic）: 3,213 → 782 トークン（60.47% 削減）、min required recall 1.0。*
 
 ## ライセンス
 

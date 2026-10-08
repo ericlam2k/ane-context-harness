@@ -180,7 +180,7 @@ print(f"Packed {package.metrics['selected_tokens']} tokens (cut {package.metrics
 
 ![概念示意图：庞大的基线与轻量的 harness——更少 token，保持完整准确率](docs/ane-concept-dashboard.jpg)
 
-*概念示意图——图中的 token 量级与表格数字仅为示意。实测数据：中位数 782 对 3,213 token（削减 60.47%），recall 1.0，见上方的表格。*
+*实测汇总图——中位数来自 `benchmarks/reports/phase5-ab-evaluation.json`（frozen eval split，18 个任务，Arm B deterministic）：3,213 → 782 token（削减 60.47%），min required recall 1.0。*
 
 ## 开源协议
 

@@ -152,7 +152,7 @@ print(f"Packed {package.metrics['selected_tokens']} tokens (cut {package.metrics
 
 ![Illustration conceptuelle : baseline lourde contre harness léger — moins de tokens, précision intacte](docs/ane-concept-dashboard.jpg)
 
-*Illustration conceptuelle — l'échelle et les chiffres du tableau sont illustratifs. Mesures réelles : 782 contre 3 213 tokens médians (réduction de 60,47 %), recall 1,0, voir le tableau ci-dessus.*
+*Figure récapitulative mesurée — médianes issues de `benchmarks/reports/phase5-ab-evaluation.json` (frozen eval split, 18 tâches, Arm B deterministic) : 3 213 → 782 tokens (réduction de 60,47 %), min required recall 1,0.*
 
 ## Licence
 

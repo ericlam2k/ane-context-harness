@@ -152,7 +152,7 @@ print(f"Packed {package.metrics['selected_tokens']} tokens (cut {package.metrics
 
 ![개념 일러스트: 무거운 베이스라인과 가벼운 하네스 — 토큰은 적게, 정확도는 그대로](docs/ane-concept-dashboard.jpg)
 
-*개념 일러스트 — 그림 속 규모와 표 수치는 예시입니다. 실제 측정값: 중앙값 782 대 3,213 토큰(60.47% 감소), recall 1.0, 위의 표를 참조하십시오.*
+*실측 요약 그림 — 중앙값은 `benchmarks/reports/phase5-ab-evaluation.json`에서(frozen eval split, 18개 작업, Arm B deterministic): 3,213 → 782 토큰(60.47% 감소), min required recall 1.0.*
 
 ## 라이선스
 
