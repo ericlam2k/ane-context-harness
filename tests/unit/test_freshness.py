@@ -70,23 +70,28 @@ def test_select_refreshes_pinned_and_notices(tmp_path):
                   explicit=["docs/rules.md"])
     assert pkg.metrics["diagnostics"]["pinned_changed"] == []
     assert pkg.metrics["diagnostics"]["pinned_missing"] == []
+    assert pkg.metrics["diagnostics"]["full_changed"] == []
+    assert pkg.metrics["diagnostics"]["full_missing"] == []
 
     # change the pinned file underneath
     (tmp_path / "repo" / "docs" / "rules.md").write_text(
         "round half to even always", encoding="utf-8")
     pkg2 = _select(pipe, "fresh-repo", "rounding rule",
                    explicit=["docs/rules.md"])
-    assert pkg2.metrics["diagnostics"]["pinned_changed"] == ["docs/rules.md"]
+    # Full incremental refresh runs first and handles the change
+    assert pkg2.metrics["diagnostics"]["full_changed"] == ["docs/rules.md"]
+    assert pkg2.metrics["diagnostics"]["pinned_changed"] == []
     # refreshed content is what the agent receives (silent refresh done)
     texts = " ".join(e["content"] for e in pkg2.evidence)
     assert "half to even" in texts
 
-    # unpinned edits stay silent
+    # unpinned edits are now caught by the full refresh too
     (tmp_path / "repo" / "src" / "main.py").write_text(
         "def main(): return 1", encoding="utf-8")
     pkg3 = _select(pipe, "fresh-repo", "rounding rule",
                    explicit=["docs/rules.md"])
     assert pkg3.metrics["diagnostics"]["pinned_changed"] == []
+    assert pkg3.metrics["diagnostics"]["full_changed"] == ["src/main.py"]
 
 
 def test_select_reports_missing_pinned(tmp_path):
@@ -96,7 +101,9 @@ def test_select_reports_missing_pinned(tmp_path):
     (tmp_path / "repo" / "docs" / "rules.md").unlink()
     pkg = _select(pipe, "fresh-missing", "rules",
                   explicit=["docs/rules.md"])
-    assert pkg.metrics["diagnostics"]["pinned_missing"] == ["docs/rules.md"]
+    assert pkg.metrics["diagnostics"]["full_missing"] == ["docs/rules.md"]
+    # pinned_missing is empty because full refresh already handled it
+    assert pkg.metrics["diagnostics"]["pinned_missing"] == []
 
 
 def test_select_without_recorded_root_skips_silently(tmp_path):
@@ -110,3 +117,5 @@ def test_select_without_recorded_root_skips_silently(tmp_path):
                   explicit=["docs/rules.md"])
     assert pkg.metrics["diagnostics"]["pinned_changed"] == []
     assert pkg.metrics["diagnostics"]["pinned_missing"] == []
+    assert pkg.metrics["diagnostics"]["full_changed"] == []
+    assert pkg.metrics["diagnostics"]["full_missing"] == []

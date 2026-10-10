@@ -199,6 +199,28 @@ class Pipeline:
                 storage.drop_path(repo_id, rel)
         return changed, missing
 
+    def _refresh_incremental(self, storage, repo_id: str, root: str) -> tuple[list, list]:
+        """Full incremental refresh: re-index ALL changed files in the repo.
+
+        Runs automatically before every selection, so the index is always
+        current and answers never come from stale files. Returns
+        (changed, missing) paths relative to root.
+        """
+        plan = scan_repository(root, self.max_file_bytes, self.never_read)
+        stored = storage.stored_file_hashes()
+        new_paths = {fi.rel_path for fi in plan.files}
+        stale = set(stored.keys()) - new_paths
+        changed = []
+        for fi in plan.files:
+            cur = stored.get(fi.rel_path)
+            if cur and cur[0] == fi.content_hash and cur[1] == fi.mtime_ns:
+                continue
+            changed.append(fi.rel_path)
+            self._store_scanned_file(storage, repo_id, fi)
+        for rel in stale:
+            storage.drop_path(repo_id, rel)
+        return changed, list(stale)
+
     def select_context(self, request: schemas.SelectRequest) -> schemas.EvidencePackage:
         t_total = time.perf_counter()
         storage = self._storage_for(request.repository_id)
@@ -210,6 +232,18 @@ class Pipeline:
         excluded = _normalize_excluded(
             getattr(request, "exclude_paths", None) or [])
         _reject_contradictions(request.explicit_paths or [], excluded)
+
+        # Silent full incremental refresh: re-index ALL changed files before
+        # ranking, so the index is always fresh for selection.
+        # Legacy DBs without a recorded root skip this silently.
+        full_changed: list = []
+        full_missing: list = []
+        root = storage.repo_root()
+        if root and os.path.isdir(root):
+            with Timer("refresh_full") as t_ref:
+                full_changed, full_missing = self._refresh_incremental(
+                    storage, request.repository_id, root)
+            stage_ms["refresh_full_ms"] = round(t_ref.elapsed_ms, 2)
 
         # Silent pinned refresh: re-index changed pinned sources before
         # ranking, so notices below describe an already-fresh index.
@@ -276,7 +310,9 @@ class Pipeline:
                         "budget": max_budget, "budget_exceeded": False,
                         "full_context": True, "per_file_tokens": {},
                         "authority_flags": [], "pinned_changed": pinned_changed,
-                        "pinned_missing": pinned_missing}
+                        "pinned_missing": pinned_missing,
+                        "full_changed": full_changed,
+                        "full_missing": full_missing}
             else:
                 selected, diag = select_evidence(
                     chunks, scores, request.task, max_budget, request.explicit_paths,
@@ -285,6 +321,8 @@ class Pipeline:
                 )
                 diag["pinned_changed"] = pinned_changed
                 diag["pinned_missing"] = pinned_missing
+                diag["full_changed"] = full_changed
+                diag["full_missing"] = full_missing
         stage_ms["packing_ms"] = round(t_pack.elapsed_ms, 2)
 
         # Exclusion enforcement: drop after ranking, in every branch
