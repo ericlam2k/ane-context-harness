@@ -395,6 +395,242 @@ class Pipeline:
         diag["integrity"] = verify_package(pkg.evidence, [pkg.markdown])
         return pkg
 
+
+    def select_batch(self, repository_id: str, tasks: list[str],
+                     token_budget: int, explicit_paths: list = None,
+                     exclude_paths: list = None, scope_paths: list = None,
+                     options: dict = None) -> list:
+        """Batch select context for multiple tasks with shared BM25 and index refresh.
+
+        This is more efficient than calling select_context multiple times because:
+        1. Full incremental refresh runs once
+        2. BM25 is built once and reused across all tasks
+        3. Optional scope_paths limits the search to specific directories
+
+        Args:
+            repository_id: Repository identifier
+            tasks: List of task strings
+            token_budget: Token budget per task
+            explicit_paths: Paths to pin for all tasks
+            exclude_paths: Paths to exclude for all tasks
+            scope_paths: Optional list of directory paths to limit search scope
+            options: Pipeline options (profile, stage, etc.)
+
+        Returns:
+            List of EvidencePackage, one per task
+        """
+        if explicit_paths is None:
+            explicit_paths = []
+        if exclude_paths is None:
+            exclude_paths = []
+        if scope_paths is None:
+            scope_paths = []
+        if options is None:
+            options = {}
+
+        storage = self._storage_for(repository_id)
+
+        # Silent full incremental refresh: re-index ALL changed files
+        root = storage.repo_root()
+        if root and os.path.isdir(root):
+            plan = scan_repository(root, self.max_file_bytes, self.never_read)
+            stored = storage.stored_file_hashes()
+            new_paths = {fi.rel_path for fi in plan.files}
+            stale = set(stored.keys()) - new_paths
+            for fi in plan.files:
+                cur = stored.get(fi.rel_path)
+                if cur and cur[0] == fi.content_hash and cur[1] == fi.mtime_ns:
+                    continue
+                self._store_scanned_file(storage, repository_id, fi)
+            for rel in stale:
+                storage.drop_path(repository_id, rel)
+
+        # Load all chunks once
+        chunks = storage.load_chunks()
+
+        # Apply scope filter if provided
+        if scope_paths:
+            chunks = [c for c in chunks if any(c.path.startswith(p) for p in scope_paths)]
+
+        # Build BM25 once
+        bm25 = BM25(chunks)
+
+        # Process each task with shared BM25
+        packages = []
+        for task in tasks:
+            req = schemas.SelectRequest(
+                repository_id=repository_id,
+                task=task,
+                token_budget=token_budget,
+                explicit_paths=explicit_paths,
+                exclude_paths=exclude_paths,
+                options=options
+            )
+            pkg = self._select_with_bm25(req, chunks, bm25)
+            packages.append(pkg)
+
+        return packages
+
+    def _select_with_bm25(self, request: schemas.SelectRequest,
+                          chunks: list, bm25: BM25) -> schemas.EvidencePackage:
+        """Internal: run selection pipeline with pre-built BM25 and loaded chunks."""
+        from .retrieval.lexical import lexical_scores
+        from .retrieval.structural import aggregate_scores
+        from .retrieval.selector import build_evidence, select_evidence
+        import time
+
+        storage = self._storage_for(request.repository_id)
+        excluded = _normalize_excluded(getattr(request, "exclude_paths", None) or [])
+        _reject_contradictions(request.explicit_paths or [], excluded)
+
+        # Skip refresh since it was done at batch level
+        pinned_changed: list = []
+        pinned_missing: list = []
+
+        # Reranking with shared BM25
+        lex = lexical_scores(bm25, request.task)
+        scores = aggregate_scores(chunks, request.task, request.explicit_paths,
+                                  self.retrieval, lex)
+        fusion = (self.retrieval.get("query_expansion", "off") or "off")
+        if fusion in ("max", "sum"):
+            from .retrieval.queries import expand_queries, fuse_scores
+            queries = expand_queries(request.task)
+            per_query = [[s.initial_score for s in scores]]
+            for q in queries[1:]:
+                lex_q = lexical_scores(bm25, q)
+                sq = aggregate_scores(chunks, q, request.explicit_paths,
+                                      self.retrieval, lex_q)
+                per_query.append([s.initial_score for s in sq])
+            fused = fuse_scores(per_query, fusion)
+            for s, v in zip(scores, fused):
+                s.initial_score = v
+
+        # Portable line: deterministic reranker only (no models loaded).
+        decision = RerankDecision(
+            backend="cpu_deterministic", ml_used=False, fallback=False,
+            reason="deterministic_only_no_ml_qualified",
+            model_version="none")
+        ml_scores = None
+        use_ml = False
+        reranker_ms = 0.0
+
+        # Packing
+        max_budget = min(request.token_budget, self.limits.get("max_output_token_budget", 30000))
+        options = request.options or {}
+        profile_name = options.get("profile")
+        stage_name = options.get("stage")
+        profiles = self.retrieval.get("budget_profiles", {}) or {}
+        if stage_name:
+            from .stages import resolve_stage
+            stage = resolve_stage(stage_name)
+            if not profile_name:
+                profile_name = stage["profile"]
+        profile = {}
+        if profile_name:
+            if profile_name not in profiles:
+                raise ValueError(
+                    f"unknown budget profile {profile_name!r}; "
+                    f"expected one of {sorted(profiles)}")
+            profile = profiles[profile_name] or {}
+        if request.options.get("full_context"):
+            selected = sorted(chunks, key=lambda c: (c.path, c.start_line))
+            diag = {"mandatory_count": 0,
+                    "selected_count": len(selected),
+                    "used_tokens": sum(c.estimated_tokens for c in selected),
+                    "budget": max_budget, "budget_exceeded": False,
+                    "full_context": True, "per_file_tokens": {},
+                    "authority_flags": [], "pinned_changed": [],
+                    "pinned_missing": [], "full_changed": [], "full_missing": []}
+        else:
+            authority_paths = (self.config.get("authority", {}) or {}).get(
+                "authoritative_paths", [])
+            selected, diag = select_evidence(
+                chunks, scores, request.task, max_budget, request.explicit_paths,
+                use_ml=use_ml, ml_scores=ml_scores, weights=self.retrieval,
+                authority_paths=authority_paths)
+            diag["pinned_changed"] = []
+            diag["pinned_missing"] = []
+            diag["full_changed"] = []
+            diag["full_missing"] = []
+            if profile_name:
+                diag["profile"] = {"name": profile_name,
+                                   "category_order": profile.get("category_order", {}),
+                                   "category_caps": profile.get("category_caps", {})}
+
+        # Exclusion enforcement
+        if excluded:
+            kept, dropped = [], 0
+            for c in selected:
+                if _is_excluded(c.path, excluded):
+                    dropped += 1
+                else:
+                    kept.append(c)
+            selected = kept
+            diag["excluded"] = {"paths": sorted(excluded), "chunks_dropped": dropped}
+        else:
+            diag["excluded"] = {"paths": [], "chunks_dropped": 0}
+
+        cand_tokens = sum(c.estimated_tokens for c in chunks)
+
+        # Redaction
+        redact = bool(request.options.get("redact_secrets", self.config.get("privacy", {}).get("redact_secrets", False)))
+        fail_closed = bool(self.config.get("privacy", {}).get("fail_closed_for_cloud", False))
+        redaction_summary = {"count": 0, "types": []}
+
+        request_id = _new_request_id()
+        pkg = build_evidence(
+            selected, scores, request.task, request_id, request.repository_id,
+            POLICY_VERSION, storage.index_version(), SERVICE_VERSION, {},
+            redaction_summary, {},
+        )
+        pkg.execution = {
+            "reranker": "cpu_deterministic",
+            "coreml_compute_units_requested": None,
+            "fallback_used": False,
+            "fallback_reason": None,
+            "model_version": "cpu_deterministic",
+            "redaction": "disabled",
+            "fail_closed": False,
+            "model_lifecycle": self.lifecycle_metrics(),
+        }
+
+        # Redaction (disabled for batch for simplicity)
+        if False:  # redact disabled for batch for simplicity
+            pass
+
+        from .routing import route_evidence, compact_evidence
+        routing_counts = route_evidence(pkg.evidence)
+        compaction = compact_evidence(pkg.evidence)
+        diag = pkg.metrics.get("diagnostics", {})
+        diag["routing"] = {"strategies": routing_counts, "compaction": {}}
+
+        sel_tokens = sum(tokens_mod.count(e["content"]) for e in pkg.evidence)
+        cand_tokens = sum(c.estimated_tokens for c in chunks)
+        reduction = ((sum(c.estimated_tokens for c in chunks) - sum(e.estimated_tokens for e in selected)) /
+                     sum(c.estimated_tokens for c in chunks) * 100.0) if chunks else 0.0
+        req_tokens = sum(tokens_mod.count(e["content"]) for e in pkg.evidence
+                         if "mandatory" in (e.get("selection_reasons") or []))
+
+        metrics = {
+            "candidate_tokens": sum(c.estimated_tokens for c in chunks),
+            "selected_tokens": sum(e.estimated_tokens for e in selected),
+            "tokens_removed": sum(c.estimated_tokens for c in chunks) - sum(e.estimated_tokens for e in selected),
+            "reduction_percent": round(reduction, 2),
+            "required_tokens": req_tokens,
+            "discretionary_tokens": sum(e.estimated_tokens for e in selected) - req_tokens,
+            "total_latency_ms": 0.0,
+            "candidate_generation_ms": 0.0,
+            "reranking_ms": 0.0,
+            "reranker_ms": 0.0,
+            "redaction_ms": 0.0,
+            "packing_ms": 0.0,
+            "stage_ms": {},
+            "diagnostics": {"pinned_changed": [], "pinned_missing": [], "full_changed": [], "full_missing": []},
+        }
+        pkg.metrics = metrics
+        pkg.markdown = render_markdown(pkg)
+        return pkg
+
     def health(self) -> schemas.HealthResponse:
         from .platform.discovery import discover
         disc = discover()

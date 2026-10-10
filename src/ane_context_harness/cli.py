@@ -90,6 +90,9 @@ def main(argv: list | None = None) -> int:
                                "defaults to stdin")
     p_update.add_argument("--log", default=None,
                           help="Optional path to append per-task JSONL log to")
+    p_update.add_argument("--path", default=None, action="append",
+                          help="Optional directory path to scope search (repeatable); "
+                               "limits the search to these directories")
     p_update.add_argument("--quiet", action="store_true",
                           help="Suppress the human-readable stderr summary footer")
     p_proxy = sub.add_parser(
@@ -301,14 +304,18 @@ def main(argv: list | None = None) -> int:
                   file=sys.stderr)
             return 2
         tasks = _parse_task_lines(raw_tasks)
+        scope_paths = args.path if args.path else []
+        packages = pipe.select_batch(
+            repository_id=args.repo_id,
+            tasks=tasks,
+            token_budget=args.budget,
+            explicit_paths=[],
+            exclude_paths=[],
+            scope_paths=scope_paths,
+            options={}
+        )
         per_task = []
-        for task in tasks:
-            req = schemas.SelectRequest(
-                repository_id=args.repo_id,
-                task=task,
-                token_budget=args.budget,
-            )
-            pkg = pipe.select_context(req)
+        for task, pkg in zip(tasks, packages):
             m = pkg.metrics
             per_task.append({
                 "task": task,

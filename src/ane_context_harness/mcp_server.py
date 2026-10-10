@@ -87,18 +87,31 @@ async def select_context_tool(repo_id: str, task: str, budget: int = 12000,
     return json.dumps(out, indent=2)
 
 
-async def update_tool(repo_id: str, budget: int, tasks: list[str]) -> str:
+async def update_tool(repo_id: str, budget: int, tasks: list[str],
+                       scope_paths: list[str] | None = None) -> str:
     """MCP tool: batch-select context for many tasks; report context cuts.
 
     Mirrors `ane-harness update` — local only, no network/redaction guarantee.
+
+    Args:
+        repo_id: Repository identifier
+        budget: Token budget per task
+        tasks: List of task strings
+        scope_paths: Optional list of directory paths to limit search scope
     """
     cfg = build_config()
     pipe = Pipeline(cfg)
+    packages = pipe.select_batch(
+        repository_id=repo_id,
+        tasks=tasks,
+        token_budget=budget,
+        explicit_paths=[],
+        exclude_paths=[],
+        scope_paths=scope_paths or [],
+        options={}
+    )
     per_task: list[dict[str, Any]] = []
-    for task in tasks:
-        req = schemas.SelectRequest(repository_id=repo_id, task=task,
-                                    token_budget=budget, explicit_paths=[])
-        pkg = pipe.select_context(req)
+    for task, pkg in zip(tasks, packages):
         per_task.append({
             "task": task,
             **_select_summary(pkg),
@@ -168,11 +181,19 @@ def build_server() -> Any:
                                          conversation_summary=conversation_summary)
 
     @server.tool()
-    async def update(repo_id: str, budget: int, tasks: list[str]) -> str:
+    async def update(repo_id: str, budget: int, tasks: list[str],
+                     scope_paths: list[str] | None = None) -> str:
         """Batch-select context for many tasks; report context cuts.
 
-        Local only, no network. Mirrors `ane-harness update`."""
-        return await update_tool(repo_id, budget, tasks)
+        Local only, no network. Mirrors `ane-harness update`.
+
+        Args:
+            repo_id: Repository identifier
+            budget: Token budget per task
+            tasks: List of task strings
+            scope_paths: Optional list of directory paths to limit search scope
+        """
+        return await update_tool(repo_id, budget, tasks, scope_paths)
 
     @server.tool()
     async def verify(bundle_dir: str) -> str:
