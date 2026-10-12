@@ -145,6 +145,32 @@ def main(argv: list | None = None) -> int:
                          help="Optional directory to write prove.json + prove.md")
     p_prove.add_argument("--quiet", action="store_true",
                          help="Suppress the human-readable stderr summary footer")
+    p_meter = sub.add_parser(
+        "meter", help="Provider-metered with/without proof: send arm A "
+                      "(full content) and arm B (harness pack) through a "
+                      "local proxy to a FREE model and report the "
+                      "provider-counted total input (live call)")
+    p_meter.add_argument("--repo-id", required=True)
+    p_meter.add_argument("--task", required=True)
+    p_meter.add_argument("--budget", type=int, default=4000)
+    p_meter.add_argument("--model", required=True,
+                         help="Free-only model slug (allowlist enforced; "
+                              "paid slugs are refused)")
+    p_meter.add_argument("--formats", default="standard,toon",
+                         help="Comma subset of standard,toon,headroom: arm-B "
+                              "renderings to meter against arm A")
+    p_meter.add_argument("--exclude-path", action="append", default=[],
+                         help="Repo-relative path excluded from the arm-B pack")
+    p_meter.add_argument("--max-tokens", type=int, default=256,
+                         help="Response cap per call (keeps output small; "
+                              "proof is about input)")
+    p_meter.add_argument("--pace", type=float, default=2.0,
+                         help="Seconds between calls")
+    p_meter.add_argument("--proxy-url", default=None,
+                         help="Proxy base URL (default $CLIPROXY_URL or "
+                              "http://localhost:8317)")
+    p_meter.add_argument("--quiet", action="store_true",
+                         help="Suppress the human-readable stderr summary footer")
 
     args = parser.parse_args(argv)
     if args.command == "shell-init":
@@ -217,6 +243,56 @@ def main(argv: list | None = None) -> int:
     cfg = build_config()
     pipe = Pipeline(cfg)
 
+    if args.command == "meter":
+        from .metering import (FORMATS, meter_footer, refuse_unless_free,
+                               run_metered, summarize)
+        key = os.environ.get("CLIPROXY_KEY")
+        if not key:
+            print(json.dumps({"ok": False, "error": (
+                "CLIPROXY_KEY is not set — refusing to run without it")}),
+                file=sys.stderr)
+            return 2
+        try:
+            refuse_unless_free(args.model)
+        except ValueError as exc:
+            print(json.dumps({"ok": False, "error": str(exc)}),
+                  file=sys.stderr)
+            return 2
+        formats = [f.strip() for f in (args.formats or "").split(",")
+                   if f.strip()]
+        if not formats or any(f not in FORMATS for f in formats):
+            print(json.dumps({"ok": False, "error": (
+                f"unknown format; expected a comma subset of {FORMATS}")}),
+                file=sys.stderr)
+            return 2
+        base_url = (args.proxy_url or os.environ.get("CLIPROXY_URL")
+                    or "http://localhost:8317")
+        try:
+            records = run_metered(
+                args.task, args.repo_id, pipe, args.model, key, base_url,
+                args.budget, formats, args.exclude_path,
+                max_tokens=args.max_tokens, pace_s=args.pace)
+        except ValueError as exc:
+            print(json.dumps({"ok": False, "error": str(exc)}),
+                  file=sys.stderr)
+            return 2
+        summary = summarize(records)
+        foot = meter_footer(summary, args.model)
+        shown = []
+        for r in records:
+            c = dict(r)
+            met = dict(c.get("metered") or {})
+            met.pop("output_text", None)  # proof is about tokens, not outputs
+            if met:
+                c["metered"] = met
+            c.pop("response", None)
+            shown.append(c)
+        print(json.dumps({"ok": True, "model": args.model, "summary": foot,
+                          "metered": summary, "records": shown},
+                         indent=2, default=str))
+        if not args.quiet:
+            print(foot, file=sys.stderr)
+        return 0
     if args.command == "health":
         h = pipe.health()
         print(json.dumps({
