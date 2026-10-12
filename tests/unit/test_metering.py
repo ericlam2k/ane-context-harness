@@ -159,3 +159,36 @@ def test_summarize_all_failed_arms(tmp_path):
     summary = summarize(records)
     assert summary["reference_metered_input"] is None
     assert "no provider-counted usage" in meter_footer(summary, "m")
+
+
+def _cli_config(tmp_path, monkeypatch):
+    from ane_context_harness import cli as cli_mod
+    cfg = tmp_path / "cli_cfg.yaml"
+    cfg.write_text(f"index:\n  storage_path: {tmp_path / 'store'}\n",
+                   encoding="utf-8")
+    monkeypatch.setenv("ANE_HARNESS_CONFIG", str(cfg))
+    return cli_mod
+
+
+def test_meter_cli_refuses_without_key(tmp_path, monkeypatch):
+    cli_mod = _cli_config(tmp_path, monkeypatch)
+    monkeypatch.delenv("CLIPROXY_KEY", raising=False)
+    rc = cli_mod.main(["meter", "--repo-id", "x", "--task", "t",
+                       "--model", "OR-Laguna"])
+    assert rc == 2
+
+
+def test_meter_cli_refuses_paid_model(tmp_path, monkeypatch):
+    cli_mod = _cli_config(tmp_path, monkeypatch)
+    monkeypatch.setenv("CLIPROXY_KEY", "test-key")
+    rc = cli_mod.main(["meter", "--repo-id", "x", "--task", "t",
+                       "--model", "gpt-5.6"])
+    assert rc == 2
+
+
+def test_meter_cli_rejects_unknown_format(tmp_path, monkeypatch):
+    cli_mod = _cli_config(tmp_path, monkeypatch)
+    monkeypatch.setenv("CLIPROXY_KEY", "test-key")
+    rc = cli_mod.main(["meter", "--repo-id", "x", "--task", "t",
+                       "--model", "OR-Laguna", "--formats", "nope"])
+    assert rc == 2
