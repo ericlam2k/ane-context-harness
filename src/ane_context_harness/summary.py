@@ -17,9 +17,10 @@ made here — recall needs labelled ground truth, unavailable at runtime.
 
 Budget policy (users never touch this): the token budget governs
 *discretionary* chunks only. Required-evidence (mandatory) chunks form a
-floor that is always kept. The footer reports the split as consequence;
-the only case a user is ever involved is discretionary overrun, which
-means "narrow the task" — and the footer says exactly that.
+floor that is always kept. When a package grows beyond the target, the
+footer states the overage and the must-keep/supporting split as
+consequence. It never blocks the current task or silently drops required
+evidence.
 """
 from __future__ import annotations
 
@@ -64,7 +65,32 @@ def select_footer(metrics: dict[str, Any], execution: dict[str, Any] | None,
     line = (f"ane-harness: sent {fmt_tokens(sel)} instead of {fmt_tokens(cand)} "
             f"· cut {red}% in {round(lat)} ms")
     if sel - budget > 0:
-        line += " — too big, narrow the task"
+        over = fmt_tokens(sel - budget)
+        pressure = (metrics.get("diagnostics", {}) or {}).get(
+            "context_pressure", {}) or {}
+        required = pressure.get("required_tokens",
+                                metrics.get("required_tokens", 0))
+        top = (pressure.get("top_files") or [])[:1]
+        if top:
+            supporting = max(0, sel - required)
+            files = pressure.get("selected_files", 0)
+            paired_tests = pressure.get("paired_test_files", 0)
+            shape = (f"{fmt_tokens(required)} must-keep + "
+                     f"{fmt_tokens(supporting)} supporting context")
+            if files:
+                shape += f" across {files} files"
+            if paired_tests:
+                label = "file" if paired_tests == 1 else "files"
+                shape += f", including {paired_tests} paired test {label}"
+            line += (f" — work continues; {over} over the target: {shape}. "
+                     "No action needed from you; the agent will use the "
+                     "context map to focus its next internal pass while "
+                     "preserving required evidence")
+        else:
+            line += (f" — work continues; package exceeded the target by "
+                     f"{over}. No action needed from you; the agent will "
+                     "focus its next internal pass while preserving "
+                     "required evidence")
     if pinned_changed:
         names = ", ".join(p.split("/")[-1] for p in pinned_changed[:2])
         extra = f" +{len(pinned_changed) - 2} more" if len(pinned_changed) > 2 else ""

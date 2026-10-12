@@ -42,12 +42,24 @@ def test_select_footer_plain_words_only():
 
 
 def test_select_footer_flags_oversize_plainly():
-    # the one case the user is ever involved: too big means narrow the task
+    # over-budget states the overage and the must-keep split, never blame
     m = {"candidate_tokens": 5000, "selected_tokens": 4800,
          "reduction_percent": 4.0, "total_latency_ms": 5.0,
-         "required_tokens": 800, "discretionary_tokens": 4000}
+         "required_tokens": 800, "discretionary_tokens": 4000,
+         "diagnostics": {"context_pressure": {
+             "required_tokens": 800,
+             "selected_files": 3,
+             "paired_test_files": 1,
+             "top_files": [{"path": "src/cart.py", "tokens": 1900,
+                            "required_tokens": 800,
+                            "reasons": ["named_symbol"]}],
+         }}}
     foot = select_footer(m, {"reranker": "cpu_deterministic"}, 9, 2000)
-    assert foot.endswith("too big, narrow the task")
+    assert "narrow the task" not in foot
+    assert "2.8k over the target" in foot
+    assert "800 must-keep + 4.0k supporting context across 3 files" in foot
+    assert "including 1 paired test file" in foot
+    assert "src/cart.py" not in foot
 
 
 def test_select_footer_flags_mandatory_overflow():
@@ -55,7 +67,11 @@ def test_select_footer_flags_mandatory_overflow():
          "reduction_percent": 97.79, "total_latency_ms": 437.0,
          "required_tokens": 7957, "discretionary_tokens": 1846}
     foot = select_footer(m, {"reranker": "cpu_deterministic"}, 33, 2000)
-    assert foot.endswith("too big, narrow the task")
+    assert "narrow the task" not in foot
+    assert "by 7.8k" in foot
+    assert foot.endswith(
+        "No action needed from you; the agent will focus its next internal "
+        "pass while preserving required evidence")
 
 
 def test_update_footer_batch_totals():

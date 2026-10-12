@@ -287,6 +287,13 @@ def main(argv: list | None = None) -> int:
             print(text)
         if not args.quiet:
             print(foot, file=sys.stderr)
+            unmatched = ((pkg.metrics.get("diagnostics", {}) or {}).get(
+                "excluded", {}) or {}).get("unmatched", [])
+            if unmatched:
+                print(f"ane-harness: exclude pattern(s) matched no files "
+                      f"and changed nothing: {', '.join(unmatched)} — check "
+                      f"the path (directories need no trailing slash, "
+                      f"e.g. tests/)", file=sys.stderr)
         if usage_log.log_enabled():
             usage_log.record("select", pkg.metrics["candidate_tokens"],
                              pkg.metrics["selected_tokens"],

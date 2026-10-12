@@ -67,3 +67,30 @@ def test_exclude_contradiction_exits_2(tmp_path, monkeypatch):
                "--exclude-path", "src/discount.py")
     assert out.returncode == 2
     assert "contradictory pin" in out.stderr
+
+
+def test_exclude_unmatched_pattern_warns_on_stderr(tmp_path, monkeypatch):
+    r = _run(tmp_path, monkeypatch, "index", "--repo", REPO,
+             "--repo-id", "exc_cli3")
+    assert r.returncode == 0, r.stderr
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "exc_cli3",
+               "--task", "Fix the incorrect discount calculation",
+               "--budget", "2000", "--exclude-path", "no/such/dir/")
+    assert out.returncode == 0, out.stderr
+    assert "matched no files" in out.stderr
+    data = json.loads(out.stdout)
+    assert data["metrics"]["diagnostics"]["excluded"]["unmatched"] == [
+        "no/such/dir/"]
+
+
+def test_exclude_directory_prefix_end_to_end(tmp_path, monkeypatch):
+    r = _run(tmp_path, monkeypatch, "index", "--repo", REPO,
+             "--repo-id", "exc_cli4")
+    assert r.returncode == 0, r.stderr
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "exc_cli4",
+               "--task", "Fix the incorrect discount calculation",
+               "--budget", "2000", "--exclude-path", "tests/")
+    assert out.returncode == 0, out.stderr
+    data = json.loads(out.stdout)
+    assert all(not e["path"].startswith("tests/") for e in data["evidence"])
+    assert "matched no files" not in out.stderr

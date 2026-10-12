@@ -338,9 +338,13 @@ class Pipeline:
                     kept.append(c)
             selected = kept
             diag["excluded"] = {"paths": sorted(excluded),
-                                "chunks_dropped": dropped}
+                                "chunks_dropped": dropped,
+                                "unmatched": _unmatched_excludes(
+                                    sorted(excluded),
+                                    [c.path for c in chunks])}
         else:
-            diag["excluded"] = {"paths": [], "chunks_dropped": 0}
+            diag["excluded"] = {"paths": [], "chunks_dropped": 0,
+                                "unmatched": []}
 
         cand_tokens = sum(c.estimated_tokens for c in chunks)
 
@@ -604,9 +608,14 @@ class Pipeline:
                 else:
                     kept.append(c)
             selected = kept
-            diag["excluded"] = {"paths": sorted(excluded), "chunks_dropped": dropped}
+            diag["excluded"] = {"paths": sorted(excluded),
+                                "chunks_dropped": dropped,
+                                "unmatched": _unmatched_excludes(
+                                    sorted(excluded),
+                                    [c.path for c in chunks])}
         else:
-            diag["excluded"] = {"paths": [], "chunks_dropped": 0}
+            diag["excluded"] = {"paths": [], "chunks_dropped": 0,
+                                "unmatched": []}
 
         cand_tokens = sum(c.estimated_tokens for c in chunks)
 
@@ -719,20 +728,43 @@ def _normalize_excluded(paths: list) -> list:
     return sorted(seen)
 
 
+def _dir_covers(prefix: str, path: str) -> bool:
+    """Directory-prefix arm: `tests/` (or `tests`) covers
+    `tests/test_x.py` but never `latest/x.py` — the `/` boundary is
+    mandatory so `src` can never swallow `src-discount/y.py`."""
+    p = prefix.rstrip("/")
+    return bool(p) and (path == p or path.startswith(p + "/"))
+
+
 def _is_excluded(chunk_path: str, excluded: list) -> bool:
-    """Conservative match: exact or suffix, same relation the selector
-    uses for explicit pins — a negative pin over-drops rather than leaks."""
+    """Conservative match: exact, suffix, or directory-prefix — same
+    relation family the selector uses for explicit pins. A negative pin
+    over-drops rather than leaks."""
     n = _norm_pin(chunk_path)
-    return any(n == pat or n.endswith(pat) for pat in excluded)
+    return any(n == pat or n.endswith(pat) or _dir_covers(pat, n)
+               for pat in excluded)
+
+
+def _unmatched_excludes(excluded: list, chunk_paths) -> list:
+    """Exclude patterns that matched no indexed chunk at all — almost
+    always a typo or a wrong-scope pattern (e.g. a directory the old
+    exact-or-suffix matcher silently ignored). Surfaced in diagnostics
+    so callers can warn instead of pretending the exclusion worked."""
+    paths = [_norm_pin(p) for p in chunk_paths]
+    return sorted(p for p in excluded
+                  if not any(q == p or q.endswith(p) or _dir_covers(p, q)
+                             for q in paths))
 
 
 def _reject_contradictions(explicit_paths: list, excluded: list) -> None:
     """A path both pinned and excluded is a caller error. Refuse with a
     ValueError so every existing contract (select/prove: stderr JSON,
     exit 2) handles it with no new plumbing."""
-    bad = sorted({_norm_pin(p) for p in explicit_paths or []
-                  if any(_norm_pin(p) == x or _norm_pin(p).endswith(x)
-                         or x.endswith(_norm_pin(p)) for x in excluded)})
+    normed = [_norm_pin(p) for p in explicit_paths or []]
+    bad = sorted({p for p in normed
+                  if any(p == x or p.endswith(x) or x.endswith(p)
+                         or _dir_covers(x, p) or _dir_covers(p, x)
+                         for x in excluded)})
     if bad:
         raise ValueError(
             f"contradictory pin: {bad} both explicitly pinned and "
