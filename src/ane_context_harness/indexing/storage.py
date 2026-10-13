@@ -26,7 +26,16 @@ class Storage:
         self.repo_id = repo_id
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
-        self._conn = sqlite3.connect(str(self.db_path), check_same_thread=False, isolation_level=None)
+        try:
+            self._conn = sqlite3.connect(
+                str(self.db_path), check_same_thread=False, isolation_level=None
+            )
+        except sqlite3.OperationalError as e:
+            raise RuntimeError(
+                f"Unable to open database at {self.db_path}. "
+                f"Check that {self.db_path.parent} exists and is writable. "
+                f"Original error: {e}"
+            ) from e
         self._conn.row_factory = sqlite3.Row
         # Restrict permissions to user only (security requirement) after the DB file exists.
         try:
