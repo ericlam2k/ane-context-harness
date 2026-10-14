@@ -15,7 +15,7 @@ from src.ane_context_harness.summary import (
 
 
 def test_fmt_tokens_compact():
-    assert fmt_tokens(800) == "800"
+    assert fmt_tokens(800) == "0.8k"
     assert fmt_tokens(18794) == "18.8k"
     assert fmt_tokens(211240) == "211.2k"
 
@@ -56,7 +56,7 @@ def test_select_footer_flags_oversize_plainly():
     foot = select_footer(m, {"reranker": "cpu_deterministic"}, 9, 2000)
     assert "narrow the task" not in foot
     assert "by 2.8k" in foot
-    assert "800 must-keep + 4.0k supporting context across 3 files" in foot
+    assert "0.8k must-keep + 4.0k supporting context across 3 files" in foot
     assert "including 1 paired test file" in foot
     assert "src/cart.py" not in foot
     assert "est." in foot  # footer uses estimates
