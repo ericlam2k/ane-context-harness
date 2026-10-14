@@ -4,12 +4,13 @@ Every `select`/`update` run (CLI or MCP) returns machine JSON, but nobody
 remembers flags to ask "how much context did that hand over?". These helpers
 render the same numbers as a one-line footer:
 
-    # ane-harness: sent 18.8k instead of 211.2k · cut 91.1% ·
+    # ane-harness: est. sent 18.8k instead of est. 211.2k · est. cut 91.1% ·
     #   61 chunks · 141 ms · budget 2000 EXCEEDED (+16.8k) · cpu_deterministic
 
-The percent is how much less we send than everything we could send — not
-provider bills or cache behavior, which are the provider's layer and are
-never claimed here.
+The percent is how much less we ESTIMATE we send than everything we could send —
+not provider bills or cache behavior, which are the provider's layer and are
+never claimed here. These are LOCAL ESTIMATES from the pinned estimator,
+not provider-metered tokens. For provider-metered totals, use `ane-harness meter`.
 
 Rules: stdout stays pure JSON (footers go to stderr on the CLI, or a
 `summary` key over MCP) so parsers never break. No recall claim is ever
@@ -41,8 +42,8 @@ def tokens_line(metrics: dict[str, Any]) -> str:
     Single source of truth shared by the markdown output and the CLI/MCP
     footers — render here so the two can never drift apart.
     """
-    return (f"**Tokens:** {metrics.get('selected_tokens', 0)} sent instead of "
-            f"{metrics.get('candidate_tokens', 0)} "
+    return (f"**Tokens:** est. {metrics.get('selected_tokens', 0)} sent instead of "
+            f"est. {metrics.get('candidate_tokens', 0)} "
             f"({metrics.get('reduction_percent', 0)}% cut) | "
             f"**Latency:** {metrics.get('total_latency_ms', 0)} ms")
 
@@ -62,8 +63,8 @@ def select_footer(metrics: dict[str, Any], execution: dict[str, Any] | None,
     sel = metrics.get("selected_tokens", 0)
     red = metrics.get("reduction_percent", 0.0)
     lat = metrics.get("total_latency_ms", 0.0)
-    line = (f"ane-harness: sent {fmt_tokens(sel)} instead of {fmt_tokens(cand)} "
-            f"· cut {red}% in {round(lat)} ms")
+    line = (f"ane-harness: est. package {fmt_tokens(sel)} from est. {fmt_tokens(cand)} eligible "
+            f"· est. cut {red}% in {round(lat)} ms")
     if sel - budget > 0:
         over = fmt_tokens(sel - budget)
         pressure = (metrics.get("diagnostics", {}) or {}).get(
@@ -102,6 +103,6 @@ def update_footer(before_total: int, after_total: int,
                   reduction_median: float, n_tasks: int,
                   budget: int, required_total: int = 0) -> str:
     """One-line footer for a batch update run (user lens: tasks + cut)."""
-    return (f"ane-harness: {n_tasks} tasks · sent {fmt_tokens(after_total)} "
-            f"instead of {fmt_tokens(before_total)} · cut "
+    return (f"ane-harness: {n_tasks} tasks · est. packaged {fmt_tokens(after_total)} "
+            f"from est. {fmt_tokens(before_total)} eligible · est. cut "
             f"{reduction_median}% median")

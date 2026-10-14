@@ -24,7 +24,7 @@ def test_tokens_line_single_source_of_truth():
     # markdown output and footers share this line; byte-stable contract
     m = {"selected_tokens": 800, "candidate_tokens": 5000,
          "reduction_percent": 84.0, "total_latency_ms": 5.0}
-    assert tokens_line(m) == ("**Tokens:** 800 sent instead of 5000 "
+    assert tokens_line(m) == ("**Tokens:** est. 800 sent instead of est. 5000 "
                                "(84.0% cut) | **Latency:** 5.0 ms")
 
 
@@ -34,7 +34,7 @@ def test_select_footer_plain_words_only():
          "required_tokens": 16794, "discretionary_tokens": 2000,
          "diagnostics": {"budget_exceeded": True}}
     foot = select_footer(m, {"reranker": "cpu_deterministic"}, 61, 20000)
-    assert foot == ("ane-harness: sent 18.8k instead of 211.2k · cut 91.1% in 141 ms")
+    assert foot == ("ane-harness: est. package 18.8k from est. 211.2k eligible · est. cut 91.1% in 141 ms")
     assert not foot.startswith("#")
     for jargon in ("required", "discretionary", "chunk", "cpu_deterministic",
                    "budget", "recall"):
@@ -60,6 +60,7 @@ def test_select_footer_flags_oversize_plainly():
     assert "800 must-keep + 4.0k supporting context across 3 files" in foot
     assert "including 1 paired test file" in foot
     assert "src/cart.py" not in foot
+    assert "est." in foot  # footer uses estimates
 
 
 def test_select_footer_flags_mandatory_overflow():
@@ -72,9 +73,10 @@ def test_select_footer_flags_mandatory_overflow():
     assert foot.endswith(
         "No action needed from you; the agent will focus its next internal "
         "pass while preserving required evidence")
+    assert "est." in foot  # footer uses estimates
 
 
 def test_update_footer_batch_totals():
     foot = update_footer(45000, 8200, 81.8, 2, 12000, 4200)
-    assert foot == "ane-harness: 2 tasks · sent 8.2k instead of 45.0k · cut 81.8% median"
+    assert foot == "ane-harness: 2 tasks · est. packaged 8.2k from est. 45.0k eligible · est. cut 81.8% median"
     assert not foot.startswith("#")
