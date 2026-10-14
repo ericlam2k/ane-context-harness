@@ -22,11 +22,8 @@ from typing import Any
 
 
 def fmt_tokens(n: float | int) -> str:
-    """Compact token count: 18794 -> '18.8k', 800 -> '800'."""
-    n = int(n)
-    if n >= 1000:
-        return f"{n / 1000:.1f}k"
-    return str(n)
+    """Token count in thousands: 18794 -> '18.8k', 800 -> '0.8k'."""
+    return f"{n / 1000:.1f}k"
 
 
 def tokens_line(metrics: dict[str, Any], include_latency: bool = True) -> str:
