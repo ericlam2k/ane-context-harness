@@ -53,3 +53,33 @@ def test_large_file_skipped(tmp_path):
     p.write_text("x" * 2000)
     plan = scan_repository(root, max_file_bytes=1000)
     assert plan.skipped and plan.skipped[0]["reason"] == "too_large"
+
+
+def test_skipped_by_reason_counts_rejections_not_unchanged(tmp_path):
+    from src.ane_context_harness.indexing.repository import skipped_by_reason
+    root = tmp_path / "repo"
+    root.mkdir()
+    (root / "ok.py").write_text("x = 1\n")
+    (root / "icon.png").write_bytes(b"\x89PNG\r\n\x1a\n" + bytes(20))
+    big = root / "big.py"
+    big.write_text("x" * 2000)
+    plan = scan_repository(root, max_file_bytes=1000)
+    counts = skipped_by_reason(plan)
+    assert counts == {"binary": 1, "too_large": 1}
+    # ok.py indexed, never counted as skipped
+    assert {f.rel_path for f in plan.files} == {"ok.py"}
+
+
+def test_index_response_carries_skipped_by_reason(tmp_path):
+    from ane_context_harness.pipeline import Pipeline
+    from ane_context_harness.config import build_config, merge
+    base = {"index": {"storage_path": str(tmp_path / "store"),
+                      "chunk_target_tokens": 50, "chunk_overlap_tokens": 5},
+            "retention": {"ttl_seconds": 300}}
+    pipe = Pipeline(build_config(merge(base, {})))
+    root = tmp_path / "repo2"
+    root.mkdir()
+    (root / "a.py").write_text("x = 1\n")
+    (root / "b.png").write_bytes(b"\x89PNG\r\n\x1a\n" + bytes(20))
+    resp = pipe.register_repository(str(root), "sbr-live", True)
+    assert resp.skipped_by_reason == {"binary": 1}

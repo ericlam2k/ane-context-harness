@@ -311,6 +311,7 @@ def main(argv: list | None = None) -> int:
             "files_indexed": resp.files_indexed,
             "chunks_indexed": resp.chunks_indexed,
             "files_skipped": resp.files_skipped,
+            "skipped_by_reason": resp.skipped_by_reason,
             "duration_ms": resp.duration_ms,
             "incremental": resp.incremental,
         }, indent=2))
@@ -364,13 +365,25 @@ def main(argv: list | None = None) -> int:
             print(text)
         if not args.quiet:
             print(foot, file=sys.stderr)
-            unmatched = ((pkg.metrics.get("diagnostics", {}) or {}).get(
-                "excluded", {}) or {}).get("unmatched", [])
+            excl = ((pkg.metrics.get("diagnostics", {}) or {}).get(
+                "excluded", {}) or {})
+            unmatched = excl.get("unmatched", [])
             if unmatched:
                 print(f"ane-harness: exclude pattern(s) matched no files "
                       f"and changed nothing: {', '.join(unmatched)} — check "
                       f"the path (directories need no trailing slash, "
                       f"e.g. tests/)", file=sys.stderr)
+            if not pkg.evidence and (excl.get("chunks_dropped", 0) or 0) > 0:
+                by_pat = excl.get("dropped_by_pattern", {}) or {}
+                top = sorted(by_pat.items(), key=lambda kv: -kv[1])[:3]
+                killers = ", ".join(f"{p} ({n})" for p, n in top)
+                print(f"ane-harness: excludes removed every candidate "
+                      f"({excl['chunks_dropped']} chunks) — nothing left to "
+                      f"send. Biggest removers: {killers}. If your targets "
+                      f"are missing, they may never have been indexed: "
+                      f"check `index` skipped_by_reason "
+                      f"(binary/too_large/not_utf8/policy_deny).",
+                      file=sys.stderr)
         if usage_log.log_enabled():
             usage_log.record("select", pkg.metrics["candidate_tokens"],
                              pkg.metrics["selected_tokens"],

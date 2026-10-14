@@ -118,6 +118,17 @@ class IndexPlan:
     skipped: list = field(default_factory=list)
 
 
+def skipped_by_reason(plan: IndexPlan) -> dict:
+    """Count scan-rejected files per reason (binary, too_large, not_utf8,
+    policy_deny, ...). Unchanged files are NOT here — they were indexed
+    before and simply had nothing new; conflating the two misleads."""
+    counts: dict = {}
+    for s in plan.skipped:
+        r = (s.get("reason") if isinstance(s, dict) else None) or "unknown"
+        counts[r] = counts.get(r, 0) + 1
+    return counts
+
+
 def scan_repository(repo_root: str | Path, max_file_bytes: int,
                    never_read: list | None = None) -> IndexPlan:
     root = normalize_repo_path(repo_root)

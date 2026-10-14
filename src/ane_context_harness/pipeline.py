@@ -101,6 +101,7 @@ class Pipeline:
             storage._conn.execute("DELETE FROM files WHERE repo_id=?", (repo_id,))
             storage._conn.execute("DELETE FROM symbols WHERE repo_id=?", (repo_id,))
             res = storage.incremental_rebuild(root, self.max_file_bytes, self.chunk_target, self.chunk_overlap, self.never_read)
+            skipped_by_reason = res.get("skipped_by_reason", {})
         else:
             # incremental
             plan = scan_repository(root, self.max_file_bytes, self.never_read)
@@ -121,12 +122,15 @@ class Pipeline:
                     continue
                 res["files_indexed"] += 1
                 res["symbols_extracted"] += self._store_scanned_file(storage, repo_id, fi)
+            from .indexing.repository import skipped_by_reason as _sbr
+            skipped_by_reason = _sbr(plan)
         duration_ms = (time.perf_counter() - t0) * 1000.0
         return schemas.IndexResponse(
             repository_id=repo_id,
             files_indexed=res["files_indexed"],
             chunks_indexed=_chunk_count(storage, repo_id),
             files_skipped=res["files_skipped"],
+            skipped_by_reason=skipped_by_reason,
             duration_ms=round(duration_ms, 2),
             incremental=not force_rebuild,
             index_version="2",
@@ -331,20 +335,25 @@ class Pipeline:
         # never enter evidence.
         if excluded:
             kept, dropped = [], 0
+            by_pattern: dict = {}
             for c in selected:
-                if _is_excluded(c.path, excluded):
+                hit = next((p for p in excluded if _is_excluded(c.path, [p])),
+                           None)
+                if hit is not None:
                     dropped += 1
+                    by_pattern[hit] = by_pattern.get(hit, 0) + 1
                 else:
                     kept.append(c)
             selected = kept
             diag["excluded"] = {"paths": sorted(excluded),
                                 "chunks_dropped": dropped,
+                                "dropped_by_pattern": by_pattern,
                                 "unmatched": _unmatched_excludes(
                                     sorted(excluded),
                                     [c.path for c in chunks])}
         else:
             diag["excluded"] = {"paths": [], "chunks_dropped": 0,
-                                "unmatched": []}
+                                "dropped_by_pattern": {}, "unmatched": []}
 
         cand_tokens = sum(c.estimated_tokens for c in chunks)
 
@@ -602,20 +611,25 @@ class Pipeline:
         # Exclusion enforcement
         if excluded:
             kept, dropped = [], 0
+            by_pattern: dict = {}
             for c in selected:
-                if _is_excluded(c.path, excluded):
+                hit = next((p for p in excluded if _is_excluded(c.path, [p])),
+                           None)
+                if hit is not None:
                     dropped += 1
+                    by_pattern[hit] = by_pattern.get(hit, 0) + 1
                 else:
                     kept.append(c)
             selected = kept
             diag["excluded"] = {"paths": sorted(excluded),
                                 "chunks_dropped": dropped,
+                                "dropped_by_pattern": by_pattern,
                                 "unmatched": _unmatched_excludes(
                                     sorted(excluded),
                                     [c.path for c in chunks])}
         else:
             diag["excluded"] = {"paths": [], "chunks_dropped": 0,
-                                "unmatched": []}
+                                "dropped_by_pattern": {}, "unmatched": []}
 
         cand_tokens = sum(c.estimated_tokens for c in chunks)
 

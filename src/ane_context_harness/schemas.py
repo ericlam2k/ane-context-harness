@@ -142,6 +142,13 @@ class IndexResponse:
     duration_ms: float
     incremental: bool = False
     index_version: str = "2"
+    # Scan-rejected files per reason (binary, too_large, not_utf8,
+    # policy_deny, ...). files_skipped above counts only unchanged files.
+    skipped_by_reason: dict = None
+
+    def __post_init__(self):
+        if self.skipped_by_reason is None:
+            self.skipped_by_reason = {}
 
 
 def evidence_to_dict(item: EvidenceItem) -> dict:

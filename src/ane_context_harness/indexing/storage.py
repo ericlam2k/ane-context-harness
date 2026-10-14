@@ -178,6 +178,7 @@ class Storage:
     def incremental_rebuild(self, repo_root, max_file_bytes, chunk_target_tokens, chunk_overlap_tokens, never_read=None):
         """Rebuild only files whose hash changed; delete chunks for removed files."""
         from .repository import scan_repository, detect_language
+        from .repository import skipped_by_reason as _sbr
         plan = scan_repository(repo_root, max_file_bytes, never_read or [])
         stored = self.stored_file_hashes()
         indexed = 0
@@ -225,6 +226,7 @@ class Storage:
             "files_skipped": skipped,
             "stale_removed": len(stale),
             "symbols_extracted": symbols_extracted,
+            "skipped_by_reason": _sbr(plan),
         }
 
     def load_chunks(self) -> list:

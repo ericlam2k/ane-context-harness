@@ -42,7 +42,8 @@ def test_excluded_diag_stamped_when_empty(tmp_path):
     pipe.register_repository(FIXTURE, "exc-empty")
     pkg = _select(pipe, "exc-empty", "Fix the discount calculation")
     assert pkg.metrics["diagnostics"]["excluded"] == {
-        "paths": [], "chunks_dropped": 0, "unmatched": []}
+        "paths": [], "chunks_dropped": 0, "dropped_by_pattern": {},
+        "unmatched": []}
 
 
 def test_exclude_directory_prefix_drops_whole_tree(tmp_path):
@@ -56,6 +57,7 @@ def test_exclude_directory_prefix_drops_whole_tree(tmp_path):
         diag = pkg.metrics["diagnostics"]["excluded"]
         assert diag["chunks_dropped"] >= 2  # both fixture test files
         assert diag["unmatched"] == []
+        assert sum(diag["dropped_by_pattern"].values()) == diag["chunks_dropped"]
 
 
 def test_exclude_prefix_needs_slash_boundary(tmp_path):

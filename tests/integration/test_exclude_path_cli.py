@@ -94,3 +94,20 @@ def test_exclude_directory_prefix_end_to_end(tmp_path, monkeypatch):
     data = json.loads(out.stdout)
     assert all(not e["path"].startswith("tests/") for e in data["evidence"])
     assert "matched no files" not in out.stderr
+
+
+def test_exclude_everything_warns_why(tmp_path, monkeypatch):
+    r = _run(tmp_path, monkeypatch, "index", "--repo", REPO,
+             "--repo-id", "exc_cli5")
+    assert r.returncode == 0, r.stderr
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "exc_cli5",
+               "--task", "Fix the incorrect discount calculation",
+               "--budget", "2000",
+               "--exclude-path", "src/", "--exclude-path", "tests/",
+               "--exclude-path", "docs/", "--exclude-path", "config/",
+               "--exclude-path", "README.md")
+    assert out.returncode == 0, out.stderr
+    data = json.loads(out.stdout)
+    assert data["evidence"] == []
+    assert "removed every candidate" in out.stderr
+    assert "skipped_by_reason" in out.stderr
