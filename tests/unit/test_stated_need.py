@@ -21,6 +21,7 @@ from __future__ import annotations
 from src.ane_context_harness.indexing.chunking import lex_terms
 from src.ane_context_harness.retrieval.structural import aggregate_scores
 from src.ane_context_harness.retrieval.selector import (
+    _gate_need_terms,
     claim_candidates,
     identify_claim_candidates,
     resolve_stated_items,
@@ -177,9 +178,121 @@ def test_resolution_block_empty_records():
 
 # --- stated terms mined for claim identification ----------------------------
 
-def test_stated_need_text_mined_with_task_extraction():
-    terms = stated_claim_terms("partial widget handling", None)
-    assert {"partial", "widget", "handling"} <= terms
+def test_stated_need_text_mined_then_anchored_to_index():
+    chunks = _symbols(
+        _chunk("a", "src/a.py", "def widget_thing(): pass",
+               symbol="widget_thing"))
+    terms, note = stated_claim_terms("partial widget handling", None, chunks)
+    assert terms == {"widget"}
+    assert note == {"kept": ["widget"],
+                    "dropped": ["handl", "handle", "handling", "partial"]}
+
+
+def test_stated_need_nothing_anchors_yields_no_terms():
+    chunks = _symbols(
+        _chunk("a", "src/a.py", "def alpha_widget(): pass",
+               symbol="alpha_widget"))
+    terms, note = stated_claim_terms("quixotic zephyr preamble", None, chunks)
+    assert terms == set()
+    assert note == {"kept": [],
+                    "dropped": ["preamble", "quixotic", "zephyr"]}
+
+
+def test_stated_need_unmineable_yields_empty_note_not_absent():
+    chunks = _symbols(
+        _chunk("a", "src/a.py", "def alpha_widget(): pass",
+               symbol="alpha_widget"))
+    terms, note = stated_claim_terms("!!!", None, chunks)
+    assert terms == set()
+    assert note == {"kept": [], "dropped": []}
+
+
+# --- need-text anchoring gate ----------------------------------------------
+
+def _gate_chunks():
+    return _symbols(
+        _chunk("a", "src/auth_session.py",
+               "def logout_user(): pass", symbol="logout_user"),
+        _chunk("b", "src/reorder.py",
+               "def needs_reorder(): pass", symbol="needs_reorder"),
+        _chunk("c", "docs/runbook.md",
+               "Operational runbook for the reorder service."))
+
+
+def test_gate_keeps_symbol_name_case_and_separator_variants():
+    chunks = _gate_chunks()
+    for term in ["logout_user", "Logout_User", "logout-user", "logout.user",
+                 "logout$user", "logoutuser"]:
+        kept, note = _gate_need_terms({term}, chunks)
+        assert kept == {term}, term
+        assert note["dropped"] == []
+
+
+def test_gate_keeps_symbol_name_inflection_fold():
+    chunks = _symbols(
+        _chunk("a", "src/s.py", "def retry_policy(): pass",
+               symbol="retry_policy"))
+    kept, note = _gate_need_terms({"retry_policies"}, chunks)
+    assert kept == {"retry_policies"}
+    assert note["dropped"] == []
+
+
+def test_gate_subtoken_branch_keeps_exact_subtokens():
+    chunks = _gate_chunks()
+    kept, note = _gate_need_terms({"logout", "user", "needs", "reorder"},
+                                  chunks)
+    assert kept == {"logout", "user", "needs", "reorder"}
+    assert note["dropped"] == []
+
+
+def test_gate_subtoken_branch_rejects_stem_of_fold():
+    chunks = _gate_chunks()
+    kept, note = _gate_need_terms({"need"}, chunks)
+    assert kept == set()
+    assert note["dropped"] == ["need"]
+
+
+def test_gate_keeps_indexed_path_occurrence():
+    chunks = _gate_chunks()
+    kept, note = _gate_need_terms({"runbook"}, chunks)
+    assert kept == {"runbook"}
+    assert note["dropped"] == []
+
+
+def test_gate_drops_generic_unanchored_terms():
+    chunks = _gate_chunks()
+    kept, note = _gate_need_terms({"zzz", "quixotic", "banana"}, chunks)
+    assert kept == set()
+    assert note["dropped"] == ["banana", "quixotic", "zzz"]
+
+
+def test_gate_prevents_substring_claim_on_folded_stem():
+    """The mined term 'need' must never claim the symbol needs_reorder.
+
+    Caught failure (the flip): an unvalidated stated need reaches the
+    claim pass, the bounded substring fallback matches the stem inside
+    needs_reorder, and a chunk the task never asked for is admitted.
+    The gate drops the term before claims see it.
+    """
+    chunks = _gate_chunks()
+    task = "unrelated phrasing entirely"
+    mandatory, _reasons, _ = identify_claim_candidates(
+        chunks, task, [], weights=WEIGHTS, stated_terms={"need"})
+    assert 1 in mandatory  # pre-gate shape: the substring fallback fires
+    terms, note = stated_claim_terms("need", None, chunks)
+    assert terms == set()
+    assert note["dropped"] == ["need"]
+    mandatory, _reasons, _ = identify_claim_candidates(
+        chunks, task, [], weights=WEIGHTS, stated_terms=terms or None)
+    assert mandatory == set()
+
+
+def test_gate_note_lists_are_sorted_and_deduplicated():
+    chunks = _gate_chunks()
+    _kept, note = _gate_need_terms({"user", "logout", "banana", "logout"},
+                                   chunks)
+    assert note["kept"] == sorted(set(note["kept"]))
+    assert note["dropped"] == sorted(set(note["dropped"]))
 
 
 def test_unresolved_stated_items_contribute_no_terms():
@@ -187,7 +300,9 @@ def test_unresolved_stated_items_contribute_no_terms():
         _chunk("a", "src/a.py", "def alpha_widget(): pass",
                symbol="alpha_widget"))
     recs = resolve_stated_items(chunks, ["zzz_absent"])
-    assert stated_claim_terms(None, recs) == set()
+    terms, note = stated_claim_terms(None, recs, chunks)
+    assert terms == set()
+    assert note is None
 
 
 def test_mixed_resolution_contributes_only_resolved_terms():
@@ -195,7 +310,7 @@ def test_mixed_resolution_contributes_only_resolved_terms():
         _chunk("a", "src/a.py", "def alpha_widget(): pass",
                symbol="alpha_widget"))
     recs = resolve_stated_items(chunks, ["alpha_widget", "zzz_absent"])
-    terms = stated_claim_terms(None, recs)
+    terms, _note = stated_claim_terms(None, recs, chunks)
     assert {"alpha", "widget"} <= terms
     assert not any("zzz" in t for t in terms)
 
@@ -206,8 +321,9 @@ def test_resolved_stated_symbol_is_identified_as_claim():
     chunks = _symbols(
         _chunk("a", "src/a.py", "def alpha_widget(): return 1",
                symbol="alpha_widget", tokens=200))
-    stated = stated_claim_terms(None, resolve_stated_items(chunks,
-                                                           ["alpha_widget"]))
+    stated, _ = stated_claim_terms(None, resolve_stated_items(chunks,
+                                                             ["alpha_widget"]),
+                                  chunks)
     mandatory, reasons, _ = identify_claim_candidates(
         chunks, "unrelated phrasing entirely", [], weights=WEIGHTS,
         stated_terms=stated)
@@ -227,7 +343,8 @@ def test_stated_symbol_claim_identified_exactly_like_task_name():
     stated = claim_candidates(
         chunks, "unrelated phrasing entirely", [], weights=WEIGHTS,
         stated_terms=stated_claim_terms(
-            None, resolve_stated_items(chunks, ["alpha_widget"])))
+            None, resolve_stated_items(chunks, ["alpha_widget"]),
+            chunks)[0])
     assert stated == task_named
 
 
@@ -238,8 +355,9 @@ def test_resolved_stated_claim_admitted_when_it_fits_although_task_is_silent():
         _chunk("b", "src/b.py", "totally unrelated prose about weather",
                tokens=200))
     scores = _scores(chunks, "unrelated phrasing entirely")
-    stated = stated_claim_terms(None, resolve_stated_items(chunks,
-                                                           ["alpha_widget"]))
+    stated, _ = stated_claim_terms(None, resolve_stated_items(chunks,
+                                                             ["alpha_widget"]),
+                                  chunks)
     selected, diag = select_evidence(
         chunks, scores, "unrelated phrasing entirely", token_budget=500,
         explicit_paths=[], weights=WEIGHTS, stated_terms=stated)
@@ -257,8 +375,8 @@ def test_resolved_stated_claim_is_dropped_and_counted_when_it_cannot_fit():
         _chunk("b", "src/b.py", "def beta_gadget(): return 1",
                symbol="beta_gadget", tokens=400))
     scores = _scores(chunks, "unrelated phrasing entirely")
-    stated = stated_claim_terms(None, resolve_stated_items(
-        chunks, ["alpha_widget", "beta_gadget"]))
+    stated, _ = stated_claim_terms(None, resolve_stated_items(
+        chunks, ["alpha_widget", "beta_gadget"]), chunks)
     selected, diag = select_evidence(
         chunks, scores, "unrelated phrasing entirely", token_budget=500,
         explicit_paths=[], weights=WEIGHTS, stated_terms=stated)
@@ -273,8 +391,9 @@ def test_resolved_stated_path_is_identified_as_claim():
     chunks = _symbols(
         _chunk("a", "src/widget.py", "def widget(): return 1",
                symbol="widget", tokens=200))
-    stated = stated_claim_terms(None, resolve_stated_items(chunks,
-                                                           ["src/widget.py"]))
+    stated, _ = stated_claim_terms(None, resolve_stated_items(chunks,
+                                                             ["src/widget.py"]),
+                                  chunks)
     mandatory, reasons, _ = identify_claim_candidates(
         chunks, "unrelated phrasing entirely", [], weights=WEIGHTS,
         stated_terms=stated)
@@ -293,7 +412,7 @@ def test_stated_need_free_text_admits_like_task_text():
         chunks, _scores(chunks, "unrelated phrasing entirely"),
         "unrelated phrasing entirely",
         token_budget=500, explicit_paths=[], weights=WEIGHTS,
-        stated_terms=stated_claim_terms("alpha_widget", None))
+        stated_terms=stated_claim_terms("alpha_widget", None, chunks)[0])
     assert {c.path for c in via_stated} == {c.path for c in via_task}
     assert diag["claims_admitted"] == 1
 

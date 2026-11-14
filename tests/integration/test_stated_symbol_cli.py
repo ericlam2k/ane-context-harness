@@ -17,6 +17,7 @@ import os
 import re
 import subprocess
 import sys
+import pytest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -335,3 +336,173 @@ def test_recovery_prompt_footer_clause_only_when_fired(tmp_path, monkeypatch):
     assert "ask: re-select" not in footer
     unfired_json = json.loads(unfired.stdout)
     assert "ask: re-select" not in unfired_json["summary"]
+
+
+def test_stated_need_garbage_text_cannot_repack_baseline(tmp_path,
+                                                         monkeypatch):
+    """A garbage stated-need must not change the pack vs the no-flag run.
+
+    Caught failure: the need text was mined unvalidated and merged into
+    claim identification — a garbage fragment rode in as a claim term and
+    repacked the budget through incidental claim admission. Unanchored
+    mined terms must be dropped before claims are identified and
+    disclosed as dropped.
+    """
+    _index(tmp_path, monkeypatch)
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+               "--task", TASK, "--budget", "800",
+               "--stated-need", "zzz_mock_need", "--quiet")
+    assert out.returncode == 0, out.stderr
+    data = json.loads(out.stdout)
+    base = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+                "--task", TASK, "--budget", "800", "--quiet")
+    assert base.returncode == 0, base.stderr
+    base_data = json.loads(base.stdout)
+    assert [e["path"] for e in data["evidence"]] == [
+        e["path"] for e in base_data["evidence"]]
+    stripped = _norm(data)
+    stripped["metrics"]["diagnostics"].pop("stated_need_resolution_note")
+    stripped["metrics"]["diagnostics"].pop("stated_need_resolution")
+    assert stripped == _norm(base_data)
+    note = data["metrics"]["diagnostics"]["stated_need_resolution_note"]
+    assert note["kept"] == []
+    assert note["dropped"] == sorted(note["dropped"])
+    for term in ("zzz_mock_need", "need", "zzz", "mock"):
+        assert term in note["dropped"]
+
+
+def test_stated_need_index_anchors_survive(tmp_path, monkeypatch):
+    """Terms that anchor to the index stay claim terms.
+
+    Caught failure (the other direction): an anchor gate tight enough to
+    drop everything — a stated need the index CAN answer must keep
+    packing the evidence it names.
+    """
+    _index(tmp_path, monkeypatch)
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+               "--task", TASK, "--budget", "800",
+               "--stated-need", "calculate_discount", "--quiet")
+    assert out.returncode == 0, out.stderr
+    data = json.loads(out.stdout)
+    assert "src/discount.py" in [e["path"] for e in data["evidence"]]
+    note = data["metrics"]["diagnostics"]["stated_need_resolution_note"]
+    for rec in note["kept"]:
+        assert rec["matched_chunks"] == 1
+    assert [rec["term"] for rec in note["kept"]] == sorted(
+        rec["term"] for rec in note["kept"])
+    assert "calculate_discount" in [rec["term"] for rec in note["kept"]]
+    assert note["dropped"] == []
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+               "--task", TASK, "--budget", "800",
+               "--stated-need", "discount gate", "--quiet")
+    assert out.returncode == 0, out.stderr
+    data = json.loads(out.stdout)
+    note = data["metrics"]["diagnostics"]["stated_need_resolution_note"]
+    assert note == {"kept": [{"term": "discount", "matched_chunks": 1}],
+                    "dropped": ["gate"]}
+
+
+def test_stated_need_all_anchorless_terms_yield_no_claims(tmp_path,
+                                                          monkeypatch):
+    """A need whose every term anchors nowhere packs nothing extra.
+
+    Caught failure: the honest empty case — the note must report the
+    drop (no invented matches), claim identification must receive zero
+    mined terms, and the pack must be identical to the no-flag baseline.
+    """
+    _index(tmp_path, monkeypatch)
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+               "--task", TASK, "--budget", "800",
+               "--stated-need", "q q q", "--quiet")
+    assert out.returncode == 0, out.stderr
+    data = json.loads(out.stdout)
+    base = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+                "--task", TASK, "--budget", "800", "--quiet")
+    assert base.returncode == 0, base.stderr
+    base_data = json.loads(base.stdout)
+    assert [e["path"] for e in data["evidence"]] == [
+        e["path"] for e in base_data["evidence"]]
+    diag = data["metrics"]["diagnostics"]
+    assert diag["stated_need_resolution"]["items"] == []
+    assert diag["stated_need_resolution"]["total"] == 0
+    assert diag["stated_need_resolution_note"] == {
+        "kept": [],
+        "dropped": ["q"]}
+
+
+def test_stated_symbol_without_need_emits_no_note(tmp_path, monkeypatch):
+    """Resolved symbols/paths without a need stay exactly as before.
+
+    Caught failure: the note leaking into runs that never stated a need —
+    it is additive strictly when --stated-need was given. Stated symbols
+    keep exactly the pre-existing diagnostics shape.
+    """
+    _index(tmp_path, monkeypatch)
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+               "--task", TASK, "--budget", "800",
+               "--stated-symbol", "calculate_discount", "--quiet")
+    assert out.returncode == 0, out.stderr
+    diag = json.loads(out.stdout)["metrics"]["diagnostics"]
+    assert diag["stated_need_resolution"]["items"] == [
+        {"stated": "calculate_discount", "resolved": True,
+         "matched_symbol": "calculate_discount", "matched_path": None}]
+    assert "stated_need_resolution_note" not in diag
+
+
+# Fuzz guard: the index-anchor gate must not be overfit to any single
+# token. Each of these high-frequency English function/stem words, as
+# the SOLE free-text stated need, must leave the pack byte-identical to
+# the no-flag baseline. Words the gate keeps on this fixture anchor to
+# the index but cite zero packed chunks (stoplisted or below the
+# usability floor), so they stay inert.
+_FUZZ_NEED_WORDS = ["need", "get", "set", "run", "find", "test",
+                    "do", "to", "gate", "flag", "marker", "check"]
+_FUZZ_GATE = {
+    "need": ([], ["need"]),
+    "get": ([], ["get"]),
+    "set": ([{"term": "set", "matched_chunks": 0}], []),
+    "run": ([{"term": "run", "matched_chunks": 0}], []),
+    "find": ([], ["find"]),
+    "test": ([{"term": "test", "matched_chunks": 0}], []),
+    "do": ([{"term": "do", "matched_chunks": 0}], []),
+    "to": ([{"term": "to", "matched_chunks": 0}], []),
+    "gate": ([], ["gate"]),
+    "flag": ([], ["flag"]),
+    "marker": ([], ["marker"]),
+    "check": ([], ["check"]),
+}
+
+
+@pytest.mark.parametrize("word", _FUZZ_NEED_WORDS)
+def test_stated_need_function_word_keeps_baseline_pack(
+        word, tmp_path, monkeypatch):
+    """One adversarial function word as the sole --stated-need must not
+    flip the pack vs the no-flag baseline.
+
+    Caught failure: the index-anchor gate overfits to a single
+    high-frequency word — other everyday words slip through a hole and
+    incidentally repack the budget through claim admission. Pack bytes
+    and every decision leaf except the two additive stated-need
+    diagnostics must equal the baseline; the note must report exactly
+    what the gate kept/dropped.
+    """
+    _index(tmp_path, monkeypatch)
+    base = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+                "--task", TASK, "--budget", "800", "--quiet")
+    assert base.returncode == 0, base.stderr
+    base_data = json.loads(base.stdout)
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+               "--task", TASK, "--budget", "800",
+               "--stated-need", word, "--quiet")
+    assert out.returncode == 0, out.stderr
+    data = json.loads(out.stdout)
+    assert _norm(data["evidence"]) == _norm(base_data["evidence"])
+    stripped = _norm(data)
+    stripped["metrics"]["diagnostics"].pop("stated_need_resolution_note")
+    stripped["metrics"]["diagnostics"].pop("stated_need_resolution")
+    assert stripped == _norm(base_data)
+    diag = data["metrics"]["diagnostics"]
+    kept, dropped = _FUZZ_GATE[word]
+    assert diag["stated_need_resolution"]["items"] == []
+    assert diag["stated_need_resolution_note"] == {"kept": kept,
+                                                   "dropped": dropped}

@@ -284,12 +284,17 @@ class Pipeline:
         stage_ms["candidate_generation_ms"] = round(t_cand.elapsed_ms, 2)
 
         # Resolution is a lookup against the loaded chunks — no model cost.
-        # Unresolved stated items are reported and never packed.
+        # Unresolved stated items are reported and never packed. Need-text
+        # mined terms are anchored to the index the same way; unanchored
+        # ones never reach claims and are disclosed in
+        # stated_need_resolution_note.
         stated_resolution = None
         stated_terms = None
+        stated_need_note = None
         if stated_symbols or stated_need:
             stated_resolution = resolve_stated_items(chunks, stated_symbols)
-            stated_terms = stated_claim_terms(stated_need, stated_resolution)
+            stated_terms, stated_need_note = stated_claim_terms(
+                stated_need, stated_resolution, chunks)
 
         # deterministic candidate generation: BM25 + symbol + path scored
         with Timer("reranking") as t_rank:
@@ -463,6 +468,43 @@ class Pipeline:
         else:
             diag["excluded"] = {"paths": [], "chunks_dropped": 0,
                                 "dropped_by_pattern": {}, "unmatched": []}
+        if stated_need_note is not None:
+            # Additive diagnostic; present only when --stated-need was
+            # given. Attached here (post-exclusion) so matched_chunks
+            # counts only chunks that actually enter the evidence pack.
+            # Each kept term carries the number of packed chunks whose
+            # symbol or basename matches it — the usable (non-generic,
+            # min-length) symbol/basename matchers the claim pass uses,
+            # WITHOUT the claim pass's file-frequency specificity gate:
+            # a ubiquitous kept term can cite chunks it could never
+            # claim-admit. This is a citation count, not a causal count:
+            # a chunk admitted through a different claim, or one that
+            # would have been selected anyway, is indistinguishable from
+            # an aimed admission at runtime. Incidental riders show up
+            # here as citations and are never upgraded to aimed
+            # admissions by this diagnostic; separating them needs the
+            # counterfactual pack against a no-stated-flags baseline,
+            # which this runtime accounting does not attempt. 0 is
+            # honest: generic or stoplisted terms (e.g. "test") cite
+            # nothing, and an anchor that lives only in a directory path
+            # component (gate rule (c)) matches no basename stem.
+            # Test-pair citations via a paired source chunk are not
+            # attributed to the term. Never invented otherwise.
+            from .retrieval.structural import (matched_symbol_terms,
+                                               matched_path_terms)
+            kept_terms = set(stated_need_note["kept"])
+            counts = dict.fromkeys(kept_terms, 0)
+            if kept_terms:
+                for chunk in selected:
+                    cited = (matched_symbol_terms(chunk, kept_terms)
+                             | matched_path_terms(chunk, kept_terms))
+                    for term in cited:
+                        counts[term] += 1
+            diag["stated_need_resolution_note"] = {
+                "kept": [{"term": term, "matched_chunks": counts[term]}
+                         for term in stated_need_note["kept"]],
+                "dropped": stated_need_note["dropped"],
+            }
         # Hints must never point at an excluded path: the caller said it
         # must not appear, and a recovery hint would smuggle it back in.
         if excluded and diag.get("recovery"):

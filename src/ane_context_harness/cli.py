@@ -85,9 +85,13 @@ def main(argv: list | None = None) -> int:
                           help="Free-text statement of the evidence need, e.g. "
                                "the symbol or behavior the caller is looking "
                                "for. Mined with the same term extraction as "
-                               "the task text and merged into claim "
-                               "identification the same way; not validated "
-                               "against the index.")
+                               "the task text; each mined term becomes a "
+                               "claim term only when it anchors to the "
+                               "index (symbol name up to case/separators/"
+                               "inflections, symbol subtoken, or indexed "
+                               "file path). Unanchored terms are dropped "
+                               "and disclosed in the "
+                               "stated_need_resolution_note diagnostic.")
     p_select.add_argument("--out", default=None)
     p_select.add_argument("--full", action="store_true",
                           help="Baseline mode: pack the whole repo, no trimming; "

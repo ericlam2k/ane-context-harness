@@ -176,24 +176,90 @@ def resolve_stated_items(chunks: list, stated_items: list) -> list:
     return resolution
 
 
+def _gate_need_terms(mined: set, chunks: list) -> tuple[set, dict]:
+    """Anchor each mined need-text term to the index.
+
+    Returns ``(kept, note)`` where ``note`` is ``{"kept": [...],
+    "dropped": [...]}`` (sorted, de-duplicated). A mined term is kept as a
+    claim term only when it anchors to the index:
+
+    (a) it equals an index symbol name up to case, identifier separators
+        (``_-.$``) and the inflection folds in ``term_variants`` — the
+        same forms machinery as ``resolve_stated_items``;
+    (b) it is a subtoken of an index symbol name — ``split_identifier``
+        on both sides, case-folded, so ``discount`` stays because it is
+        a subtoken of the symbol ``calculate_discount``. Inflection folds
+        are NOT applied here (they belong to rule (a)); a bare stem is
+        not a subtoken, so a term that only appears as a folded stem of
+        some longer symbol never rides in through this branch.
+    (c) it occurs in an indexed file path (substring, case-folded,
+        NFC-normalized, forward slashes).
+
+    Terms that anchor nowhere are dropped from claim identification
+    entirely and disclosed in the note. The failure mode pinned here: a
+    garbage ``--stated-need`` silently repacking the budget through
+    incidental claim admission — a term kept here must point at something
+    the index actually carries.
+    """
+    from ..indexing.chunking import split_identifier
+    paths = {_path_norm(c.path).lower() for c in chunks}
+    symbols = _index_symbol_names(chunks)
+    sym_forms: set = set()
+    subtokens: set = set()
+    for name in symbols:
+        sym_forms |= _symbol_forms(name)
+        # Plain split only: inflection folds live in rule (a). A folded
+        # stem here would re-admit stems the gate exists to keep out.
+        for piece in split_identifier(name):
+            subtokens.add(piece.lower())
+    kept, dropped = set(), set()
+    for term in mined:
+        low = term.lower()
+        anchors = bool(_symbol_forms(low) & sym_forms)
+        if not anchors:
+            pieces = {piece.lower() for piece in split_identifier(low)}
+            anchors = bool(pieces & subtokens)
+        if not anchors:
+            anchors = any(low in p for p in paths)
+        if anchors:
+            kept.add(term)
+        else:
+            dropped.add(term)
+    return kept, {"kept": sorted(kept), "dropped": sorted(dropped)}
+
+
 def stated_claim_terms(stated_need: str | None,
-                       resolution: list | None) -> set:
-    """Lex terms of the resolved stated items plus the stated-need text.
+                       resolution: list | None,
+                       chunks: list) -> tuple[set, dict | None]:
+    """Lex terms of the resolved stated items plus gated stated-need text.
 
     Terms of UNRESOLVED stated items never appear here (unresolved needs
-    are reported, not packed). The stated-need free text is mined with the
-    same term extraction used for task text; nothing else is added.
+    are reported, not packed); terms of resolved stated items are trusted
+    exactly as before. The stated-need free text is mined with the same
+    term extraction used for task text, but each mined term is kept as a
+    claim term only when it anchors to the index (see
+    ``_gate_need_terms``); unanchored mined terms are dropped and
+    disclosed in the returned note (``None`` when no need was stated).
+    The note is present whenever --stated-need was given — including the
+    honest empty case where mining produced nothing, which reports
+    ``{"kept": [], "dropped": []}`` rather than hiding that the flag was
+    consumed. The caller (pipeline) extends each kept term with
+    ``matched_chunks`` — the packed chunks citing it — before attaching
+    the note to diagnostics; the kept entries this function returns are
+    plain term strings, sorted.
     """
     terms = set()
+    note = None
     if stated_need:
-        terms |= _terms(stated_need)
+        kept, note = _gate_need_terms(_terms(stated_need), chunks)
+        terms |= kept
     for rec in resolution or []:
         if not rec.get("resolved"):
             continue
         matched = rec.get("matched_symbol") or rec.get("matched_path") or ""
         if matched:
             terms |= _terms(matched)
-    return terms
+    return terms, note
 
 
 def recovery_prompt(recovery: dict | None,
@@ -411,10 +477,11 @@ def identify_claim_candidates(chunks: list, task: str, explicit_paths: list,
     Keeping this pass in one place prevents the shortlist and the selector
     from drifting apart: both callers see identical claim rules.
 
-    ``stated_terms`` carries the lex terms of the caller's stated need (the
-    validated --stated-symbol items and the --stated-need free text); they
-    merge into the same term set the task text produces, so resolved stated
-    needs are identified exactly as task-derived claims are.
+    ``stated_terms`` carries the validated lex terms of the caller's
+    stated need (--stated-symbol items that resolved, plus --stated-need
+    free text mined and anchored to the index by ``stated_claim_terms``);
+    they merge into the same term set the task text produces, so resolved
+    stated needs are identified exactly as task-derived claims are.
     """
     weights = weights or {}
     task_terms = _terms(task)
@@ -622,8 +689,8 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
     of the caller's stated need; they merge into claim identification exactly
     as task-text terms do — same matchers, same gates (specificity, per-file
     and claim caps, budget admission), never a budget override. Unresolved
-    stated items contribute nothing; the caller reports them in the
-    stated_need_resolution diagnostic.
+    stated items and unanchored mined need terms contribute nothing; the
+    caller reports them in the stated_need_resolution diagnostic.
     """
     weights = weights or {}
     task_terms = _terms(task)
