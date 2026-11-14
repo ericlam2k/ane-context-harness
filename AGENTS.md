@@ -38,8 +38,9 @@ schema v2 with whole-repo-fits budget rejection; **frozen split**
 write-once via `task_set_hash`) — **all gates run on the eval split only;
 tuning happens on dev only**. Retrieval includes identifier subtoken splitting,
 plural folding, file-level `file_symbols` (interface/type declarations
-extracted), symbol-micro-term guards and score-first packing with
-mandatory retention. Token counting is **pinned** to one deterministic backend
+extracted), symbol-micro-term guards and claims-first packing (budget-honest;
+named evidence admitted while it fits, then breadth, depth, and a small
+reserved tail). Token counting is **pinned** to one deterministic backend
 (`regex-heuristic`, `TOKEN_ESTIMATOR_VERSION="2"` — optional deps must never
 move counts). Reports embed `METRIC_DEFINITIONS` (Recall@K, nDCG@10, MRR,
 required-evidence recall) with per-task `ranked_chunk_ids` and named
