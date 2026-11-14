@@ -6,7 +6,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14-blue.svg)](https://python.org)
 [![Platform](https://img.shields.io/badge/Platform-macOS%20(Apple%20Silicon)%20%7C%20Linux-brightgreen.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-265%20passed-success.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-413%20passed-success.svg)]()
 [![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)]()
 
 ---
@@ -141,6 +141,70 @@ ane-harness serve --port 8765
 
 *概念示意图——图中的仪表盘是图形示意，并非真实工具截图。*
 
+
+---
+
+## 已声明的需求与恢复提示
+
+有时候任务真正需要的证据没有进入 pack——预算不得不削减它，或者 agent 明明知道自己需要什么，但任务文本从未点名。harness 会在输出中直白地说明这一点，并让 agent 能够直接声明自己的需求。
+
+### 当预算装不下所有内容时会发生什么
+
+Pack 从不会静默丢掉任何东西。录入按轮次、按顺序进行：
+
+1. **Claims first。**任务自身指向的证据——任务中点名的 symbol 或路径，或者当任务询问测试时对应的测试文件——会先被录入，按分数排序，只要预算还容得下。
+2. **Breadth。**剩余每个路径中最佳的 chunk，按分数排序，只要预算还有剩余——先录入某个文件的最佳 chunk，再轮到其他任何文件的第二个 chunk。
+3. **Depth。**进一步的 chunks，按分数排序，受逐文件与多样性规则约束。
+4. **Tail。**预算中预留的一小部分，用于录入那些被挤出核心预算、体积小且价值高的 chunks。
+
+两条规则保证它的诚实。只有你显式 pin 的内容（`--explicit-path` 或 authority rule）才能让 pack 超出你请求的预算；推断出的证据永远不行。而且 pack 不得不舍弃的任何东西都会在输出中被计数——`claims_dropped_budget`、`claims_capped` 以及 `metrics.diagnostics` 下的同类字段——绝不隐藏。Chunks 要么完整录入，要么不录入；没有任何东西会被截断、摘要化或改写来迁就预算。
+
+### 恢复提示：下一步搜什么
+
+当 pack 漏掉了它本应携带的证据——被点名的 symbol 或必需的路径——输出会带有一个 `recovery` 块：最多列出五个错过的条目，每个条目包含 chunk、路径、symbol、它为何放不下（`budget`、`capped` 或 `dropped`），以及一条可直接运行的搜索命令。命令是 `rg -n`（当 ripgrep 在 PATH 上时）、找不到时则是等价的 `grep -nE`、再或者空字符串——同时附带一个 `recovery_tool` 诊断，说明两个工具都没找到。harness 只打印这些命令，从不运行它们。块中的总数始终精确；只有逐项列举会受限制。提示只针对任务必需的证据触发——绝不针对可自由裁量的削减。该块出现在 `metrics.diagnostics` 中，以及 CLI `select` 输出和 `/v1/context/select` 响应的顶层。
+
+提示是一种可用性（affordance），不是承诺：它告诉 agent 下一步该看哪里；它并不说明 pack 是完整的。
+
+### 已声明的需求：`--stated-symbol` 与 `--stated-need`
+
+当任务文本不够时，直接说出你需要什么：
+
+```bash
+ane-harness select \
+  --repo-id my-project \
+  --task "Fix the discount calculation bug" \
+  --stated-symbol calculate_discount \
+  --stated-symbol src/billing/rates.py \
+  --stated-need "rounding policy for loyalty points"
+```
+
+- `--stated-symbol` 可重复指定。每个条目都会在索引上校验，不消耗模型调用：精确匹配 symbol 名（忽略大小写、标识符分隔符（`_`、`-`、`.`、`$`）以及复数/屈折形式，双向应用），或精确的仓库路径（NFC 归一化、正斜杠）。匹配成功的条目会并入与其他条目相同的 claim candidates，并按同样的 budget-honest 规则录入——没有预算覆盖，也没有绕过。
+- `--stated-need` 接受自由文本，使用与任务文本相同的词项提取进行挖掘。每个挖掘出的词项只有在锚定到索引时才成为 claim 词项——见下方的闸门；其余的一律丢弃并公开披露。
+- 无法解析的条目永远不会被 pack。它们会被报告在 `stated_need_resolution` 诊断中——每个条目一条记录，包含匹配到了什么（或没匹配到），以及最多三个可尝试的最近索引符号（按共享标识符子词项排序；零共享子词项也会被如实报告，而不是被掩盖）。
+
+Resolution 是一次索引查找，不是推断；它不消耗任何模型调用。`stated_need_resolution` 诊断只在给出 stated 标志时出现。
+
+### The ask：`recovery_prompt`
+
+当 pack 不得不削减必需的证据，或某个 stated symbol 无法解析时，输出会带有一个 `recovery_prompt`——一行通俗英语，点名错过了什么（附最多三个内联指针，其余放不下时附 "+N more"），并教会你重新声明需求的确切 flag。在这类运行中，end-of-run 提示会增加子句 `· ask: re-select with --stated-symbol if evidence misses`。当没有遗漏且没有 stated 未解析时，该键与该子句都不会出现，输出保持不变。该 prompt 出现在 `metrics.diagnostics` 中，以及 CLI `select` 输出和 `/v1/context/select` 响应的顶层。
+
+The ask 是一种可用性披露（affordance），不是漏检器。harness 无法知道任务是否需要它削减掉的那些证据；它只能报告自己削减了什么，或者你 stated 的某个名字在索引里找不到。如果 pack 已经覆盖了任务，忽略 the ask——重新选择会多花一轮、由 provider 计费的回合。
+
+### 需求文本闸门（need-text gate）
+
+自由文本的需求是唯一一处任意词项可能钻进 pack 的地方，所以闸门让 `--stated-need` 保持诚实。每个挖掘出的词项只有在锚定到索引时才保留为 claim 词项：
+
+- 它在忽略大小写、标识符分隔符和屈折形式后等于某个索引 symbol 名（与 `--stated-symbol` 使用的匹配方式相同）；
+- 它是一个索引 symbol 名的子词项，匹配时不做屈折折叠——裸词干不是子词项，因此只以某个较长 symbol 的折叠词干形式出现的词项永远不会混入；或者
+- 它出现在某个已索引的文件路径中。
+
+在哪里都锚不上的词项会完全从 claim identification 中丢弃，两半都会在 `stated_need_resolution_note` 诊断中公开披露——`kept`（每个词项附一个 `matched_chunks` 计数）和 `dropped`。只要给出了 `--stated-need`，该 note 就会出现，包括诚实的空情况。`matched_chunks` 统计引用该词项的 packed chunks；它是引用计数（citation count），不是意图度量（aim measure）。
+
+### Aim accounting：`stated_claim_summary`
+
+给出 stated 标志时，输出会带有一个 `stated_claim_summary`，包含三个计数——`stated_symbol`、`stated_path`、`stated_need`——统计 claims-first 轮次在引用 stated-origin 词项（已解析的 stated symbol、匹配到的 stated 路径，或闸门保留的 stated-need 词项）时录入的 packed chunks。这些计数不是互斥的——一个 chunk 可能因为它引用的每个 origin 各计一次——且它们的总和不是 pack 大小。统计口径是排除之后的最终 selected set，只统计 claims-first 的录入；task-born claims 永远不计入。该 summary 出现在 `metrics.diagnostics` 中，以及 CLI `select` 输出的顶层。
+
+这个限制，直说：同时也逐字出现在任务文本中的 stated 词项会被记为 stated，而一个偶然搭车者——一个 stated-anchored claim，其 chunk 本来就会被 pack——在运行时与有意的录入无法区分，且永远不会被升级为后者。非零计数意味着"一个 stated need 被某个 packed claim 引用了"，而不是"这个 chunk 正是 agent 想要的"。
 
 ---
 

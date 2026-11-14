@@ -6,7 +6,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14-blue.svg)](https://python.org)
 [![Platform](https://img.shields.io/badge/Platform-macOS%20(Apple%20Silicon)%20%7C%20Linux-brightgreen.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-265%20passed-success.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-413%20passed-success.svg)]()
 [![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)]()
 
 ---
@@ -113,6 +113,70 @@ ane-harness serve --port 8765
 
 *Ilustración conceptual — el panel de la imagen es arte gráfico, no una captura de una herramienta real.*
 
+
+---
+
+## Necesidades Declaradas y Sugerencias de Recuperación
+
+A veces la evidencia que la tarea necesita no llega al pack — el presupuesto obligó a cortarla, o el agente sabe exactamente qué necesita pero el texto de la tarea nunca lo nombra. El harness lo dice en su salida, de forma directa, y le da al agente una manera de declarar la necesidad directamente.
+
+### Qué ocurre cuando el presupuesto no alcanza para todo
+
+El pack nunca descarta nada en silencio. La admisión ocurre en pasadas, en orden:
+
+1. **Claims first.** La evidencia a la que apunta la propia tarea — un símbolo o ruta nombrado en la tarea, o el archivo de test correspondiente cuando la tarea pregunta sobre tests — se admite primero, en orden de puntuación, mientras quepa en el presupuesto.
+2. **Breadth.** El mejor chunk de cada ruta restante, en orden de puntuación, mientras quede presupuesto — primero el mejor chunk de un archivo, antes que un segundo chunk de cualquier otro archivo.
+3. **Depth.** Chunks adicionales en orden de puntuación, bajo las reglas por archivo y de diversidad.
+4. **Tail.** Una pequeña porción reservada del presupuesto se dedica a chunks pequeños de alto valor que quedaron fuera del presupuesto principal.
+
+Dos reglas mantienen la honestidad. Solo lo que fijas explícitamente (`--explicit-path` o una regla de autoridad) puede empujar el pack más allá del presupuesto solicitado; la evidencia inferida nunca puede. Y todo lo que el pack tuvo que dejar fuera se cuenta en la salida — `claims_dropped_budget`, `claims_capped` y similares bajo `metrics.diagnostics` — nunca se oculta. Los chunks se admiten enteros o no se admiten; nada se trunca, se resume ni se reescribe para que quepa.
+
+### Sugerencias de recuperación: qué buscar a continuación
+
+Cuando el pack pierde evidencia que debía llevar — un símbolo nombrado o una ruta requerida — la salida lleva un bloque `recovery`: lista hasta cinco elementos perdidos, cada uno con el chunk, la ruta, el símbolo, *por qué* no cupo (`budget`, `capped` o `dropped`), y un comando de búsqueda listo para ejecutar. El comando es `rg -n` cuando ripgrep está en el PATH, un equivalente `grep -nE` cuando no lo está, o una cadena vacía — con un diagnóstico `recovery_tool` que indica que ninguna de las dos herramientas se encontró. El harness imprime estos comandos; nunca los ejecuta. Los totales del bloque siempre son exactos; solo el listado detallado está limitado. Las sugerencias se disparan únicamente sobre la evidencia que la tarea requiere — nunca sobre cortes discrecionales. El bloque aparece en `metrics.diagnostics` y en el nivel superior de la salida CLI `select` y en la respuesta `/v1/context/select`.
+
+Una sugerencia es una facilidad (affordance), no una promesa: le dice al agente dónde mirar a continuación; no dice que el pack esté completo.
+
+### Necesidades declaradas: `--stated-symbol` y `--stated-need`
+
+Cuando el texto de la tarea no basta, di directamente lo que necesitas:
+
+```bash
+ane-harness select \
+  --repo-id my-project \
+  --task "Fix the discount calculation bug" \
+  --stated-symbol calculate_discount \
+  --stated-symbol src/billing/rates.py \
+  --stated-need "rounding policy for loyalty points"
+```
+
+- `--stated-symbol` es repetible. Cada elemento se valida contra el índice sin coste de modelo: coincidencia exacta con un nombre de símbolo sin distinguir mayúsculas/minúsculas, con los separadores de identificador (`_`, `-`, `.`, `$`) y las formas plurales/inflexionales (aplicadas en ambas direcciones), o una ruta exacta del repositorio (normalizada NFC, con barras diagonales). Un elemento resuelto se fusiona en los mismos claim candidates que todo lo demás y se admite bajo las mismas reglas budget-honest — no hay anulación de presupuesto ni bypass.
+- `--stated-need` toma texto libre, extraído con la misma extracción de términos que el texto de la tarea. Cada término extraído se convierte en un término de claim solo cuando se ancla al índice — ver el gate más abajo; el resto se descarta y se divulga.
+- Los elementos no resueltos nunca se empaquetan. Se reportan en el diagnóstico `stated_need_resolution` — un registro por elemento, con lo que coincidió (o no) y hasta tres símbolos indexados cercanos para probar (ordenados por subtokens de identificador compartidos; cero subtokens compartidos se reporta honestamente, sin maquillarlo).
+
+La resolución es una consulta al índice, no una inferencia; no cuesta ninguna llamada al modelo. El diagnóstico `stated_need_resolution` está presente solo cuando se pasó un flag stated.
+
+### The ask: `recovery_prompt`
+
+Cuando el pack tuvo que cortar evidencia requerida, o un stated symbol no pudo resolverse, la salida lleva un `recovery_prompt` — una línea en lenguaje llano que nombra lo que se perdió (con hasta tres punteros en línea, más "+N more" cuando el resto no cabe) y enseña los flags exactos para redeclarar la necesidad. En esas ejecuciones, la nota de fin de ejecución gana la cláusula `· ask: re-select with --stated-symbol if evidence misses`. Cuando no falta nada y ningún stated está sin resolver, ni la clave ni la cláusula aparecen, y la salida no cambia. El prompt aparece en `metrics.diagnostics` y en el nivel superior de la salida CLI `select` y en la respuesta `/v1/context/select`.
+
+The ask es una divulgación de facilidad (affordance), no un detector de faltas. El harness no puede saber si la tarea necesitaba la evidencia que cortó; solo puede reportar que cortó algo, o que un nombre que declaraste no se encontró en el índice. Si el pack cubre la tarea, ignora the ask — volver a seleccionar gasta un turno que el proveedor factura.
+
+### El filtro del texto de la necesidad (need-text gate)
+
+Las necesidades de texto libre son el único lugar por donde un término arbitrario podría colarse en el pack, así que el gate mantiene honesto a `--stated-need`. Cada término extraído permanece como término de claim solo cuando se ancla al índice:
+
+- es igual a un nombre de símbolo indexado sin distinguir mayúsculas/minúsculas, separadores de identificador y formas inflexionales (la misma coincidencia que usa `--stated-symbol`);
+- es un subtoken de un nombre de símbolo indexado, emparejado sin pliegues inflexionales — una raíz desnuda no es un subtoken, así que un término que solo aparece como raíz plegada de un símbolo más largo nunca entra; o
+- aparece en una ruta de archivo indexada.
+
+Los términos que no se anclan en ningún sitio se descartan por completo de la identificación de claims, y ambas mitades se divulgan en el diagnóstico `stated_need_resolution_note` — `kept` (con un recuento `matched_chunks` por término) y `dropped`. La nota está presente siempre que se pasa `--stated-need`, incluido el caso honesto de lista vacía. `matched_chunks` cuenta los chunks empaquetados que citan el término; es un recuento de citas, no una medida de intención.
+
+### Aim accounting: `stated_claim_summary`
+
+Cuando se pasa un flag stated, la salida lleva un `stated_claim_summary` con tres recuentos — `stated_symbol`, `stated_path`, `stated_need` — que cuentan los chunks empaquetados que la pasada claims-first admitió mientras citaban un término de origen stated (un stated symbol resuelto, una stated path correspondiente, o un término stated-need conservado por el gate). Los recuentos no son disjuntos — un chunk puede contar una vez por cada origen que cita — y su suma no es el tamaño del pack. La base es el conjunto seleccionado final después de las exclusiones, contado solo para admisiones claims-first; los claims nacidos de la tarea nunca cuentan. El summary aparece en `metrics.diagnostics` y en el nivel superior de la salida CLI `select`.
+
+El límite, dicho sin rodeos: un término stated que también aparece verbatim en el texto de la tarea se acredita como stated, y un polizón incidental — un claim anclado stated cuyo chunk se habría empaquetado de todas formas — es indistinguible de una admisión intencionada en tiempo de ejecución y nunca se promueve a una. Un recuento distinto de cero significa "una necesidad stated fue citada por un claim empaquetado", no "este chunk es exactamente lo que el agente buscaba".
 
 ---
 

@@ -6,7 +6,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14-blue.svg)](https://python.org)
 [![Platform](https://img.shields.io/badge/Platform-macOS%20(Apple%20Silicon)%20%7C%20Linux-brightgreen.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-265%20passed-success.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-413%20passed-success.svg)]()
 [![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)]()
 
 ---
@@ -91,7 +91,7 @@ Bốn quy tắc đã được tài liệu hóa, không model tham gia, không ng
 
 - 💰 **Ít ngữ cảnh hơn mỗi task, output ổn định:** Bỏ qua file không liên quan tới prompt — và output ổn định giúp nhà cung cấp tái sử dụng những gì đã đọc thay vì tính phí lại. Cut% đo giảm ngữ cảnh local, không bao giờ là hóa đơn của bạn.
 - ⚡ **Latency tức thì (~3ms):** Chạy hoàn toàn bằng Python native và C extensions local trên máy Mac hoặc Linux của bạn.
-- 🎯 **Độ chính xác điểm đúng chỗ:** Kết hợp khai báo symbol AST (class, TypeScript interface, enum, hàm) với tìm kiếm từ vựng BM25 và packing theo điểm, theo ngân sách token.
+- 🎯 **Độ chính xác điểm đúng chỗ:** Kết hợp khai báo symbol AST (class, TypeScript interface, enum, hàm) với tìm kiếm từ vựng BM25 và packing claims-first trung thực với ngân sách (budget-honest claims-first packing).
 - 🛡️ **Khử trùng secret zero-leak:** Tự động quét và redact AWS keys, private RSA/PEM keys, file `.env`, và secret entropy cao bằng placeholder ổn định theo request trước khi render prompt.
 - 🔌 **Hỗ trợ agent phổ quát:** Ship sẵn adapter dùng được cho **Anthropic Messages** (với breakpoint prompt-caching), **OpenAI Responses**, chat **OpenAI-Compatible**, và **Markdown** sạch.
 
@@ -199,7 +199,7 @@ given repo; redaction does not guarantee all secrets are caught."*
 
 Mọi lần chạy cũng in một dòng footer cắt một dòng ra stderr (và cùng
 dòng đó làm key `summary` trong stdout JSON), ví dụ
-`ane-harness: sent 7.1k instead of 211.2k · cut 96.6% in 165 ms`. Chỉ lời thường —
+`ane-harness: LOCAL est. pack 18.8k from est. 211.2k eligible · est. cut 91.1% · 61 chunks · 141 ms · cpu_deterministic`. Chỉ lời thường —
 không jargon, không markup heading `#`. Tổng cộng dồn local (chỉ đếm, không
 có text task) — xem chúng
 bất cứ lúc nào bằng `ane-harness daily`, hoặc mỗi khi thoát shell với
@@ -252,6 +252,70 @@ Các endpoint có sẵn:
 
 ---
 
+## Nhu cầu đã nêu và gợi ý khôi phục
+
+Đôi khi bằng chứng mà task cần không lọt vào pack — ngân sách buộc phải cắt nó, hoặc agent biết chính xác nó cần gì nhưng chính task text không nêu tên. Harness nói thẳng điều đó trong output, và cho agent một cách để nêu trực tiếp nhu cầu.
+
+### Điều gì xảy ra khi ngân sách không đủ chỗ cho mọi thứ
+
+Pack không bao giờ âm thầm bỏ bớt mọi thứ. Việc admit diễn ra theo lượt, theo thứ tự:
+
+1. **Claims first.** Bằng chứng mà chính task chỉ đích danh — một symbol hoặc path được nêu trong task, hoặc file test tương ứng khi task hỏi về test — được admit trước, theo điểm, trong khi còn vừa ngân sách.
+2. **Breadth.** Chunk tốt nhất của mỗi path còn lại, theo điểm, trong khi còn ngân sách — chunk tốt nhất của một file trước chunk thứ hai của bất kỳ file nào khác.
+3. **Depth.** Các chunk tiếp theo theo điểm, dưới quy tắc per-file và diversity.
+4. **Tail.** Một phần nhỏ của ngân sách được dành riêng cho các chunk nhỏ, giá trị cao, bị đẩy ra khỏi core budget.
+
+Hai quy tắc giữ cho mọi thứ trung thực. Chỉ những gì bạn pin tường minh (`--explicit-path` hoặc một authority rule) mới được đẩy pack vượt ngân sách yêu cầu; evidence suy luận ra không bao giờ được. Và mọi thứ pack buộc phải bỏ lại đều được đếm trong output — `claims_dropped_budget`, `claims_capped` và các biến thể khác dưới `metrics.diagnostics` — không bao giờ bị giấu. Chunk được admit nguyên vẹn hoặc không admit; không có gì bị truncate, tóm tắt hay viết lại để vừa.
+
+### Gợi ý khôi phục: tìm gì tiếp theo
+
+Khi pack bỏ sót evidence mà nó phải mang — một symbol được nêu tên hoặc một path bắt buộc — output mang một block `recovery`: nó liệt kê tối đa năm item bị bỏ sót, mỗi item gồm chunk, path, symbol, *vì sao* nó không vừa (`budget`, `capped`, hoặc `dropped`), và một lệnh tìm kiếm sẵn sàng chạy. Lệnh là `rg -n` khi ripgrep có trên PATH, một bản tương đương `grep -nE` khi không, hoặc chuỗi rỗng — với một diagnostic `recovery_tool` nói rằng không tìm thấy tool nào. Harness in các lệnh này; nó không bao giờ chạy chúng. Tổng trong block luôn chính xác; chỉ phần liệt kê chi tiết bị giới hạn. Gợi ý chỉ kích hoạt trên evidence mà task yêu cầu — không bao giờ trên các cắt tùy ý. Block xuất hiện trong `metrics.diagnostics`, và ở cấp top-level của output CLI `select` và response `/v1/context/select`.
+
+Một gợi ý là một affordance, không phải một lời hứa: nó cho agent biết nên nhìn đâu tiếp theo; nó không nói pack đã đầy đủ.
+
+### Nhu cầu đã nêu: `--stated-symbol` và `--stated-need`
+
+Khi task text không đủ, hãy nói thẳng bạn cần gì:
+
+```bash
+ane-harness select \
+  --repo-id my-project \
+  --task "Fix the discount calculation bug" \
+  --stated-symbol calculate_discount \
+  --stated-symbol src/billing/rates.py \
+  --stated-need "rounding policy for loyalty points"
+```
+
+- `--stated-symbol` có thể lặp lại. Mỗi item được validate với index mà không tốn model: khớp chính xác tên symbol up to case, identifier separators (`_`, `-`, `.`, `$`) và các dạng plural/inflection (áp dụng cả hai chiều), hoặc một path repository chính xác (NFC-normalized, forward slashes). Một item resolve được merge vào cùng claim candidates như mọi item khác và được admit theo cùng quy tắc budget-honest — không có budget override và không có bypass.
+- `--stated-need` nhận văn bản tự do, được mine với cùng term extraction như task text. Mỗi mined term chỉ trở thành claim term khi nó neo được vào index — xem the gate bên dưới; các term còn lại bị loại và được công bố.
+- Item không resolve được không bao giờ được pack. Chúng được báo cáo trong diagnostic `stated_need_resolution` — một record mỗi item, với những gì khớp (hoặc không) và tối đa ba nearest indexed symbols để thử (xếp hạng theo shared identifier subtokens; zero shared subtokens được báo cáo trung thực, không che đậy).
+
+Resolution là một index lookup, không phải inference; nó không tốn model call nào. Diagnostic `stated_need_resolution` chỉ xuất hiện khi một stated flag được đưa ra.
+
+### The ask: `recovery_prompt`
+
+Khi pack buộc phải cắt evidence bắt buộc, hoặc một stated symbol không resolve được, output mang một `recovery_prompt` — một dòng ngôn ngữ thường đặt tên cái bị bỏ sót (với tối đa ba inline pointers, cộng "+N more" khi phần còn lại không vừa) và dạy đúng các flags để nêu lại nhu cầu. Trên các lần chạy đó, end-of-run note nhận thêm mệnh đề `· ask: re-select with --stated-symbol if evidence misses`. Khi không có gì bị bỏ và không có gì stated chưa resolve, cả key lẫn mệnh đề đều không xuất hiện, và output không đổi. Prompt xuất hiện trong `metrics.diagnostics` và ở top-level của output CLI `select` và response `/v1/context/select`.
+
+The ask là một affordance disclosure, không phải một miss detector. Harness không thể biết task cần evidence mà nó đã cắt; nó chỉ có thể báo rằng nó đã cắt cái gì đó, hoặc một cái tên bạn stated không tìm thấy trong index. Nếu pack đã bao phủ task, hãy bỏ qua the ask — re-select tốn thêm một lượt mà provider tính tiền.
+
+### Cổng lọc văn bản nhu cầu (need-text gate)
+
+Free-text needs là nơi duy nhất một term bất kỳ có thể bí mật lọt vào pack, nên cổng lọc giữ `--stated-need` trung thực. Mỗi mined term chỉ còn là claim term khi nó neo vào index:
+
+- nó bằng một tên symbol trong index up to case, identifier separators, và inflection forms (cùng cách matching mà `--stated-symbol` dùng);
+- nó là một subtoken của một tên symbol trong index, khớp không có inflection folds — một bare stem không phải subtoken, nên một term chỉ xuất hiện như folded stem của một symbol dài hơn không bao giờ lọt vào; hoặc
+- nó xuất hiện trong một indexed file path.
+
+Các term không neo được vào index ở đâu đều bị loại khỏi claim identification hoàn toàn, và cả hai nửa đều được công bố trong diagnostic `stated_need_resolution_note` — `kept` (với một `matched_chunks` count mỗi term) và `dropped`. Note xuất hiện bất cứ khi nào `--stated-need` được đưa ra, kể cả trường hợp honest empty. `matched_chunks` đếm packed chunks citing the term; nó là một citation count, không phải một aim measure.
+
+### Aim accounting: `stated_claim_summary`
+
+Khi một stated flag được đưa ra, output mang một `stated_claim_summary` với ba counts — `stated_symbol`, `stated_path`, `stated_need` — đếm packed chunks mà claims-first pass đã admit trong khi citing một stated-origin term (một resolved stated symbol, một matched stated path, hoặc một gate-kept stated-need term). Các counts không rời nhau — một chunk có thể được đếm một lần cho mỗi origin nó cites — và tổng của chúng không phải pack size. Basis là final selected set sau exclusions, chỉ đếm cho claims-first admissions; task-born claims không bao giờ được đếm. Summary xuất hiện trong `metrics.diagnostics` và ở top-level của output CLI `select`.
+
+Giới hạn, nói thẳng: một stated term cũng xuất hiện nguyên văn trong task text được ghi nhận là stated, và một incidental rider — một stated-anchored claim mà chunk của nó đã được pack anyway — không thể phân biệt được với một aimed admission lúc runtime và không bao giờ được nâng cấp thành một. Một count khác 0 nghĩa là "một stated need đã được cited bởi một packed claim", không phải "chunk này chính xác là thứ agent nhắm tới".
+
+---
+
 ## Dùng trong Python
 
 Bạn cũng có thể dùng harness trực tiếp trong workflow AI agent của mình:
@@ -301,8 +365,8 @@ print(f"Packed {package.metrics['selected_tokens']} tokens (cut {package.metrics
                              │
 User Prompt  ──────►   BM25 Lexical Search
                              │
-                   Score-First Budget Packer
-                  (Mandatory Retention + MMR)
+                   Claims-First Budget Packer
+                 (Claims → Breadth → Depth → Tail)
                              │
                   Local Secret Sanitizer
               (Redacts .env, AWS keys, certs)
@@ -314,7 +378,7 @@ User Prompt  ──────►   BM25 Lexical Search
 
 1. **Chunking AST nhận biết symbol:** Thay vì tách dòng ngây thơ, file được parse theo cấu trúc code thật (class, method, TypeScript type/interface/enum).
 2. **Truy xuất xác định:** Truy xuất từ vựng BM25 nhanh, lọc bằng symbol term guards, tách subtoken, và gập số nhiều.
-3. **Packing ngân sách theo điểm:** Ngữ cảnh được pack tham lam để vừa khít trong token budget bạn chỉ định (ví dụ 1,200 tokens), bảo đảm evidence bắt buộc không bao giờ bị cắt cụt.
+3. **Packing ngân sách claims-first:** Ngữ cảnh được pack theo lượt — evidence được task chỉ đích danh (claims) được admit trước, theo điểm, trong khi còn vừa ngân sách, rồi breadth (một chunk tốt nhất của mỗi file còn lại), rồi depth, rồi một phần tail nhỏ được dành riêng — và evidence suy luận ra không bao giờ đẩy pack vượt ngân sách bạn chỉ định. Không có gì bị cắt cụt hay viết lại để vừa: một chunk được admit nguyên vẹn hoặc không admit, và những gì không vừa được báo cáo, không bị giấu.
 4. **Phát hiện secret & hàng rào riêng tư:** Các pattern loại trừ chuẩn (`.env*`, `.aws/**`, `*.pem`, v.v.) không bao giờ được đọc, và bộ phân loại regex + entropy thay token nhạy cảm bằng placeholder ổn định.
 5. **Nén nhiễu:** Output tool dài (test traces, terminal logs) được thu thành digest gọn, vẫn giữ tín hiệu.
 
@@ -346,7 +410,7 @@ Dành cho researcher, architect, và technical lead quan tâm tới độ nghiê
 ## Chạy bộ kiểm thử
 
 ```bash
-# Run all 258 unit, integration, and security tests
+# Run all 413 unit, integration, and security tests
 python3 -m pytest -q
 
 # Run concurrent A/B benchmark evaluation
