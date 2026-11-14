@@ -35,6 +35,19 @@ DEFAULT_CONFIG = {
         "git_recency_weight": 0.05,
         "diversity_lambda": 0.25,
         "top_k_for_diversity": 60,
+        # Score-driven cutoff (optional): when set, chunks admitted in the
+        # depth pass whose final_score falls below this threshold are
+        # skipped. Claims and pins are unaffected; None = disabled.
+        "score_cutoff": None,
+        # Claims-first admission bounds: inferred claims (named symbol/path,
+        # test pair) ride while they fit. "fraction" caps claim tokens as a
+        # share of the budget; "max_claim_chunks" caps claim count; the rest
+        # spill to ordinary score/budget gating and the drops are counted.
+        "claim_budget_fraction": 1.0,
+        "max_claim_chunks": 24,
+        # Fraction of the budget reserved as a tail for small high-value
+        # chunks crowded out of the core budget.
+        "tail_reserve_fraction": 0.05,
         # Multi-pass query expansion for ranking only ("off" | "max" | "sum").
         # Pins, reasons, and budgets always use the original task. "max"
         # (fused best-pass score) won the frozen-eval comparison over "sum"

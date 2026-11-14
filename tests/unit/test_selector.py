@@ -66,8 +66,16 @@ def test_named_symbol_mandatory():
     scores = _scores(chunks, "discount fix")
     selected, diag = select_evidence(chunks, scores, "discount fix", token_budget=2,
                                      explicit_paths=[], weights=WEIGHTS)
-    # calculate_discount chunk must be selected (named symbol in task)
+    # Budget contract: a named-symbol claim admits only while it fits; a
+    # claim that cannot fit is dropped and counted, not forced in.
+    assert not any(c.symbol == "calculate_discount" for c in selected)
+    assert diag["claims_dropped_budget"] >= 1
+    # Explicit pins are the caller's own request and stay unconditional.
+    scores = _scores(chunks, "discount fix")
+    selected, diag = select_evidence(chunks, scores, "discount fix", token_budget=2,
+                                     explicit_paths=["src/discount.py"], weights=WEIGHTS)
     assert any(c.symbol == "calculate_discount" for c in selected)
+    assert diag["budget_exceeded"] is True
 
 
 def test_stable_ordering():

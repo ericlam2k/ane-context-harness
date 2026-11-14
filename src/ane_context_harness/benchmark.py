@@ -359,6 +359,7 @@ def run_benchmark(tasks: list, pipeline, repo_paths: dict) -> BenchmarkReport:
             task=task.task,
             token_budget=task.token_budget,
             explicit_paths=[rc.get("path") for rc in task.required_chunks] if hints else [],
+            required_paths=[rc.get("path") for rc in task.required_chunks],
         )
         storage = pipeline._storage_for(task.repository_id)
         with Timer("total") as t_total:

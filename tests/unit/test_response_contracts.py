@@ -139,16 +139,18 @@ def test_select_evidence_item_keys(tmp_path):
 
 def test_select_metrics_keys_and_types(tmp_path):
     # The metrics block must keep the same names and kinds of values.
+    # Additive policy: keys may be added over time; tests assert the
+    # required names are present, never the exact set.
     pipe = _pipe(tmp_path)
     pipe.register_repository(FIXTURE, "contract-metrics")
     pkg = _select(pipe, "contract-metrics", "Fix the discount calculation")
-    assert set(pkg.metrics.keys()) == {
+    assert {
         "candidate_tokens", "selected_tokens", "tokens_removed",
         "reduction_percent", "required_tokens", "discretionary_tokens",
         "total_latency_ms", "candidate_generation_ms", "reranking_ms",
         "reranker_ms", "redaction_ms", "packing_ms", "stage_ms",
         "diagnostics",
-    }
+    } <= set(pkg.metrics.keys())
     assert isinstance(pkg.metrics["candidate_tokens"], int)
     assert isinstance(pkg.metrics["selected_tokens"], int)
     assert isinstance(pkg.metrics["tokens_removed"], int)
@@ -163,16 +165,18 @@ def test_select_metrics_keys_and_types(tmp_path):
 def test_select_diagnostics_keys_and_excluded_shape(tmp_path):
     # Extra detail about the pick must keep the same names.
     # Excluded means files the caller asked to leave out.
+    # Additive policy: keys may be added over time; tests assert the
+    # required names are present, never the exact set.
     pipe = _pipe(tmp_path)
     pipe.register_repository(FIXTURE, "contract-diag")
     pkg = _select(pipe, "contract-diag", "Fix the discount calculation")
     diag = pkg.metrics["diagnostics"]
-    assert set(diag.keys()) == {
+    assert {
         "mandatory_count", "selected_count", "used_tokens", "budget",
         "budget_exceeded", "per_file_tokens", "authority_flags",
         "pinned_changed", "pinned_missing", "full_changed", "full_missing",
         "excluded", "routing", "integrity",
-    }
+    } <= set(diag.keys())
     assert isinstance(diag["mandatory_count"], int)
     assert isinstance(diag["selected_count"], int)
     assert isinstance(diag["budget_exceeded"], bool)
@@ -181,9 +185,9 @@ def test_select_diagnostics_keys_and_excluded_shape(tmp_path):
     assert isinstance(diag["routing"], dict)
     assert isinstance(diag["integrity"], dict)
     excluded = diag["excluded"]
-    assert set(excluded.keys()) == {
+    assert {
         "paths", "chunks_dropped", "dropped_by_pattern", "unmatched",
-    }
+    } <= set(excluded.keys())
     assert excluded == {"paths": [], "chunks_dropped": 0,
                         "dropped_by_pattern": {}, "unmatched": []}
     # With a real exclude, the same names must stay with honest counts.
@@ -191,9 +195,9 @@ def test_select_diagnostics_keys_and_excluded_shape(tmp_path):
     pkg2 = _select(pipe, "contract-diag", "Fix the discount calculation",
                    exclude_paths=[victim])
     excluded2 = pkg2.metrics["diagnostics"]["excluded"]
-    assert set(excluded2.keys()) == {
+    assert {
         "paths", "chunks_dropped", "dropped_by_pattern", "unmatched",
-    }
+    } <= set(excluded2.keys())
     assert isinstance(excluded2["paths"], list)
     assert isinstance(excluded2["chunks_dropped"], int)
     assert isinstance(excluded2["dropped_by_pattern"], dict)

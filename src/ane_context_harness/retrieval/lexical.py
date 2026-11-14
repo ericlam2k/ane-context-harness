@@ -5,31 +5,20 @@ Operates over in-memory RepositoryChunk objects. No embeddings, no ML.
 from __future__ import annotations
 
 import math
-import re
 
 _K1 = 1.2
 _B = 0.75
 
 
 def tokenize_query(query: str) -> list:
-    """Query terms, split/folded identically to indexing (lex_terms)."""
-    from ..indexing.chunking import split_identifier, _fold_plural
-    out = []
-    for tok in re.findall(r"[A-Za-z0-9_]+", query):
-        low = tok.lower()
-        out.append(low)
-        singular = _fold_plural(low)
-        if singular:
-            out.append(singular)
-        subs = split_identifier(tok)
-        if len(subs) > 1:
-            for s in subs:
-                low_s = s.lower()
-                out.append(low_s)
-                sg = _fold_plural(low_s)
-                if sg:
-                    out.append(sg)
-    return out
+    """Query terms, folded identically to indexing (lex_terms).
+
+    Delegates to lex_terms so document and query folds share one code path —
+    the folds (plural + ingest/ed inflections) cannot drift between index
+    build and later selects.
+    """
+    from ..indexing.chunking import lex_terms
+    return lex_terms(query)
 
 
 class BM25:

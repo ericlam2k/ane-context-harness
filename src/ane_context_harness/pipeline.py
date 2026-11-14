@@ -23,7 +23,9 @@ from .providers.markdown import render_markdown
 from .retrieval.lexical import BM25, lexical_scores
 from .retrieval.reranker import RerankDecision
 from .retrieval.structural import aggregate_scores
-from .retrieval.selector import build_evidence, select_evidence
+from .retrieval.selector import (
+    build_evidence, build_rerank_shortlist, claim_candidates, select_evidence,
+)
 from .telemetry.metrics import Timer
 
 POLICY_VERSION = "phase0-2-deterministic+rules"
@@ -41,7 +43,10 @@ class Pipeline:
         self.limits = config.get("limits", {})
         self.never_read = config.get("privacy", {}).get("never_read", [])
         self._profile_cache = None
-        self._facade = None
+        # Dormant injection seam: an object with get() -> (facade, decision)
+        # and close(). The portable line ships no model backend, so the cache
+        # stays None and every select resolves the deterministic decision.
+        self._reranker_cache = None
         self.storage_base = os.path.expanduser(config.get("index", {}).get("storage_path", "~/.ane_context_harness"))
         os.makedirs(self.storage_base, exist_ok=True)
         self.storage = None
@@ -52,9 +57,9 @@ class Pipeline:
                 "prediction_count": 0, "fallback_count": 0}
 
     def close(self) -> None:
-        """Clean shutdown: nothing to release on the portable line."""
-        if self._facade is not None:
-            self._facade.close()
+        """Clean shutdown: release an injected reranker cache, if any."""
+        if self._reranker_cache is not None:
+            self._reranker_cache.close()
 
     def _storage_for(self, repo_id, repo_root=None) -> Storage:
         repo_id_safe = repo_id.replace("/", "_").replace(":", "_")
@@ -292,13 +297,92 @@ class Pipeline:
                 for s, v in zip(scores, fused):
                     s.initial_score = v
             # Portable line: deterministic reranker only (no models loaded).
-            decision = RerankDecision(
-                backend="cpu_deterministic", ml_used=False, fallback=False,
-                reason="deterministic_only_no_ml_qualified",
-                model_version="none")
+            # The `_reranker_cache` seam mirrors a host-injected cached
+            # backend; with the deterministic decision the shortlist path
+            # never activates.
+            cache = self._reranker_cache
+            if cache is not None:
+                facade, decision = cache.get()
+            else:
+                facade = None
+                decision = RerankDecision(
+                    backend="cpu_deterministic", ml_used=False, fallback=False,
+                    reason="deterministic_only_no_ml_qualified",
+                    model_version="none")
             ml_scores = None
             use_ml = False
             reranker_ms = 0.0
+            rerank_diag = {"active": False, "backend": decision.backend,
+                           "max_candidates": 0,
+                           "shortlist_size": 0, "claim_candidates": 0,
+                           "claims_outside_top_k": 0,
+                           "claim_protection": False,
+                           "reliability": {"candidates_scored": 0,
+                                           "truncated_candidates": 0,
+                                           "truncation_rate": 0.0,
+                                           "invalid_predictions": 0,
+                                           "strict_validity": True,
+                                           "fallback_used": False,
+                                           "fallback_reason": None}}
+            if decision.ml_used and facade is not None:
+                max_candidates = self.retrieval.get("max_rerank_candidates", 120)
+                top_k = min(max_candidates, len(chunks))
+                # final_score does not exist until the selector runs, so the
+                # shortlist orders by initial_score (the full deterministic
+                # signal at this point).
+                order = sorted(range(len(chunks)),
+                               key=lambda i: (-scores[i].initial_score, i))
+                # Pointwise reranker: score the deterministic top-K plus
+                # every pre-cap claim candidate, so a claim outside the
+                # top-K cannot be silently dropped before the selector's
+                # claims-first guarantee applies.
+                claim_idx = claim_candidates(
+                    chunks, request.task, request.explicit_paths,
+                    authority_paths=authority_paths, weights=self.retrieval,
+                    symbol_specificity=self.retrieval.get(
+                        "mandatory_symbol_specificity"),
+                    disable_symbol_pins=False)
+                shortlist_idx, claims_outside = build_rerank_shortlist(
+                    order, claim_idx, top_k)
+                shortlist_chunks = [chunks[i] for i in shortlist_idx]
+                t_rr = time.perf_counter()
+                if hasattr(facade, "rerank_with_stats"):
+                    top_scores, rr_stats = facade.rerank_with_stats(
+                        request.task, shortlist_chunks, len(shortlist_chunks))
+                else:
+                    top_scores = facade.rerank(
+                        request.task, shortlist_chunks, len(shortlist_chunks))
+                    rr_stats = {}
+                reranker_ms = round((time.perf_counter() - t_rr) * 1000.0, 2)
+                ml_scores = [None] * len(chunks)
+                for j, i in enumerate(shortlist_idx):
+                    ml_scores[i] = top_scores[j] if j < len(top_scores) else None
+                invalid = (rr_stats.get("invalid_predictions")
+                           if rr_stats else
+                           sum(1 for s in top_scores if s is None))
+                rerank_diag = {
+                    "active": True,
+                    "backend": decision.backend,
+                    "max_candidates": top_k,
+                    "shortlist_size": len(shortlist_idx),
+                    "claim_candidates": len(claim_idx),
+                    "claims_outside_top_k": claims_outside,
+                    "claim_protection": True,
+                    "reliability": {
+                        "candidates_scored": len(shortlist_idx),
+                        "truncated_candidates": int(
+                            rr_stats.get("truncated_candidates") or 0),
+                        "truncation_rate": float(
+                            rr_stats.get("truncation_rate") or 0.0),
+                        "invalid_predictions": int(invalid or 0),
+                        "strict_validity": bool(invalid == 0),
+                        "fallback_used": bool(decision.fallback),
+                        "fallback_reason": decision.reason,
+                        "model_available": bool(
+                            rr_stats.get("available", True)),
+                    },
+                }
+                use_ml = True
         stage_ms["reranking_ms"] = round(t_rank.elapsed_ms, 2)
         stage_ms["reranker_ms"] = reranker_ms
 
@@ -322,6 +406,7 @@ class Pipeline:
                     chunks, scores, request.task, max_budget, request.explicit_paths,
                     use_ml=use_ml, ml_scores=ml_scores, weights=self.retrieval,
                     authority_paths=authority_paths,
+                    required_paths=getattr(request, "required_paths", None),
                 )
                 diag["pinned_changed"] = pinned_changed
                 diag["pinned_missing"] = pinned_missing
@@ -354,6 +439,7 @@ class Pipeline:
         else:
             diag["excluded"] = {"paths": [], "chunks_dropped": 0,
                                 "dropped_by_pattern": {}, "unmatched": []}
+        diag["rerank_shortlist"] = rerank_diag
 
         cand_tokens = sum(c.estimated_tokens for c in chunks)
 
@@ -598,7 +684,8 @@ class Pipeline:
             selected, diag = select_evidence(
                 chunks, scores, request.task, max_budget, request.explicit_paths,
                 use_ml=use_ml, ml_scores=ml_scores, weights=self.retrieval,
-                authority_paths=authority_paths)
+                authority_paths=authority_paths,
+                required_paths=getattr(request, "required_paths", None))
             diag["pinned_changed"] = []
             diag["pinned_missing"] = []
             diag["full_changed"] = []

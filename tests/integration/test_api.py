@@ -31,7 +31,11 @@ def _post(base, path, payload):
 
 def test_api_health_and_select(tmp_path, py_repo):
     cfg = build_config({"index": {"storage_path": str(tmp_path / "store")},
-                        "privacy": {"never_read": ["**/.env*", "**/.aws/**"]}})
+                        # Budget-honest packing now fits small config files, so
+                        # the fixture's credential file is denied at indexing
+                        # time (same policy class as the .env deny above).
+                        "privacy": {"never_read": ["**/.env*", "**/.aws/**",
+                                                   "**/runtime.secrets.json"]}})
     server = create_server("127.0.0.1", 0, config=cfg)
     port = server.server_address[1]
     threading.Thread(target=server.serve_forever, daemon=True).start()

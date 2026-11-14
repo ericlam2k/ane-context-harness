@@ -204,30 +204,67 @@ def _fold_plural(term: str) -> str | None:
     return None
 
 
+def _fold_inflection(term: str) -> list:
+    """Additional deterministic stems for common verb/agreement inflections.
+
+    Applied on both sides (index and query) through term_variants; purely
+    additive — the full original token is always indexed — and minimum
+    lengths are chosen so micro-term noise does not flood the vocabulary.
+    """
+    out = []
+    if len(term) >= 5:
+        if term.endswith("ies"):
+            out.append(term[:-3] + "y")   # retries -> retry, categories -> category
+        if term.endswith("ied"):
+            out.append(term[:-3] + "y")   # retried -> retry
+        if term.endswith("ing") and len(term) >= 6:
+            stem = term[:-3]
+            if len(stem) >= 3:
+                out.append(stem)          # configuring -> configur
+                out.append(stem + "e")    # configuring -> configure, pricing -> price
+        if term.endswith("ed"):
+            stem = term[:-2]
+            if len(stem) >= 3:
+                out.append(stem)          # aborted -> abort
+                out.append(stem + "e")    # configured -> configure
+                if len(stem) >= 4 and stem[-1] == stem[-2]:
+                    out.append(stem[:-1])  # stopped -> stop
+    return out
+
+
+def term_variants(term: str) -> list:
+    """Every folded form of ONE lowercase token, applied identically on both
+    sides. Order-kept and de-duplicated inside the token's own folds so a
+    duplicate fold cannot double-count term frequency."""
+    out = []
+    for v in (_fold_plural(term), *_fold_inflection(term)):
+        if v and v != term and v not in out:
+            out.append(v)
+    return out
+
+
 def lex_terms(text: str) -> list:
     """Lexical terms for indexing: full tokens PLUS identifier subtokens.
 
     Indexing the full token preserves exact-match behaviour; adding subtokens
     lets word queries match camelCase/snake_case identifiers (``priceQuote``
     matches ``quote``) — required for code retrieval in TS/Go/Java style
-    sources. Plural forms additionally fold to their singular so ``tests``
-    matches ``test``. The query side (retrieval.lexical.tokenize_query)
-    applies the identical split/fold so document/query terms stay symmetric.
+    sources. Plural forms fold to their singular and verb inflections fold
+    to their base stems (``tests`` matches ``test``, ``configured`` and
+    ``configuring`` match ``configure``), so query/document folds stay
+    symmetric. The query side (retrieval.lexical.tokenize_query) delegates
+    to this same function so document/query terms cannot drift.
     """
     import re
     out = []
     for tok in re.findall(r"[A-Za-z0-9_]+", text):
         low = tok.lower()
         out.append(low)
-        singular = _fold_plural(low)
-        if singular:
-            out.append(singular)
+        out.extend(term_variants(low))
         subs = split_identifier(tok)
         if len(subs) > 1:
             for s in subs:
                 low_s = s.lower()
                 out.append(low_s)
-                sg = _fold_plural(low_s)
-                if sg:
-                    out.append(sg)
+                out.extend(term_variants(low_s))
     return out
