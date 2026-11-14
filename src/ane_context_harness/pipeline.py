@@ -25,8 +25,8 @@ from .retrieval.reranker import RerankDecision
 from .retrieval.structural import aggregate_scores
 from .retrieval.selector import (
     build_evidence, build_rerank_shortlist, claim_candidates,
-    resolve_stated_items, select_evidence, stated_claim_terms,
-    stated_need_resolution_block,
+    recovery_prompt, resolve_stated_items, select_evidence,
+    stated_claim_terms, stated_need_resolution_block,
 )
 from .telemetry.metrics import Timer
 
@@ -527,6 +527,14 @@ class Pipeline:
             # paths into an empty response.
             diag.pop("recovery", None)
             diag.pop("recovery_tool", None)
+        # Ask affordance, not a miss detector: when considered evidence
+        # was not admitted or a stated symbol was not found in the index,
+        # the result teaches the agent how to state its need. Reads the
+        # final (post-exclusion, post-fail-closed) recovery block; absent
+        # when nothing fired.
+        prompt = recovery_prompt(diag.get("recovery"), stated_resolution)
+        if prompt:
+            diag["recovery_prompt"] = prompt
         pkg.execution["secret_classifier"] = {
             "backend": sc_backend if classifier else "disabled",
             "enabled": bool(classifier),

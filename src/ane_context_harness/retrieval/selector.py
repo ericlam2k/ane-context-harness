@@ -196,6 +196,89 @@ def stated_claim_terms(stated_need: str | None,
     return terms
 
 
+def recovery_prompt(recovery: dict | None,
+                    stated_resolution: list | None) -> str | None:
+    """Plain-English ask affordance for a select result, or ``None``.
+
+    An affordance disclosure, never a miss detector: the harness cannot
+    know that the task needed evidence the pack had to cut. Whenever the
+    recovery block is non-empty (considered evidence was not admitted) or
+    a stated symbol was not found in the index, the result teaches the
+    agent how to state its need exactly. The missed-claim pointers come
+    from the same recovery block the pack produced — they are read, never
+    re-derived — and the nearest indexed symbols come from the stated
+    resolution records themselves; nothing is recomputed here.
+
+    ``None`` (key absent) when neither condition holds — a covered run
+    with nothing stated stays byte-identical.
+    """
+    recovery = recovery or {}
+    unresolved = [rec for rec in (stated_resolution or [])
+                  if not rec.get("resolved")]
+    if not recovery and not unresolved:
+        return None
+    sentences = []
+    if recovery:
+        total = recovery.get("required_claims_total", 0) or 0
+        covered = recovery.get("required_claims_covered", 0) or 0
+        missed_claims = max(0, total - covered)
+
+        def _pointers(entries, cap=3):
+            out = []
+            for entry in entries or []:
+                label = str(entry.get("symbol")
+                            or entry.get("path") or "")
+                if not label:
+                    continue
+                why = entry.get("why")
+                out.append(f"{label} ({why})" if why else label)
+                if len(out) >= cap:
+                    break
+            return out
+
+        if missed_claims > 0:
+            ptrs = _pointers(recovery.get("missed_claims"))
+            more = missed_claims - len(ptrs)
+            suffix = f", +{more} more" if more > 0 else ""
+            text = (f"Evidence below may be incomplete: the pack missed "
+                    f"{missed_claims} required claim"
+                    f"{'s' if missed_claims != 1 else ''}")
+            text += f" ({', '.join(ptrs)}{suffix})." if ptrs else "."
+            sentences.append(text)
+        if "required_paths_total" in recovery:
+            missed_paths = max(
+                0, (recovery.get("required_paths_total", 0) or 0)
+                - (recovery.get("required_paths_covered", 0) or 0))
+            if missed_paths > 0:
+                ptrs = _pointers(recovery.get("missed_required_paths"))
+                more = missed_paths - len(ptrs)
+                suffix = f", +{more} more" if more > 0 else ""
+                text = (f"The pack also missed {missed_paths} required path"
+                        f"{'s' if missed_paths != 1 else ''}")
+                text += f" ({', '.join(ptrs)}{suffix})." if ptrs else "."
+                sentences.append(text)
+        sentences.append(
+            "If the task's need is missing, re-invoke select with "
+            "--stated-symbol <symbol> (repeatable) or --stated-need "
+            "'<need text>' for exact index lookup.")
+    if unresolved:
+        names = ", ".join(str(rec.get("stated") or "") for rec in unresolved)
+        sentences.append(f"Stated symbol(s) not found in index: {names}.")
+        nearest_parts = []
+        for rec in unresolved:
+            sym = str(rec.get("stated") or "")
+            nearest = rec.get("nearest") or []
+            listed = ", ".join(nearest) if nearest else str(
+                rec.get("nearest_note") or "no similar indexed symbols")
+            if len(unresolved) > 1:
+                nearest_parts.append(f"{sym}: {listed}")
+            else:
+                nearest_parts.append(listed)
+        sentences.append(
+            "Nearest indexed symbols: " + "; ".join(nearest_parts) + ".")
+    return " ".join(sentences)
+
+
 def stated_need_resolution_block(records: list) -> dict:
     """Additive diagnostics block for stated needs, or ``None``-free.
 

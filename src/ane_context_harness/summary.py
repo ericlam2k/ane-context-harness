@@ -90,6 +90,10 @@ def select_footer(metrics: dict[str, Any], execution: dict[str, Any] | None,
         names = ", ".join(p.split("/")[-1] for p in pinned_changed[:2])
         extra = f" +{len(pinned_changed) - 2} more" if len(pinned_changed) > 2 else ""
         line += f" — pinned source updated: {names}{extra}"
+    if (metrics.get("diagnostics") or {}).get("recovery_prompt"):
+        # Appended only when the ask affordance fired (additive; every
+        # other run keeps the byte shape the pinned footer contract pins).
+        line += " · ask: re-select with --stated-symbol if evidence misses"
     return line
 
 

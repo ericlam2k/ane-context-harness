@@ -228,3 +228,110 @@ def test_no_stated_flags_byte_identical(tmp_path, monkeypatch):
     assert _norm(a) == _norm(b)
     for data in (a, b):
         assert "stated_need_resolution" not in data["metrics"]["diagnostics"]
+
+
+def test_recovery_prompt_fires_on_budget_cut_unstated(tmp_path, monkeypatch):
+    """The affordance ships when a stated-flag-free run had to cut named
+    evidence — the agent never learns the stated-need escape otherwise.
+
+    Caught failure: the pack cuts the evidence the task needs (here the
+    discount module at a starving budget), the recovery block lists the
+    cut, and the result says nothing about how to ask exactly. The line
+    must carry the honest missed count from the recovery block totals,
+    the missed path pointer, and the re-select instruction."""
+    _index(tmp_path, monkeypatch)
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+               "--task", "Fix the incorrect discount calculation",
+               "--budget", "30", "--quiet")
+    assert out.returncode == 0, out.stderr
+    data = json.loads(out.stdout)
+    diag = data["metrics"]["diagnostics"]
+    rec = diag["recovery"]
+    assert rec["required_claims_total"] - rec["required_claims_covered"] >= 1
+    prompt = data["recovery_prompt"]
+    assert prompt == diag["recovery_prompt"]
+    n = str(rec["required_claims_total"] - rec["required_claims_covered"])
+    assert f"{n} required claim" in prompt
+    assert "src/discount.py" in prompt
+    assert "--stated-symbol" in prompt and "--stated-need" in prompt
+
+
+def test_recovery_prompt_names_unresolved_and_nearest(tmp_path, monkeypatch):
+    """An unresolved stated symbol is named with the nearest indexed
+    symbols the resolution records already carry (or an honest zero-match
+    line) — nothing is recomputed for the prompt.
+
+    Caught failure: the agent states a need the index cannot resolve and
+    the harness either goes quiet or invents proximity. `nonexistent_thing`
+    shares no identifier subtoken with any indexed symbol and must say so;
+    `calcluate_discount` shares subtokens with real indexed symbols and
+    must surface them. Neither case involves the recovery block (a budget
+    of 800 covers this fixture end-to-end for the discount claims)."""
+    _index(tmp_path, monkeypatch)
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+               "--task", TASK, "--budget", "800",
+               "--stated-symbol", "nonexistent_thing", "--quiet")
+    assert out.returncode == 0, out.stderr
+    data = json.loads(out.stdout)
+    assert "recovery" not in data["metrics"]["diagnostics"]
+    prompt = data["recovery_prompt"]
+    assert "Stated symbol(s) not found in index: nonexistent_thing." in prompt
+    assert "no similar indexed symbols" in prompt
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+               "--task", TASK, "--budget", "800",
+               "--stated-symbol", "calcluate_discount", "--quiet")
+    assert out.returncode == 0, out.stderr
+    prompt = json.loads(out.stdout)["recovery_prompt"]
+    assert "Stated symbol(s) not found in index: calcluate_discount." in prompt
+    assert "calculate_discount" in prompt
+
+
+def test_recovery_prompt_absent_when_nothing_cut_and_nothing_stated(
+        tmp_path, monkeypatch):
+    """Empty recovery + nothing stated → no recovery_prompt key anywhere.
+
+    Caught failure: the affordance fires with a fabricated count or a
+    fabricated promise on a run where the whole fixture fits the budget.
+    The key must be absent, not present-but-empty."""
+    _index(tmp_path, monkeypatch)
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+               "--task", "Fix the login bug", "--budget", "30000",
+               "--quiet")
+    assert out.returncode == 0, out.stderr
+    data = json.loads(out.stdout)
+    assert "recovery" not in data["metrics"]["diagnostics"]
+    assert "recovery_prompt" not in data
+    assert "recovery_prompt" not in data["metrics"]["diagnostics"]
+
+
+def test_recovery_prompt_footer_clause_only_when_fired(tmp_path, monkeypatch):
+    """The printed footer carries the ask clause exactly when the
+    affordance fired; a covered unstated run's footer keeps the pinned
+    LOCAL est. pack contract with no clause.
+
+    Caught failure: every footer (or none) advertises the re-select
+    affordance — or the clause moves ahead of the est. figures it must
+    follow. The clause is appended at the end of the LOCAL est. pack
+    line, only on firing runs."""
+    _index(tmp_path, monkeypatch)
+    fired = _run(tmp_path, monkeypatch, "select", "--repo-id",
+                 "stated_cli", "--task",
+                 "Fix the incorrect discount calculation", "--budget", "30")
+    assert fired.returncode == 0, fired.stderr
+    footer = fired.stderr.strip().splitlines()[0]
+    assert footer.startswith("ane-harness: LOCAL est. pack")
+    assert footer.endswith(
+        "· ask: re-select with --stated-symbol if evidence misses")
+    assert footer.count("ask: re-select") == 1
+    fired_json = json.loads(fired.stdout)
+    assert fired_json["summary"].endswith(
+        "· ask: re-select with --stated-symbol if evidence misses")
+    unfired = _run(tmp_path, monkeypatch, "select", "--repo-id",
+                   "stated_cli", "--task", "Fix the login bug",
+                   "--budget", "30000")
+    assert unfired.returncode == 0, unfired.stderr
+    footer = unfired.stderr.strip().splitlines()[0]
+    assert footer.startswith("ane-harness: LOCAL est. pack")
+    assert "ask: re-select" not in footer
+    unfired_json = json.loads(unfired.stdout)
+    assert "ask: re-select" not in unfired_json["summary"]

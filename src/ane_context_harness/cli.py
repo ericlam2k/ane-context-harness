@@ -378,6 +378,10 @@ def main(argv: list | None = None) -> int:
             # Additive; present only when required evidence missed. The
             # harness never runs the emitted commands itself.
             out["recovery"] = _rec
+        _rp = ((pkg.metrics or {}).get("diagnostics") or {}).get("recovery_prompt")
+        if _rp:
+            # Additive; present only when the affordance fired.
+            out["recovery_prompt"] = _rp
         text = json.dumps(out, indent=2, default=str)
         if args.out:
             with open(args.out, "w", encoding="utf-8") as f:

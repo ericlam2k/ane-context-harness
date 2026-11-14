@@ -72,6 +72,11 @@ class _Handler(BaseHTTPRequestHandler):
             if _rec:
                 # Additive; present only when required evidence missed.
                 out = {**out, "recovery": _rec}
+            _rp = ((getattr(pkg, "metrics", None) or {}).get("diagnostics")
+                   or {}).get("recovery_prompt")
+            if _rp:
+                # Additive; present only when the affordance fired.
+                out = {**out, "recovery_prompt": _rp}
             self._send(200, out)
             return
         if path == "/v1/context/compress-output":

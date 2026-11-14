@@ -171,3 +171,51 @@ def test_api_select_has_no_stated_keys_by_default(tmp_path, py_repo):
     finally:
         server.shutdown()
         server.server_close()
+
+
+def test_api_select_recovery_prompt_additive_only(tmp_path, py_repo):
+    """Failure caught: the ask affordance either goes missing from the
+    wire contract when required evidence misses, or leaks a key into a
+    fully covered select. The affordance is additive and present only
+    when it fired, mirroring the recovery block's top-level + diagnostics
+    pattern."""
+    cfg = build_config({"index": {"storage_path": str(tmp_path / "store")},
+                        "privacy": {"never_read": ["**/.env*", "**/.aws/**",
+                                                   "**/runtime.secrets.json"]}})
+    server = create_server("127.0.0.1", 0, config=cfg)
+    port = server.server_address[1]
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        base = f"http://127.0.0.1:{port}"
+        status, idx = _post(base, "/v1/repositories/index",
+                            {"repository_path": py_repo,
+                             "repository_id": "synthetic_py_project"})
+        assert status == 200
+
+        # Starved budget: the recovery block fires and the affordance
+        # rides it — top-level + diagnostics, one-to-one.
+        status, starved = _post(base, "/v1/context/select", {
+            "repository_id": "synthetic_py_project",
+            "task": "Fix the incorrect discount calculation",
+            "token_budget": 30,
+        })
+        assert status == 200
+        diag = starved["metrics"]["diagnostics"]
+        assert "recovery_prompt" in diag
+        prompt = starved["recovery_prompt"]
+        assert prompt == diag["recovery_prompt"]
+        assert "src/discount.py" in prompt
+        assert "--stated-symbol" in prompt and "--stated-need" in prompt
+
+        # Comfortable budget: everything covered; no new keys anywhere.
+        status, covered = _post(base, "/v1/context/select", {
+            "repository_id": "synthetic_py_project",
+            "task": "Fix the incorrect discount calculation",
+            "token_budget": 2000,
+        })
+        assert status == 200
+        assert "recovery_prompt" not in covered
+        assert "recovery_prompt" not in covered["metrics"]["diagnostics"]
+    finally:
+        server.shutdown()
+        server.server_close()
