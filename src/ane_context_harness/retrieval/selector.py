@@ -41,6 +41,180 @@ CATEGORY_ORDER = {
 
 _PER_FILE_FRACTION = 0.25  # per-file maximum allocation of budget
 
+# Stated needs: a caller that knows which symbol or file it needs (CLI
+# --stated-symbol / --stated-need) can say so; the harness validates the
+# statement against the index and merges resolved items into claim-candidate
+# identification exactly as task-derived claims are, under the same
+# claims-first budget rules. A stated string that validates is admitted
+# like any named-evidence claim; one that does not is reported and packs
+# nothing.
+_IDENT_SEP_RE = re.compile(r"[_\-.$]")
+
+
+def _ident_norm(text: str) -> str:
+    """Case-folded, separator-free identifier spelling.
+
+    Strips the identifier separators the index already treats as spelling
+    variants (``_``, ``-``, ``.``, ``$``) so ``logout_user`` and
+    ``logoutUser`` compare equal. Whitespace and slashes are deliberately
+    kept: a multi-word phrase or a path can never resolve as a symbol here.
+    """
+    return _IDENT_SEP_RE.sub("", (text or "").lower())
+
+
+def _path_norm(path: str) -> str:
+    """NFC-normalized forward-slash path, for exact membership checks."""
+    return unicodedata.normalize("NFC", str(path or "")).replace("\\", "/")
+
+
+def _index_symbol_names(chunks: list) -> list:
+    names = set()
+    for c in chunks:
+        meta = getattr(c, "metadata", None) or {}
+        for name in meta.get("file_symbols") or []:
+            if isinstance(name, str) and name:
+                names.add(name)
+        for name, _line in meta.get("symbol_spans") or []:
+            if isinstance(name, str) and name:
+                names.add(name)
+        sym = getattr(c, "symbol", None)
+        if isinstance(sym, str) and sym:
+            names.add(sym)
+    return sorted(names)
+
+
+def _symbol_forms(name: str) -> set:
+    low = name.lower()
+    forms = {low, _ident_norm(low)}
+    from ..indexing.chunking import term_variants
+    for variant in term_variants(low):
+        forms.add(variant)
+        forms.add(_ident_norm(variant))
+    return forms
+
+
+def _nearest_index_symbols(stated: str, chunks: list, limit: int = 3) -> list:
+    """Top ``limit`` indexed symbols nearest to an unresolved stated item.
+
+    Proximity is the count of shared identifier subtokens (split on
+    underscore/camelCase/digit bounds, case-folded, with the same
+    inflection folds used for claim identification on both sides); ties
+    break alphabetically. Zero shared subtokens yields an empty list —
+    the caller reports "no similar indexed symbols" rather than inventing
+    proximity.
+    """
+    from ..indexing.chunking import split_identifier, term_variants
+
+    def _subs(text) -> set:
+        out = set()
+        for piece in split_identifier(text or ""):
+            low = piece.lower()
+            out.add(low)
+            out |= set(term_variants(low))
+        return out
+
+    stated_subs = _subs(stated)
+    if not stated_subs:
+        return []
+    scored = []
+    for name in _index_symbol_names(chunks):
+        shared = len(stated_subs & _subs(name))
+        if shared:
+            scored.append((-shared, name))
+    scored.sort(key=lambda item: (item[0], item[1]))
+    return [name for _neg, name in scored[:limit]]
+
+
+def resolve_stated_items(chunks: list, stated_items: list) -> list:
+    """Validate each stated symbol/path against the index, at zero model cost.
+
+    One record per stated item, in the order given:
+    ``{"stated", "resolved", "matched_symbol", "matched_path"}`` for every
+    item, plus ``nearest`` (top indexed symbols by shared subtokens) and,
+    when nothing shares, an honest ``nearest_note``. Matching is exact on
+    the symbol name up to the folds already supported elsewhere in the
+    pipeline: case, identifier separators (``logout_user`` vs
+    ``logoutUser``), and the plural/inflection variants from
+    ``term_variants`` — applied in both directions (``categories``
+    resolves to ``category`` and vice versa). Subtoken membership is NOT
+    used for resolution: it would turn an exact statement into a
+    prefix/substring guess. A stated string that is not a symbol is
+    checked as a repository path (NFC-normalized, forward slashes, exact
+    match). Unresolved items never reach claim identification; they are
+    reported here instead.
+    """
+    paths = {_path_norm(c.path) for c in chunks}
+    symbols = _index_symbol_names(chunks)
+    sym_forms = [_symbol_forms(name) for name in symbols]
+    resolution = []
+    for raw in stated_items or []:
+        stated = raw if isinstance(raw, str) else str(raw)
+        rec = {"stated": stated, "resolved": False,
+               "matched_symbol": None, "matched_path": None}
+        item = stated.strip()
+        if item:
+            item_forms = _symbol_forms(item)
+            hit = None
+            for idx, name in enumerate(symbols):  # sorted: deterministic pick
+                if item_forms & sym_forms[idx]:
+                    hit = name
+                    break
+            if hit is not None:
+                rec["resolved"] = True
+                rec["matched_symbol"] = hit
+            else:
+                path = _path_norm(item)
+                if path in paths:
+                    rec["resolved"] = True
+                    rec["matched_path"] = path
+        if not rec["resolved"]:
+            nearest = _nearest_index_symbols(item, chunks, 3) if item else []
+            rec["nearest"] = nearest
+            if not nearest:
+                rec["nearest_note"] = "no similar indexed symbols"
+        resolution.append(rec)
+    return resolution
+
+
+def stated_claim_terms(stated_need: str | None,
+                       resolution: list | None) -> set:
+    """Lex terms of the resolved stated items plus the stated-need text.
+
+    Terms of UNRESOLVED stated items never appear here (unresolved needs
+    are reported, not packed). The stated-need free text is mined with the
+    same term extraction used for task text; nothing else is added.
+    """
+    terms = set()
+    if stated_need:
+        terms |= _terms(stated_need)
+    for rec in resolution or []:
+        if not rec.get("resolved"):
+            continue
+        matched = rec.get("matched_symbol") or rec.get("matched_path") or ""
+        if matched:
+            terms |= _terms(matched)
+    return terms
+
+
+def stated_need_resolution_block(records: list) -> dict:
+    """Additive diagnostics block for stated needs, or ``None``-free.
+
+    Present in diagnostics only when the caller stated a need. Per-item
+    records carry the outcome; the counts summarize them; the note pins
+    the framing — resolution is an index lookup, it costs no model calls
+    and packs nothing on its own.
+    """
+    records = records or []
+    unresolved = sum(1 for r in records if not r.get("resolved"))
+    return {
+        "items": records,
+        "total": len(records),
+        "resolved": len(records) - unresolved,
+        "unresolved": unresolved,
+        "note": ("resolution is an index lookup, not inference; "
+                 "unresolved items are never packed"),
+    }
+
 
 def _terms(text: str) -> set:
     from ..indexing.chunking import lex_terms
@@ -139,7 +313,8 @@ def identify_claim_candidates(chunks: list, task: str, explicit_paths: list,
                               authority_paths: list | None = None,
                               weights: dict | None = None,
                               symbol_specificity: dict | None = None,
-                              disable_symbol_pins: bool = False
+                              disable_symbol_pins: bool = False,
+                              stated_terms: set | None = None
                               ) -> tuple[set, dict, set]:
     """Identify claim candidates BEFORE the per-file and budget caps.
 
@@ -152,9 +327,16 @@ def identify_claim_candidates(chunks: list, task: str, explicit_paths: list,
 
     Keeping this pass in one place prevents the shortlist and the selector
     from drifting apart: both callers see identical claim rules.
+
+    ``stated_terms`` carries the lex terms of the caller's stated need (the
+    validated --stated-symbol items and the --stated-need free text); they
+    merge into the same term set the task text produces, so resolved stated
+    needs are identified exactly as task-derived claims are.
     """
     weights = weights or {}
     task_terms = _terms(task)
+    if stated_terms:
+        task_terms = task_terms | set(stated_terms)
 
     mandatory_idx = set()
     reasons_by_idx: dict = {}
@@ -234,12 +416,13 @@ def claim_candidates(chunks: list, task: str, explicit_paths: list,
                      authority_paths: list | None = None,
                      weights: dict | None = None,
                      symbol_specificity: dict | None = None,
-                     disable_symbol_pins: bool = False) -> set:
+                     disable_symbol_pins: bool = False,
+                     stated_terms: set | None = None) -> set:
     """Pre-cap claim indices for a reranker shortlist (see above)."""
     mandatory_idx, _, _ = identify_claim_candidates(
         chunks, task, explicit_paths, authority_paths=authority_paths,
         weights=weights, symbol_specificity=symbol_specificity,
-        disable_symbol_pins=disable_symbol_pins)
+        disable_symbol_pins=disable_symbol_pins, stated_terms=stated_terms)
     return mandatory_idx
 
 
@@ -346,14 +529,23 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
                     ml_scores: list | None = None, weights: dict | None = None,
                     per_file_fraction: float = _PER_FILE_FRACTION,
                     authority_paths: list | None = None,
-                    required_paths: list[str] | None = None) -> tuple[list, dict]:
+                    required_paths: list[str] | None = None,
+                    stated_terms: set | None = None) -> tuple[list, dict]:
     """Return (selected_chunks_in_order, diagnostics).
 
     ``required_paths`` (optional) names the evidence the task requires; those
     paths' claims lead the admission order while both fit the budget, and are
-    never admitted past it."""
+    never admitted past it. ``stated_terms`` (optional) carries the lex terms
+    of the caller's stated need; they merge into claim identification exactly
+    as task-text terms do — same matchers, same gates (specificity, per-file
+    and claim caps, budget admission), never a budget override. Unresolved
+    stated items contribute nothing; the caller reports them in the
+    stated_need_resolution diagnostic.
+    """
     weights = weights or {}
     task_terms = _terms(task)
+    if stated_terms:
+        task_terms = task_terms | set(stated_terms)
     # index scores by chunk_id
     score_by_id = {s.chunk_id: s for s in scores}
     # ensure every chunk has a score
@@ -386,7 +578,8 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
         identify_claim_candidates(
             chunks, task, explicit_paths, authority_paths=authority_paths,
             weights=weights,
-            symbol_specificity=weights.get("mandatory_symbol_specificity")))
+            symbol_specificity=weights.get("mandatory_symbol_specificity"),
+            stated_terms=stated_terms))
     # Named-claim candidates, snapshotted before any cap demotes a chunk;
     # used after packing to report how the task's named evidence fared.
     named_claim_idx = {

@@ -140,3 +140,34 @@ def test_api_rejects_oversized_body(tmp_path):
     finally:
         server.shutdown()
         server.server_close()
+
+
+def test_api_select_has_no_stated_keys_by_default(tmp_path, py_repo):
+    """Failure caught: the stated-need diagnostics block leaking into
+    responses for callers that never stated a need. The wire carries no
+    stated keys; an unstated select must show no top-level and no
+    diagnostics stated_* keys, exactly as before the feature landed."""
+    cfg = build_config({"index": {"storage_path": str(tmp_path / "store")},
+                        "privacy": {"never_read": ["**/.env*", "**/.aws/**",
+                                                   "**/runtime.secrets.json"]}})
+    server = create_server("127.0.0.1", 0, config=cfg)
+    port = server.server_address[1]
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        base = f"http://127.0.0.1:{port}"
+        status, idx = _post(base, "/v1/repositories/index",
+                            {"repository_path": py_repo,
+                             "repository_id": "synthetic_py_project"})
+        assert status == 200
+        status, sel = _post(base, "/v1/context/select", {
+            "repository_id": "synthetic_py_project",
+            "task": "Fix the incorrect discount calculation",
+            "token_budget": 1200,
+        })
+        assert status == 200
+        assert "stated_need_resolution" not in sel
+        diag = sel["metrics"]["diagnostics"]
+        assert not any(k.startswith("stated_") for k in diag)
+    finally:
+        server.shutdown()
+        server.server_close()

@@ -88,6 +88,13 @@ class SelectRequest:
     # Hints only to the packer: required claims lead other claims while they
     # fit the budget; they are never admitted past it.
     required_paths: list[str] = field(default_factory=list)
+    # Needs the caller states explicitly (CLI --stated-symbol repeatable,
+    # --stated-need free text). Validated against the index and merged
+    # into claim-candidate identification under the same budget-honest
+    # claims-first rules; never a budget override. Defaults empty: no
+    # behavior change for callers that do not declare stated needs.
+    stated_symbols: list = field(default_factory=list)
+    stated_need: str = ""
     # Paths that must never appear in the evidence pack (negative pins).
     # Enforced in packing, after ranking; a path both pinned and excluded
     # is a contradictory instruction and the request is refused.

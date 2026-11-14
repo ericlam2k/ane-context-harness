@@ -72,6 +72,22 @@ def main(argv: list | None = None) -> int:
                           help="Repo-relative path that must never appear in the "
                                "evidence pack (negative pin; enforced in "
                                "packing, after ranking)")
+    p_select.add_argument("--stated-symbol", action="append", default=[],
+                          help="Symbol or path the caller states as needed "
+                               "evidence (repeatable). Validated against the "
+                               "index; a resolved item is merged into claim "
+                               "candidates under the same budget-honest "
+                               "claims-first rules (no budget override). An "
+                               "unresolved item is never packed and is "
+                               "reported in the stated_need_resolution "
+                               "diagnostic.")
+    p_select.add_argument("--stated-need", default=None,
+                          help="Free-text statement of the evidence need, e.g. "
+                               "the symbol or behavior the caller is looking "
+                               "for. Mined with the same term extraction as "
+                               "the task text and merged into claim "
+                               "identification the same way; not validated "
+                               "against the index.")
     p_select.add_argument("--out", default=None)
     p_select.add_argument("--full", action="store_true",
                           help="Baseline mode: pack the whole repo, no trimming; "
@@ -324,6 +340,8 @@ def main(argv: list | None = None) -> int:
             explicit_paths=args.explicit_path,
             exclude_paths=args.exclude_path,
             options={"full_context": True} if args.full else {},
+            stated_symbols=list(args.stated_symbol),
+            stated_need=(args.stated_need or ""),
         )
         try:
             pkg = pipe.select_context(req)

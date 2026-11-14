@@ -24,7 +24,9 @@ from .retrieval.lexical import BM25, lexical_scores
 from .retrieval.reranker import RerankDecision
 from .retrieval.structural import aggregate_scores
 from .retrieval.selector import (
-    build_evidence, build_rerank_shortlist, claim_candidates, select_evidence,
+    build_evidence, build_rerank_shortlist, claim_candidates,
+    resolve_stated_items, select_evidence, stated_claim_terms,
+    stated_need_resolution_block,
 )
 from .telemetry.metrics import Timer
 
@@ -270,9 +272,24 @@ class Pipeline:
                         request.explicit_paths, authority_paths)
             stage_ms["refresh_ms"] = round(t_ref.elapsed_ms, 2)
 
+        # Stated needs (CLI --stated-symbol / --stated-need). Reading the
+        # flags is pure string handling; the index lookup happens after the
+        # chunks load. Nothing stated: the machinery below is skipped
+        # entirely and the diagnostics carry no new keys.
+        stated_symbols = list(getattr(request, "stated_symbols", None) or [])
+        stated_need = (getattr(request, "stated_need", None) or "").strip()
+
         with Timer("candidate_generation") as t_cand:
             chunks = storage.load_chunks()
         stage_ms["candidate_generation_ms"] = round(t_cand.elapsed_ms, 2)
+
+        # Resolution is a lookup against the loaded chunks — no model cost.
+        # Unresolved stated items are reported and never packed.
+        stated_resolution = None
+        stated_terms = None
+        if stated_symbols or stated_need:
+            stated_resolution = resolve_stated_items(chunks, stated_symbols)
+            stated_terms = stated_claim_terms(stated_need, stated_resolution)
 
         # deterministic candidate generation: BM25 + symbol + path scored
         with Timer("reranking") as t_rank:
@@ -341,7 +358,8 @@ class Pipeline:
                     authority_paths=authority_paths, weights=self.retrieval,
                     symbol_specificity=self.retrieval.get(
                         "mandatory_symbol_specificity"),
-                    disable_symbol_pins=False)
+                    disable_symbol_pins=False,
+                    stated_terms=stated_terms)
                 shortlist_idx, claims_outside = build_rerank_shortlist(
                     order, claim_idx, top_k)
                 shortlist_chunks = [chunks[i] for i in shortlist_idx]
@@ -407,12 +425,18 @@ class Pipeline:
                     use_ml=use_ml, ml_scores=ml_scores, weights=self.retrieval,
                     authority_paths=authority_paths,
                     required_paths=getattr(request, "required_paths", None),
+                    stated_terms=stated_terms,
                 )
                 diag["pinned_changed"] = pinned_changed
                 diag["pinned_missing"] = pinned_missing
                 diag["full_changed"] = full_changed
                 diag["full_missing"] = full_missing
-        stage_ms["packing_ms"] = round(t_pack.elapsed_ms, 2)
+            if stated_resolution is not None:
+                # Additive diagnostic; present only when the caller stated a
+                # need. Unstated requests never see this key.
+                diag["stated_need_resolution"] = stated_need_resolution_block(
+                    stated_resolution)
+            stage_ms["packing_ms"] = round(t_pack.elapsed_ms, 2)
 
         # Exclusion enforcement: drop after ranking, in every branch
         # (including full-context baselines — "must never appear" has no
