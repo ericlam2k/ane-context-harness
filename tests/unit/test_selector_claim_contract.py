@@ -264,7 +264,7 @@ def test_named_path_claim_via_inflection_fold():
     """An -ing token in the task folds to its base stem for path matching."""
     chunks = [_chunk("doc", "docs/pricing-rules.md",
                      "The cap applies to every concession.")]
-    idx, reasons, _ = _identify(
+    idx, reasons, _, _ = _identify(
         chunks, "What caps apply to the customer's price concession?")
     assert idx == {0}
     assert "named_path" in reasons[0]
@@ -275,7 +275,7 @@ def test_specificity_gate_rejects_terms_ubiquitous_across_files():
     chunks = [_chunk(f"c{n}", f"src/m{n}.py", f"def delta_{n}(): return {n}",
                      symbol=f"delta_{n}")
               for n in range(4)]
-    idx, reasons, _ = _identify(chunks, "delta handling")
+    idx, reasons, _, _ = _identify(chunks, "delta handling")
     assert idx == set()
     assert all("named_symbol" not in rs for rs in reasons.values())
 
@@ -283,7 +283,7 @@ def test_specificity_gate_rejects_terms_ubiquitous_across_files():
 def test_specificity_gate_keeps_rare_terms():
     chunks = [_chunk("c", "src/zephyr.py", "def zephyr_handler(): return 1",
                      symbol="zephyr_handler")]
-    idx, reasons, _ = _identify(chunks, "zephyr handling")
+    idx, reasons, _, _ = _identify(chunks, "zephyr handling")
     assert idx == {0}
     assert "named_symbol" in reasons[0]
 
@@ -292,7 +292,7 @@ def test_intent_boilerplate_terms_never_pin_files():
     """Prompt-navigation vocabulary pins nothing by itself."""
     chunks = [_chunk("c", "src/render.py", "def render_name(): return 1",
                      symbol="render_name")]
-    idx, reasons, _ = _identify(chunks, "Name the relevant files")
+    idx, reasons, _, _ = _identify(chunks, "Name the relevant files")
     assert idx == set()
     assert all("named_symbol" not in rs for rs in reasons.values())
 

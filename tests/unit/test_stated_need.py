@@ -276,13 +276,13 @@ def test_gate_prevents_substring_claim_on_folded_stem():
     """
     chunks = _gate_chunks()
     task = "unrelated phrasing entirely"
-    mandatory, _reasons, _ = identify_claim_candidates(
+    mandatory, _reasons, _, _ = identify_claim_candidates(
         chunks, task, [], weights=WEIGHTS, stated_terms={"need"})
     assert 1 in mandatory  # pre-gate shape: the substring fallback fires
     terms, note = stated_claim_terms("need", None, chunks)
     assert terms == set()
     assert note["dropped"] == ["need"]
-    mandatory, _reasons, _ = identify_claim_candidates(
+    mandatory, _reasons, _, _ = identify_claim_candidates(
         chunks, task, [], weights=WEIGHTS, stated_terms=terms or None)
     assert mandatory == set()
 
@@ -324,7 +324,7 @@ def test_resolved_stated_symbol_is_identified_as_claim():
     stated, _ = stated_claim_terms(None, resolve_stated_items(chunks,
                                                              ["alpha_widget"]),
                                   chunks)
-    mandatory, reasons, _ = identify_claim_candidates(
+    mandatory, reasons, _, _ = identify_claim_candidates(
         chunks, "unrelated phrasing entirely", [], weights=WEIGHTS,
         stated_terms=stated)
     assert 0 in mandatory
@@ -394,7 +394,7 @@ def test_resolved_stated_path_is_identified_as_claim():
     stated, _ = stated_claim_terms(None, resolve_stated_items(chunks,
                                                              ["src/widget.py"]),
                                   chunks)
-    mandatory, reasons, _ = identify_claim_candidates(
+    mandatory, reasons, _, _ = identify_claim_candidates(
         chunks, "unrelated phrasing entirely", [], weights=WEIGHTS,
         stated_terms=stated)
     assert 0 in mandatory

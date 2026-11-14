@@ -386,6 +386,13 @@ def main(argv: list | None = None) -> int:
         if _rp:
             # Additive; present only when the affordance fired.
             out["recovery_prompt"] = _rp
+        _scs = ((pkg.metrics or {}).get("diagnostics") or {}).get(
+            "stated_claim_summary")
+        if _scs is not None:
+            # Additive; present only when a stated flag was given. Mirrors
+            # the diagnostics copy; aimed admissions of stated-origin
+            # claims, not a counterfactual verdict.
+            out["stated_claim_summary"] = _scs
         text = json.dumps(out, indent=2, default=str)
         if args.out:
             with open(args.out, "w", encoding="utf-8") as f:

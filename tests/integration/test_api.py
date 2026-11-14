@@ -166,6 +166,7 @@ def test_api_select_has_no_stated_keys_by_default(tmp_path, py_repo):
         })
         assert status == 200
         assert "stated_need_resolution" not in sel
+        assert "stated_claim_summary" not in sel
         diag = sel["metrics"]["diagnostics"]
         assert not any(k.startswith("stated_") for k in diag)
     finally:

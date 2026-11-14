@@ -229,6 +229,8 @@ def test_no_stated_flags_byte_identical(tmp_path, monkeypatch):
     assert _norm(a) == _norm(b)
     for data in (a, b):
         assert "stated_need_resolution" not in data["metrics"]["diagnostics"]
+        assert "stated_claim_summary" not in data["metrics"]["diagnostics"]
+        assert "stated_claim_summary" not in data
 
 
 def test_recovery_prompt_fires_on_budget_cut_unstated(tmp_path, monkeypatch):
@@ -363,6 +365,8 @@ def test_stated_need_garbage_text_cannot_repack_baseline(tmp_path,
     stripped = _norm(data)
     stripped["metrics"]["diagnostics"].pop("stated_need_resolution_note")
     stripped["metrics"]["diagnostics"].pop("stated_need_resolution")
+    stripped["metrics"]["diagnostics"].pop("stated_claim_summary")
+    stripped.pop("stated_claim_summary")
     assert stripped == _norm(base_data)
     note = data["metrics"]["diagnostics"]["stated_need_resolution_note"]
     assert note["kept"] == []
@@ -482,9 +486,9 @@ def test_stated_need_function_word_keeps_baseline_pack(
     Caught failure: the index-anchor gate overfits to a single
     high-frequency word — other everyday words slip through a hole and
     incidentally repack the budget through claim admission. Pack bytes
-    and every decision leaf except the two additive stated-need
-    diagnostics must equal the baseline; the note must report exactly
-    what the gate kept/dropped.
+    and every decision leaf except the additive stated-need diagnostics
+    (plus the additive top-level stated_claim_summary mirror) must equal
+    the baseline; the note must report exactly what the gate kept/dropped.
     """
     _index(tmp_path, monkeypatch)
     base = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
@@ -500,9 +504,156 @@ def test_stated_need_function_word_keeps_baseline_pack(
     stripped = _norm(data)
     stripped["metrics"]["diagnostics"].pop("stated_need_resolution_note")
     stripped["metrics"]["diagnostics"].pop("stated_need_resolution")
+    stripped["metrics"]["diagnostics"].pop("stated_claim_summary")
+    stripped.pop("stated_claim_summary")
     assert stripped == _norm(base_data)
     diag = data["metrics"]["diagnostics"]
     kept, dropped = _FUZZ_GATE[word]
     assert diag["stated_need_resolution"]["items"] == []
     assert diag["stated_need_resolution_note"] == {"kept": kept,
                                                    "dropped": dropped}
+
+
+# Stated-claim summary: the runtime observable for "did the agent aim
+# right". Aimed admissions (claims citing a stated-origin term, admitted
+# by the claims-first pass, surviving exclusion) are counted per origin;
+# the harness cannot tell an incidental rider from an aimed hit without
+# the counterfactual pack, so it never claims to. The tests below pin
+# the block's contract and name the caught failure: aimed vs lucky
+# admissions indistinguishable at runtime.
+
+def test_stated_claim_summary_counts_stated_symbol(tmp_path, monkeypatch):
+    """A resolved stated symbol that drives a packed claim is counted.
+
+    Caught failure: the agent aimed at a symbol and the runtime could not
+    say so — aimed and lucky admissions were distinguishable only by
+    replaying without the flags. ``--stated-symbol calculate_discount``
+    must yield stated_claim_summary.stated_symbol >= 1 on the synthetic
+    checkout fixture with src/discount.py packed.
+    """
+    _index(tmp_path, monkeypatch)
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+               "--task", TASK, "--budget", "800",
+               "--stated-symbol", "calculate_discount", "--quiet")
+    assert out.returncode == 0, out.stderr
+    data = json.loads(out.stdout)
+    diag = data["metrics"]["diagnostics"]
+    summary = diag["stated_claim_summary"]
+    assert set(summary) == {"stated_symbol", "stated_path", "stated_need"}
+    assert summary["stated_symbol"] >= 1
+    assert "src/discount.py" in [e["path"] for e in data["evidence"]]
+    # Two-spot mirror: the top-level JSON carries the same object.
+    assert data["stated_claim_summary"] == summary
+
+
+def test_stated_claim_summary_counts_stated_path(tmp_path, monkeypatch):
+    """A resolved stated path drives a packed named_path claim.
+
+    Caught failure: the agent aimed at a file (a path is a perfectly good
+    aim) and the summary credited nothing — the origin of the term must
+    survive candidate construction so the path arm is countable too.
+    """
+    _index(tmp_path, monkeypatch)
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+               "--task", TASK, "--budget", "800",
+               "--stated-symbol", "src/discount.py", "--quiet")
+    assert out.returncode == 0, out.stderr
+    data = json.loads(out.stdout)
+    diag = data["metrics"]["diagnostics"]
+    summary = diag["stated_claim_summary"]
+    assert summary["stated_path"] >= 1
+    assert "src/discount.py" in [e["path"] for e in data["evidence"]]
+    assert data["stated_claim_summary"] == summary
+
+
+def test_stated_claim_summary_counts_stated_need(tmp_path, monkeypatch):
+    """A kept anchored stated-need term drives a packed claim.
+
+    Caught failure: the free-text need (not a symbol resolution) recovered
+    the evidence and the runtime stayed silent about the aim — the kept
+    anchored term's admissions must be countable under stated_need.
+    """
+    _index(tmp_path, monkeypatch)
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+               "--task", TASK, "--budget", "800",
+               "--stated-need", "calculate_discount", "--quiet")
+    assert out.returncode == 0, out.stderr
+    data = json.loads(out.stdout)
+    diag = data["metrics"]["diagnostics"]
+    summary = diag["stated_claim_summary"]
+    assert summary["stated_need"] >= 1
+    assert "src/discount.py" in [e["path"] for e in data["evidence"]]
+    assert data["stated_claim_summary"] == summary
+
+
+def test_stated_claim_summary_attribution_limit_disclosed(tmp_path,
+                                                          monkeypatch):
+    """A stated term also verbatim in the task text is credited as stated.
+
+    Caught failure: the attribution limit went undisclosed — the summary
+    read as exclusivity ("the task text did not ask for this") when the
+    provenance is per term, not per exclusivity. The task below names
+    the symbol verbatim AND the symbol is stated; the admission is
+    credited to the stated origin, by design.
+    """
+    _index(tmp_path, monkeypatch)
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+               "--task", "Fix the incorrect calculate_discount calculation",
+               "--budget", "800",
+               "--stated-symbol", "calculate_discount", "--quiet")
+    assert out.returncode == 0, out.stderr
+    data = json.loads(out.stdout)
+    summary = data["metrics"]["diagnostics"]["stated_claim_summary"]
+    assert summary["stated_symbol"] >= 1
+
+
+def test_stated_claim_summary_honest_zeros_when_nothing_resolves(
+        tmp_path, monkeypatch):
+    """Unresolvable stated items: key present, all counts 0.
+
+    Caught failure: a flag was given, nothing resolved, and the summary
+    went silent — indistinguishable from "the feature never ran". The
+    honest zeros make an unresolved aim visible: stated flags given, no
+    aimed admission happened, and the pack must match the no-flag
+    baseline exactly.
+    """
+    _index(tmp_path, monkeypatch)
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+               "--task", TASK, "--budget", "800",
+               "--stated-symbol", "nonexistent_thing", "--quiet")
+    assert out.returncode == 0, out.stderr
+    data = json.loads(out.stdout)
+    diag = data["metrics"]["diagnostics"]
+    summary = diag["stated_claim_summary"]
+    assert summary == {"stated_symbol": 0, "stated_path": 0,
+                       "stated_need": 0}
+    assert data["stated_claim_summary"] == summary
+    base = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+                "--task", TASK, "--budget", "800", "--quiet")
+    assert base.returncode == 0, base.stderr
+    base_data = json.loads(base.stdout)
+    assert [e["path"] for e in data["evidence"]] == [
+        e["path"] for e in base_data["evidence"]]
+
+
+def test_stated_claim_summary_excluded_claim_counts_zero(tmp_path,
+                                                         monkeypatch):
+    """A claim admitted pre-exclusion but excluded after admission is not
+    counted.
+
+    Caught failure: the summary credited an admission whose chunk the
+    caller asked to exclude — double-crediting a chunk that never enters
+    the pack. The basis is the post-exclusion pack, so an excluded
+    aimed claim yields honest zeros for that arm.
+    """
+    _index(tmp_path, monkeypatch)
+    out = _run(tmp_path, monkeypatch, "select", "--repo-id", "stated_cli",
+               "--task", TASK, "--budget", "800",
+               "--stated-symbol", "calculate_discount",
+               "--exclude-path", "src/discount.py", "--quiet")
+    assert out.returncode == 0, out.stderr
+    data = json.loads(out.stdout)
+    summary = data["metrics"]["diagnostics"]["stated_claim_summary"]
+    assert summary == {"stated_symbol": 0, "stated_path": 0,
+                       "stated_need": 0}
+    assert all(e["path"] != "src/discount.py" for e in data["evidence"])

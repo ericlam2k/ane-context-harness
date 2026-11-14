@@ -262,6 +262,53 @@ def stated_claim_terms(stated_need: str | None,
     return terms, note
 
 
+def stated_claim_origins(stated_need: str | None, resolution: list | None,
+                         chunks: list) -> dict:
+    """Provenance of each stated claim term: term -> set of origins.
+
+    Origins: ``stated_symbol`` (a resolved ``--stated-symbol`` item matched
+    an index symbol), ``stated_path`` (a resolved item matched a repository
+    path — a stated string is a path when it is not a symbol), ``stated_need``
+    (a kept, index-anchored mined term from ``--stated-need`` text). The
+    origin records where the TERM came from, not which matcher fired on a
+    chunk: the term from a stated path can pin a chunk through the symbol
+    matcher, and is still a ``stated_path`` citation. A term minted by more
+    than one stated source (an exact symbol also kept as a need anchor)
+    carries every origin it was minted under, and a chunk citing it counts
+    once per origin. Terms with no stated source never appear in the map,
+    so an empty dict (or ``None`` at the call site) means nothing stated
+    survived the gates.
+
+    Attribution limit, stated plainly: provenance here is per term, not per
+    exclusivity — a stated term that also appears verbatim in the task text
+    is credited as stated. What the pack would have selected without the
+    stated flags is not computed, so direct versus incidental admissions are
+    not separated here.
+    """
+    origins: dict = {}
+
+    def _add(term: str, origin: str) -> None:
+        origins.setdefault(term, set()).add(origin)
+
+    if stated_need:
+        kept, _note = _gate_need_terms(_terms(stated_need), chunks)
+        for term in kept:
+            _add(term, "stated_need")
+    for rec in resolution or []:
+        if not rec.get("resolved"):
+            continue
+        symbol = rec.get("matched_symbol")
+        if symbol:
+            for term in _terms(symbol):
+                _add(term, "stated_symbol")
+            continue
+        path = rec.get("matched_path")
+        if path:
+            for term in _terms(path):
+                _add(term, "stated_path")
+    return origins
+
+
 def recovery_prompt(recovery: dict | None,
                     stated_resolution: list | None) -> str | None:
     """Plain-English ask affordance for a select result, or ``None``.
@@ -463,11 +510,13 @@ def identify_claim_candidates(chunks: list, task: str, explicit_paths: list,
                               weights: dict | None = None,
                               symbol_specificity: dict | None = None,
                               disable_symbol_pins: bool = False,
-                              stated_terms: set | None = None
-                              ) -> tuple[set, dict, set]:
+                              stated_terms: set | None = None,
+                              stated_origins: dict | None = None
+                              ) -> tuple[set, dict, set, dict]:
     """Identify claim candidates BEFORE the per-file and budget caps.
 
-    Returns ``(mandatory_idx, reasons_by_idx, authority_fired)``. The set is
+    Returns ``(mandatory_idx, reasons_by_idx, authority_fired,
+    stated_origins_by_idx)``. The set is
     the union of explicit paths, authority matches, named symbol/path
     matches, and paired tests. ``select_evidence`` applies the per-file and
     budget caps after this pass; the reranker shortlist uses the same
@@ -482,6 +531,27 @@ def identify_claim_candidates(chunks: list, task: str, explicit_paths: list,
     free text mined and anchored to the index by ``stated_claim_terms``);
     they merge into the same term set the task text produces, so resolved
     stated needs are identified exactly as task-derived claims are.
+
+    ``stated_origins`` maps each stated term to the set of stated sources
+    it was minted under (``stated_symbol`` / ``stated_path`` /
+    ``stated_need``), see ``stated_claim_origins``. When given, a candidate
+    whose matched terms cite stated-origin terms carries those origins in
+    ``stated_origins_by_idx`` (chunk index -> set of origins); candidates
+    citing no stated-origin term — every task-text claim, plus explicit/
+    authority pins — get no entry. Tags are per cited term, not exclusive:
+    a chunk that cites both task-text and stated-origin terms carries the
+    stated tags alongside the task-text claim. A claim may therefore carry
+    several origins; a test-pair candidate cites no term of its own and is
+    never tagged (the pair claim flows from the source claim, which keeps
+    its own tags). When ``stated_origins`` is None the map is empty and
+    every candidate's origin stays None — the non-stated construction
+    paths are byte-identical to before.
+
+    Attribution limit, stated plainly: terms are credited by provenance,
+    not by exclusivity — a stated term that also appears verbatim in the
+    task text is credited as stated. The pack is not re-derived without
+    the stated flags, so an aimed admission is reported as "cites a stated
+    term", never as "the task text needed it".
     """
     weights = weights or {}
     task_terms = _terms(task)
@@ -491,6 +561,7 @@ def identify_claim_candidates(chunks: list, task: str, explicit_paths: list,
     mandatory_idx = set()
     reasons_by_idx: dict = {}
     authority_fired = set()
+    stated_origins_by_idx: dict = {}
 
     def _add(i: int, reason: str) -> None:
         mandatory_idx.add(i)
@@ -541,6 +612,15 @@ def identify_claim_candidates(chunks: list, task: str, explicit_paths: list,
                 _add(i, "named_symbol")
 
         path_matched = matched_path_terms(c, task_terms)
+        if stated_origins:
+            # Tag the candidate with the origins of the stated terms it
+            # cites (under any matcher). Attribution is per cited term:
+            # task-text-only claims are never tagged.
+            tags = set()
+            for t in matched | path_matched:
+                tags |= stated_origins.get(t, set())
+            if tags:
+                stated_origins_by_idx[i] = tags
         if path_matched:
             # Path terms are file names the task text names — user-named file
             # evidence. Path claims keep the same specificity gate as symbol
@@ -559,7 +639,7 @@ def identify_claim_candidates(chunks: list, task: str, explicit_paths: list,
     for si in src_mandatory:
         for ti in _nearest_test_for_source(chunks, si, task_terms):
             _add(ti, "test_pair")
-    return mandatory_idx, reasons_by_idx, authority_fired
+    return mandatory_idx, reasons_by_idx, authority_fired, stated_origins_by_idx
 
 
 def claim_candidates(chunks: list, task: str, explicit_paths: list,
@@ -567,12 +647,14 @@ def claim_candidates(chunks: list, task: str, explicit_paths: list,
                      weights: dict | None = None,
                      symbol_specificity: dict | None = None,
                      disable_symbol_pins: bool = False,
-                     stated_terms: set | None = None) -> set:
+                     stated_terms: set | None = None,
+                     stated_origins: dict | None = None) -> set:
     """Pre-cap claim indices for a reranker shortlist (see above)."""
-    mandatory_idx, _, _ = identify_claim_candidates(
+    mandatory_idx, _, _, _ = identify_claim_candidates(
         chunks, task, explicit_paths, authority_paths=authority_paths,
         weights=weights, symbol_specificity=symbol_specificity,
-        disable_symbol_pins=disable_symbol_pins, stated_terms=stated_terms)
+        disable_symbol_pins=disable_symbol_pins, stated_terms=stated_terms,
+        stated_origins=stated_origins)
     return mandatory_idx
 
 
@@ -680,7 +762,8 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
                     per_file_fraction: float = _PER_FILE_FRACTION,
                     authority_paths: list | None = None,
                     required_paths: list[str] | None = None,
-                    stated_terms: set | None = None) -> tuple[list, dict]:
+                    stated_terms: set | None = None,
+                    stated_origins: dict | None = None) -> tuple[list, dict]:
     """Return (selected_chunks_in_order, diagnostics).
 
     ``required_paths`` (optional) names the evidence the task requires; those
@@ -691,6 +774,17 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
     and claim caps, budget admission), never a budget override. Unresolved
     stated items and unanchored mined need terms contribute nothing; the
     caller reports them in the stated_need_resolution diagnostic.
+
+    ``stated_origins`` carries the per-term provenance for ``stated_terms``
+      (``stated_claim_origins``: term -> set of origins). When given it is
+      threaded into candidate construction; chunks admitted by the
+      claims-first pass (stage B) that cite stated-origin terms are handed
+      off to the caller via ``diagnostics["claim_origins"]`` (chunk_id ->
+      sorted origin list), which the caller pops and intersects with the
+      post-exclusion pack to build ``stated_claim_summary``. The key is
+      present only when ``stated_origins`` is not None and is never meant
+      to be serialized. ``None`` (default) leaves every non-stated path
+      byte-identical to before.
     """
     weights = weights or {}
     task_terms = _terms(task)
@@ -724,12 +818,13 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
 
     # Claim candidates before caps. The reranker shortlist (pipeline) calls
     # the same helper, so both callers see identical claim rules.
-    mandatory_idx, claim_reasons, authority_fired = (
+    mandatory_idx, claim_reasons, authority_fired, stated_origins_by_idx = (
         identify_claim_candidates(
             chunks, task, explicit_paths, authority_paths=authority_paths,
             weights=weights,
             symbol_specificity=weights.get("mandatory_symbol_specificity"),
-            stated_terms=stated_terms))
+            stated_terms=stated_terms,
+            stated_origins=stated_origins))
     # Named-claim candidates, snapshotted before any cap demotes a chunk;
     # used after packing to report how the task's named evidence fared.
     named_claim_idx = {
@@ -849,6 +944,13 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
     claims_dropped = 0
     claims_capped = 0
     claim_capped_idx: list = []
+    # Transient hand-off to the caller (popped by pipeline before any
+    # serialization): chunk_id -> sorted stated origins of the chunk
+    # admitted by the claims-first pass. Keyed by chunk_id because caps and
+    # exclusions may drop chunks after admission; the caller intersects
+    # with the post-exclusion pack. Present only when stated_origins was
+    # given.
+    claim_origins: dict = {}
     tail_fill = 0
     tail_reserve = int(token_budget * weights.get("tail_reserve_fraction", 0.05))
     core_budget = max(0, token_budget - tail_reserve)
@@ -1034,6 +1136,13 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
         _admit(i, categorize(c), True)
         breadth_paths.add(path)
         claims_admitted += 1
+        if stated_origins is not None:
+            tags = stated_origins_by_idx.get(i)
+            if tags:
+                # A chunk cited under several stated origins counts once
+                # per origin, both here and in the caller's post-exclusion
+                # summary; the sum of those counts is not the pack size.
+                claim_origins[c.chunk_id] = sorted(tags)
 
     # C. breadth — one chunk per remaining distinct path, score order. When
     # the task does not ask about tests, test paths come after code and
@@ -1243,6 +1352,12 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
         # when every required item made it in.
         diagnostics["recovery"] = recovery_block
         diagnostics["recovery_tool"] = recovery_tools
+    if stated_origins is not None:
+        # Transient hand-off: the caller pops this before diagnostics are
+        # serialized (pipeline intersects it with the post-exclusion pack
+        # to build stated_claim_summary). Present only when stated_origins
+        # was given; never emitted to output.
+        diagnostics["claim_origins"] = claim_origins
     return final_chunks, diagnostics
 
 

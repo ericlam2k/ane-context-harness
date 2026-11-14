@@ -26,7 +26,7 @@ from .retrieval.structural import aggregate_scores
 from .retrieval.selector import (
     build_evidence, build_rerank_shortlist, claim_candidates,
     recovery_prompt, resolve_stated_items, select_evidence,
-    stated_claim_terms, stated_need_resolution_block,
+    stated_claim_origins, stated_claim_terms, stated_need_resolution_block,
 )
 from .telemetry.metrics import Timer
 
@@ -291,9 +291,16 @@ class Pipeline:
         stated_resolution = None
         stated_terms = None
         stated_need_note = None
+        stated_origins_map = None
         if stated_symbols or stated_need:
             stated_resolution = resolve_stated_items(chunks, stated_symbols)
             stated_terms, stated_need_note = stated_claim_terms(
+                stated_need, stated_resolution, chunks)
+            # Provenance of every stated claim term (term -> origins), for
+            # the stated_claim_summary diagnostic. Computed exactly when a
+            # stated flag was given; an empty map means nothing stated
+            # survived the gates and yields honest zeros.
+            stated_origins_map = stated_claim_origins(
                 stated_need, stated_resolution, chunks)
 
         # deterministic candidate generation: BM25 + symbol + path scored
@@ -364,7 +371,8 @@ class Pipeline:
                     symbol_specificity=self.retrieval.get(
                         "mandatory_symbol_specificity"),
                     disable_symbol_pins=False,
-                    stated_terms=stated_terms)
+                    stated_terms=stated_terms,
+                    stated_origins=stated_origins_map)
                 shortlist_idx, claims_outside = build_rerank_shortlist(
                     order, claim_idx, top_k)
                 shortlist_chunks = [chunks[i] for i in shortlist_idx]
@@ -431,6 +439,7 @@ class Pipeline:
                     authority_paths=authority_paths,
                     required_paths=getattr(request, "required_paths", None),
                     stated_terms=stated_terms,
+                    stated_origins=stated_origins_map,
                 )
                 diag["pinned_changed"] = pinned_changed
                 diag["pinned_missing"] = pinned_missing
@@ -441,6 +450,10 @@ class Pipeline:
                 # need. Unstated requests never see this key.
                 diag["stated_need_resolution"] = stated_need_resolution_block(
                     stated_resolution)
+            # Provenance hand-off from the claims pass (chunk_id -> origins);
+            # never serialized. Absent when select_evidence was not called
+            # (full-context branch) or nothing stated was given.
+            claim_origins = diag.pop("claim_origins", None) or {}
             stage_ms["packing_ms"] = round(t_pack.elapsed_ms, 2)
 
         # Exclusion enforcement: drop after ranking, in every branch
@@ -505,6 +518,43 @@ class Pipeline:
                          for term in stated_need_note["kept"]],
                 "dropped": stated_need_note["dropped"],
             }
+        if stated_symbols or stated_need:
+            # Stated-claim summary: the runtime half of "did the agent aim
+            # right". Counts PACKED chunks the claims-first pass admitted
+            # while citing a stated-origin term, per origin: stated_symbol
+            # (resolved --stated-symbol item matched an index symbol),
+            # stated_path (a stated item matched a repository path),
+            # stated_need (a kept, index-anchored --stated-need term).
+            # A chunk admitted by several origins is counted once per
+            # origin it was cited under; the three counts are not disjoint
+            # and their sum is NOT the pack size — do not read it as one.
+            # Basis is the final post-exclusion `selected` set, the same
+            # basis as matched_chunks above (exclusions may have dropped
+            # claim-admitted chunks after admission).
+            #
+            # Honest limit, stated plainly: this counts aimed admissions.
+            # A count > 0 says "a stated need was cited by a packed claim",
+            # not "this chunk is the evidence the agent was after". The
+            # harness cannot recognise an incidental rider (a stated-anchored
+            # claim whose chunk rode the budget for unrelated reasons) from
+            # the pack alone — that needs the counterfactual pack without
+            # the stated flags, which this runtime accounting does not
+            # attempt. Unlike the citation count in the note above, the
+            # basis here is the claims-first pass only: task-born candidates
+            # carry no stated origin, so they are never counted as aimed,
+            # however often they happen to match a stated term.
+            # Attribution limit: a stated term that also appears verbatim in
+            # the task text is credited as stated (term-level provenance,
+            # not exclusivity).
+            summary = {"stated_symbol": 0, "stated_path": 0, "stated_need": 0}
+            for chunk in selected:
+                origins = claim_origins.get(chunk.chunk_id)
+                if not origins:
+                    continue
+                for origin in origins:
+                    if origin in summary:
+                        summary[origin] += 1
+            diag["stated_claim_summary"] = summary
         # Hints must never point at an excluded path: the caller said it
         # must not appear, and a recovery hint would smuggle it back in.
         if excluded and diag.get("recovery"):
