@@ -17,6 +17,7 @@ were crowded out. The request is never exceeded by inferred evidence.
 from __future__ import annotations
 
 import re
+import shutil
 import unicodedata
 from dataclasses import dataclass, field
 
@@ -275,6 +276,71 @@ def compute_final_scores(scores: list, weights: dict, use_ml: bool, ml_scores: l
             s.final_score = s.final_score / mx
 
 
+_RECOVERY_IDENT = re.compile(r"[A-Za-z_$][A-Za-z0-9_$]{0,63}")
+# Cap on listed missed items; the coverage counts always stay exact, only
+# the itemized listing is bounded.
+_RECOVERY_LIST_LIMIT = 5
+_MISS_REASON_MARKERS = frozenset({
+    "claim_dropped_budget",
+    "mandatory_demoted_per_file_cap",
+    "mandatory_demoted_budget_cap",
+})
+
+
+def _shell_quote(text: str) -> str:
+    return "'" + text.replace("'", "'\\''") + "'"
+
+
+def _recovery_symbols(chunk) -> list:
+    """Declared identifier names on this chunk, index order (spans, label, file)."""
+    names = []
+
+    def _add(name):
+        if (isinstance(name, str) and _RECOVERY_IDENT.fullmatch(name)
+                and name not in names):
+            names.append(name)
+
+    for name, _line in (chunk.metadata or {}).get("symbol_spans") or []:
+        _add(name)
+    _add(chunk.symbol)
+    for name in (chunk.metadata or {}).get("file_symbols") or []:
+        _add(name)
+    return names
+
+
+def _recovery_terms(chunk) -> list:
+    """Identifier terms for a recovery command: declared symbols first, then
+    the longest identifier-ish content terms stored in the chunk's index
+    metadata. Empty when the chunk offers nothing usable."""
+    symbols = _recovery_symbols(chunk)[:3]
+    if symbols:
+        return symbols
+    terms = {t for t in (chunk.lexical_terms or ())
+             if _RECOVERY_IDENT.fullmatch(t)
+             and any(ch.isalpha() for ch in t) and len(t) >= 4}
+    return sorted(terms, key=lambda t: (-len(t), t))[:3]
+
+
+def _detect_search_tools() -> dict:
+    """Resolve search tools on PATH at selection time. Presence via PATH is
+    the contract — the harness never runs the binary to probe it. Values
+    are the resolved paths, or None when absent."""
+    return {"rg": shutil.which("rg"), "grep": shutil.which("grep")}
+
+
+def _recovery_command(chunk, tools: dict) -> str:
+    terms = _recovery_terms(chunk)
+    if not terms:
+        return ""
+    pattern = "|".join(re.escape(s) for s in terms)
+    if tools.get("rg"):
+        return f"rg -n {_shell_quote(pattern)} -- {_shell_quote(chunk.path)}"
+    if tools.get("grep"):
+        # Same alternation and ERE escaping the rg form uses.
+        return f"grep -nE {_shell_quote(pattern)} -- {_shell_quote(chunk.path)}"
+    return ""
+
+
 def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
                     explicit_paths: list, use_ml: bool = False,
                     ml_scores: list | None = None, weights: dict | None = None,
@@ -321,6 +387,16 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
             chunks, task, explicit_paths, authority_paths=authority_paths,
             weights=weights,
             symbol_specificity=weights.get("mandatory_symbol_specificity")))
+    # Named-claim candidates, snapshotted before any cap demotes a chunk;
+    # used after packing to report how the task's named evidence fared.
+    named_claim_idx = {
+        i for i, reasons in claim_reasons.items()
+        if any(r in ("named_symbol", "named_path", "test_pair")
+               for r in reasons)
+    }
+    if not _task_asks_about_tests(task, chunks):
+        named_claim_idx = {i for i in named_claim_idx
+                           if categorize(chunks[i]) != "test"}
     for i, reasons in claim_reasons.items():
         sc = score_by_id[chunks[i].chunk_id]
         if i in mandatory_idx:
@@ -429,6 +505,7 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
     claims_admitted = 0
     claims_dropped = 0
     claims_capped = 0
+    claim_capped_idx: list = []
     tail_fill = 0
     tail_reserve = int(token_budget * weights.get("tail_reserve_fraction", 0.05))
     core_budget = max(0, token_budget - tail_reserve)
@@ -594,6 +671,7 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
         path = c.path
         if n_claim >= max(1, claim_chunk_cap):
             claims_capped += len(claim_idx) - n_claim
+            claim_capped_idx.extend(claim_idx[n_claim:])
             break
         if (used_tokens + c.estimated_tokens > token_budget
                 or used_tokens + c.estimated_tokens > claim_cap * token_budget):
@@ -699,6 +777,92 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
             breadth_paths.add(c.path)
             tail_fill += 1
 
+    # Required-evidence coverage: how the task's named claims and the
+    # caller-labelled required paths fared against the pack. The block is
+    # emitted only when at least one required item missed; a fully covered
+    # run adds no diagnostics keys at all.
+    covered_claims = [i for i in named_claim_idx if i in selected_idx]
+    missed_claims = [i for i in named_claim_idx if i not in selected_idx]
+    required_set = {p.replace("\\", "/") for p in (required_paths or []) if p}
+    required_uncovered: list = []
+    required_covered = 0
+    if required_set:
+        packed_paths = {chunks[i].path.replace("\\", "/")
+                        for i in selected_idx}
+        indexed_paths = {c.path.replace("\\", "/") for c in chunks}
+        required_covered = len(required_set & packed_paths)
+        for p in sorted(required_set - packed_paths):
+            if p not in indexed_paths:
+                why = "not_indexed"
+            elif used_tokens >= token_budget:
+                why = "budget"
+            else:
+                why = "dropped"
+            required_uncovered.append({"path": p, "why": why})
+    recovery_block = None
+    recovery_tools = None
+    if missed_claims or required_uncovered:
+        recovery_tools = _detect_search_tools()
+        claim_capped_set = set(claim_capped_idx)
+
+        def _why(i):
+            reasons = score_by_id[chunks[i].chunk_id].selection_reasons or []
+            if ("mandatory_demoted_per_file_cap" in reasons
+                    or "mandatory_demoted_budget_cap" in reasons
+                    or i in claim_capped_set):
+                return "capped"
+            if "claim_dropped_budget" in reasons or used_tokens >= token_budget:
+                return "budget"
+            return "dropped"
+
+        def _entry(i):
+            sc = score_by_id[chunks[i].chunk_id]
+            c = chunks[i]
+            reasons = sorted({r for r in (sc.selection_reasons or [])
+                              if r in _MISS_REASON_MARKERS})
+            if i in claim_capped_set:
+                reasons = sorted(set(reasons) | {"claim_capped"})
+            return {"chunk_id": c.chunk_id,
+                    "path": c.path,
+                    "symbol": c.symbol or None,
+                    "why": _why(i),
+                    "reasons": reasons,
+                    "command": _recovery_command(c, recovery_tools)}
+
+        missed_sorted = sorted(
+            missed_claims,
+            key=lambda i: (-score_by_id[chunks[i].chunk_id].initial_score,
+                           chunks[i].path, chunks[i].start_line, i))
+        # One entry per (path, identifier set): repeated misses on the
+        # same material carry the same instruction; totals are unaffected.
+        listed = []
+        seen = set()
+        for i in missed_sorted:
+            terms = frozenset(_recovery_terms(chunks[i]))
+            if terms:
+                key = (chunks[i].path, terms)
+                if key in seen:
+                    continue
+                seen.add(key)
+            if len(listed) >= _RECOVERY_LIST_LIMIT:
+                break
+            listed.append(_entry(i))
+        recovery_block = {
+            "required_claims_total": len(named_claim_idx),
+            "required_claims_covered": len(covered_claims),
+            "required_evidence_recall": (
+                round(len(covered_claims) / len(named_claim_idx), 4)
+                if named_claim_idx else 1.0),
+            "missed_claims": listed,
+        }
+        if required_set:
+            recovery_block["required_paths_total"] = len(required_set)
+            recovery_block["required_paths_covered"] = required_covered
+            recovery_block["required_paths_recall"] = round(
+                required_covered / len(required_set), 4)
+            recovery_block["missed_required_paths"] = \
+                required_uncovered[:_RECOVERY_LIST_LIMIT]
+
     # stable final order by category then score
     selected_sorted = sorted(selected, key=lambda x: (CATEGORY_ORDER.get(x[1], 9), -scores[x[0]].final_score, x[0]))
     final_chunks = [chunks[i] for i, _ in selected_sorted]
@@ -730,6 +894,12 @@ def select_evidence(chunks: list, scores: list, task: str, token_budget: int,
         "authority_flags": sorted(authority_fired),
         "score_cutoff_skipped": skipped_by_cutoff,
     }
+    if recovery_block is not None:
+        # What the pack could not admit and why, so the next turn can
+        # state the need instead of guessing. Additive; absent entirely
+        # when every required item made it in.
+        diagnostics["recovery"] = recovery_block
+        diagnostics["recovery_tool"] = recovery_tools
     return final_chunks, diagnostics
 
 

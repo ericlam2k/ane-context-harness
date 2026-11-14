@@ -355,6 +355,11 @@ def main(argv: list | None = None) -> int:
                           "content_hash": e.get("content_hash")} for e in pkg.evidence],
             "markdown_length": len(pkg.markdown),
         }
+        _rec = ((pkg.metrics or {}).get("diagnostics") or {}).get("recovery")
+        if _rec:
+            # Additive; present only when required evidence missed. The
+            # harness never runs the emitted commands itself.
+            out["recovery"] = _rec
         text = json.dumps(out, indent=2, default=str)
         if args.out:
             with open(args.out, "w", encoding="utf-8") as f:

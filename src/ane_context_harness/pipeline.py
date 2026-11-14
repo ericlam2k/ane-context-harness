@@ -439,6 +439,19 @@ class Pipeline:
         else:
             diag["excluded"] = {"paths": [], "chunks_dropped": 0,
                                 "dropped_by_pattern": {}, "unmatched": []}
+        # Hints must never point at an excluded path: the caller said it
+        # must not appear, and a recovery hint would smuggle it back in.
+        if excluded and diag.get("recovery"):
+            rec = diag["recovery"]
+            rec["missed_claims"] = [
+                m for m in rec.get("missed_claims", [])
+                if not any(_is_excluded(m["path"], [p]) for p in excluded)]
+            rec["missed_required_paths"] = [
+                m for m in rec.get("missed_required_paths", [])
+                if not any(_is_excluded(m["path"], [p]) for p in excluded)]
+            if not rec["missed_claims"] and not rec.get("missed_required_paths"):
+                diag.pop("recovery", None)
+                diag.pop("recovery_tool", None)
         diag["rerank_shortlist"] = rerank_diag
 
         cand_tokens = sum(c.estimated_tokens for c in chunks)
@@ -485,6 +498,11 @@ class Pipeline:
                 pkg.execution["redaction_failed"] = True
                 cleared = True
             stage_ms["redaction_ms"] = round(t_red.elapsed_ms, 2)
+        if cleared:
+            # Fail-closed cleared the pack; recovery entries would leak
+            # paths into an empty response.
+            diag.pop("recovery", None)
+            diag.pop("recovery_tool", None)
         pkg.execution["secret_classifier"] = {
             "backend": sc_backend if classifier else "disabled",
             "enabled": bool(classifier),

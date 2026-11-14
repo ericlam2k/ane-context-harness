@@ -67,6 +67,11 @@ class _Handler(BaseHTTPRequestHandler):
                 pkg.markdown = render_markdown(
                     pkg, conversation=req.conversation_summary or "")
             out = pkg.__dict__ if hasattr(pkg, "__dict__") else pkg
+            _rec = ((getattr(pkg, "metrics", None) or {}).get("diagnostics")
+                    or {}).get("recovery")
+            if _rec:
+                # Additive; present only when required evidence missed.
+                out = {**out, "recovery": _rec}
             self._send(200, out)
             return
         if path == "/v1/context/compress-output":
