@@ -6,9 +6,9 @@ Current version: 0.2.0. This policy starts from this version.
 
 This policy covers anything a script or setup file might depend on:
 
-- Keys in CLI stdout JSON (the named fields in command output).
+- Keys in CLI (command-line interface) stdout JSON (the named fields in command output).
 - CLI flags (the `--options` you pass to commands).
-- MCP tool shapes (the names and fields of tools offered to agents).
+- MCP (Model Context Protocol) tool shapes (the names and fields of tools offered to agents).
 - Config keys (the named settings in config files).
 - Budget profile names (the named token-budget presets).
 

@@ -1,7 +1,7 @@
 """Capability-profile schema and derivation from measurements.
 
-Profiles are derived from measurements, never from chip names. Phase 1 has no
-qualified Core ML backend, so the default profile is DETERMINISTIC_ONLY.
+Profiles are derived from measurements, never from chip names. No accelerated backend is
+qualified, so the default profile is DETERMINISTIC_ONLY.
 """
 from __future__ import annotations
 
@@ -75,8 +75,8 @@ def derive_profile(discovery: dict, measurements: dict | None = None) -> Capabil
 def _feature_state(meas: dict) -> dict:
     """Compute a feature's final state.
 
-    Portable line: deterministic-only, always. Measurement-gated ML
-    backends live in the private distribution.
+    Portable line: deterministic-only, always. Measurement-gated model
+    backends are not part of this repository.
     """
     return {
         "enabled": True,

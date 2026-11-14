@@ -43,7 +43,7 @@ def test_no_accelerator_claim_from_apple_silicon():
 def test_measurements_never_enable_ml():
     """Portable line: measurements cannot enable ML backends."""
     meas = {
-        "reranker": {"backend": "coreml_all", "enabled": True,
+        "reranker": {"backend": "accelerated_backend", "enabled": True,
                      "measured_speedup_percent": 22.0, "warm_p95_ms": 390,
                      "peak_memory_mb": 512, "failure_rate_percent": 0.0,
                      "numerical_validation": "passed"},
@@ -63,7 +63,7 @@ def test_mock_calibration_is_deterministic_only():
 def test_no_constrained_profile_on_portable_line():
     """Slow measurements cannot move the portable line off deterministic."""
     meas = {
-        "reranker": {"backend": "coreml_all", "enabled": True,
+        "reranker": {"backend": "accelerated_backend", "enabled": True,
                      "measured_speedup_percent": 20.0, "warm_p95_ms": 800,
                      "peak_memory_mb": 600, "failure_rate_percent": 0.0,
                      "numerical_validation": "passed"},

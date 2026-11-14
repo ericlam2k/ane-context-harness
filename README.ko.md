@@ -2,6 +2,8 @@
 
 [English](README.md) · [Tiếng Việt](README.vi.md) · [中文](README.zh.md) · [Français](README.fr.md) · [Español](README.es.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
+*영어 버전이 기준 README이며, 번역은 늦을 수 있습니다.*
+
 > **AI 에이전트가 읽는 컨텍스트를 60% 이상 절감하고, 필요한 필수 코드는 100% 유지하며, 4ms 이내에 컨텍스트를 추출합니다 — 로컬 머신에서 완전한 오프라인으로 작동.**
 
 [![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14-blue.svg)](https://python.org)
@@ -21,7 +23,7 @@ Cursor, Claude Code, OpenCode, Cline, Windsurf, Aider와 같은 AI 에이전트�
 
 **ane-context-harness**는 코드베이스와 코딩 에이전트 사이에서 동작하는 경량 로컬 퍼스트(Local-First) 컨텍스트 엔진입니다. 단 **~3밀리초** 만에 리포지토리를 인덱싱하고, 심볼 계층 구조(함수, 인터페이스, 타입)를 추출하며, 노이즈를 제거하고, 시크릿을 마스킹(Redaction)하여 에이전트가 작업에 실제 필요한 고가치 코드 증거만을 패킹합니다.
 
-> `ane`라는 이름은 과거 프로젝트의 유산이며 필수 종속성이 아닙니다. 배포 버전은 순수 CPU 기반으로 작동하며 macOS Apple Silicon, macOS Intel 및 Linux를 완벽히 지원합니다. 하드웨어 가속 기능은 별도의 프라이빗 배포판으로 관리됩니다.
+> `ane`라는 이름은 과거 프로젝트의 유산이며 필수 종속성이 아닙니다. 배포 버전은 순수 CPU 기반으로 작동하며 macOS Apple Silicon, macOS Intel 및 Linux를 완벽히 지원합니다. 하드웨어 가속 기능은 이 저장소에는 포함되어 있지 않습니다.
 
 외부 네트워크 호출 0건. 100% 개인정보 보호 및 오프라인 동작.
 
@@ -216,7 +218,7 @@ print(f"Packed {package.metrics['selected_tokens']} tokens (cut {package.metrics
 
 ![개념 일러스트: 무거운 베이스라인과 가벼운 하네스 — 토큰은 적게, 정확도는 그대로](docs/ane-concept-dashboard.jpg)
 
-*실측 요약 그림 — 중앙값은 `benchmarks/reports/phase5-ab-evaluation.json`에서(frozen eval split, 18개 작업, Arm B deterministic): 3,213 → 782 토큰(60.47% 감소), min required recall 1.0.*
+*실측 요약 그림 — 중앙값은 `ane-context-harness-evidence-v0.1/reports/phase5-ab-evaluation.json`에서(frozen eval split, 18개 작업, Arm B deterministic): 3,213 → 782 토큰(60.47% 감소), min required recall 1.0.*
 
 ## 라이선스
 

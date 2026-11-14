@@ -2,6 +2,8 @@
 
 [English](README.md) · [Tiếng Việt](README.vi.md) · [中文](README.zh.md) · [Français](README.fr.md) · [Español](README.es.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
+*El inglés es el README de referencia; las traducciones pueden retrasarse.*
+
 > **Reduce más del 60% del contexto que lee tu agente de IA, conserva cada línea de código requerida y selecciona contexto en menos de 4 ms — ejecutándose 100% offline en tu máquina local.**
 
 [![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14-blue.svg)](https://python.org)
@@ -21,7 +23,7 @@ Cuando haces vibe-coding o ejecutas agentes de IA (Cursor, Claude Code, OpenCode
 
 **ane-context-harness** es un motor de contexto *local-first* y ligero situado entre tu código y tu agente de desarrollo. En **~3 milisegundos**, indiza tu repositorio, extrae la jerarquía de símbolos (funciones, interfaces, tipos), elimina el ruido, oculta credenciales (redaction) y empaqueta solo el código relevante que el agente necesita.
 
-> El nombre `ane` es por razones históricas; **no** es una dependencia. La versión pública corre únicamente en CPU sobre macOS (Apple Silicon e Intel) y Linux. La aceleración por hardware pertenece a una distribución privada independiente.
+> El nombre `ane` es por razones históricas; **no** es una dependencia. La versión pública corre únicamente en CPU sobre macOS (Apple Silicon e Intel) y Linux. La aceleración por hardware no forma parte de este repositorio.
 
 Sin llamadas a redes externas. 100% privado y ejecutable fuera de línea.
 
@@ -216,7 +218,7 @@ print(f"Packed {package.metrics['selected_tokens']} tokens (cut {package.metrics
 
 ![Ilustración conceptual: baseline pesado frente a harness ligero — menos tokens, precisión intacta](docs/ane-concept-dashboard.jpg)
 
-*Figura resumen medida — medianas de `benchmarks/reports/phase5-ab-evaluation.json` (frozen eval split, 18 tareas, Arm B deterministic): 3.213 → 782 tokens (recorte del 60,47 %), min required recall 1,0.*
+*Figura resumen medida — medianas de `ane-context-harness-evidence-v0.1/reports/phase5-ab-evaluation.json` (frozen eval split, 18 tareas, Arm B deterministic): 3.213 → 782 tokens (recorte del 60,47 %), min required recall 1,0.*
 
 ## Licencia
 

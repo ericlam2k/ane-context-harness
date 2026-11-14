@@ -1,6 +1,6 @@
 """Frozen release-evidence bundle: checksum verification only (portable line).
 
-Bundle construction is ANE-release infrastructure (private distribution).
+Bundle construction is not part of this repository.
 These tests cover verify_bundle against hand-built manifests plus the real
 frozen in-tree bundle.
 """

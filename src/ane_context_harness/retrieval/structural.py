@@ -4,7 +4,7 @@ deterministic backend only.
 
 Backend selection is delegated to the capability profile; this module exposes
 `RankBackend`-agnostic initial scoring and a `ScoreBackend` hook for future
-Core ML integration without changing API contracts.
+backends without changing API contracts.
 """
 from __future__ import annotations
 

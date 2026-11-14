@@ -82,8 +82,7 @@ def _macos() -> dict:
 
 
 def _detect_accelerators() -> dict:
-    """Portable line: no accelerator probing (hardware acceleration lives in
-    the private distribution)."""
+    """Portable line: no accelerator probing."""
     return {}
 
 
@@ -108,6 +107,6 @@ def discover() -> dict:
         },
         "devices": _detect_accelerators(),
         "runtime": {
-            "compute_mode": "deterministic_only",  # no qualified Core ML backend in Phase 1
+            "compute_mode": "deterministic_only",  # deterministic backend only
         },
     }

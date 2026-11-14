@@ -4,13 +4,25 @@ Reconstructed from read-only `git log --oneline` and `--stat` output. Dates are 
 
 ## Unreleased
 
-- Budget-honest claims-first packing: named evidence (a symbol or path the task names, or the matching test file when the task asks about tests) is admitted first while it fits the budget — then breadth (the best chunk of each remaining path), then depth, then a small reserved tail for small, high-value chunks crowded out of the core budget. Only explicit pins (`--explicit-path` or an authority rule) may push the pack past the requested budget; inferred evidence never can. Claims that do not fit are counted (`claims_dropped_budget`, `claims_capped`) in the output, never silently dropped.
-- Claim extraction and a deterministic shortlist seam: the selector identifies claim candidates before the per-file and budget caps and scores every one of them before capping, so a claim outside the top candidates still reaches the shortlist. The shortlist diagnostics (`rerank_shortlist`) are inert on the deterministic backend.
-- Recovery hints: when the pack misses required evidence, the output carries a `recovery` block — up to five missed items with path, symbol, why each did not fit (`budget`, `capped`, or `dropped`), and a ready-to-run search command (`rg -n` when ripgrep is on PATH, a `grep -nE` equivalent without it, or an empty command with a `recovery_tool` diagnostic when neither exists). The harness prints these commands; it never runs them. The block is additive and appears only on a miss.
-- Stated needs: `--stated-symbol` (repeatable) and `--stated-need` (free text) let the caller declare what it needs. Each stated symbol or path is validated against the index at no model cost (exact match up to case, identifier separators, and inflection forms, or an exact repository path); resolved items merge into claim candidates under the same budget-honest rules — no budget override. Unresolved items are never packed and are reported in the `stated_need_resolution` diagnostic with nearest indexed symbols to try.
-- Ask affordance: a `recovery_prompt` line, present only when the pack cut required evidence or a stated symbol was unresolved, naming what was missed and the flags to re-state the need. On those runs the end-of-run note gains the clause `· ask: re-select with --stated-symbol if evidence misses`. Absent the firing condition the output is unchanged.
-- Need-text gate: mined `--stated-need` terms become claim terms only when they anchor to the index (symbol name up to case/separators/inflections, a plain symbol subtoken without inflection folds, or an indexed file path). Dropped terms are disclosed in the `stated_need_resolution_note` diagnostic.
-- Claim-origin tagging: the output carries a `stated_claim_summary` (`stated_symbol`, `stated_path`, `stated_need`) counting packed chunks the claims-first pass admitted while citing a stated-origin term, present only when stated flags were given. Counts are per cited origin — not disjoint, and not the pack size. A stated term that also appears verbatim in the task text is credited as stated.
+Packing:
+
+- Select packs claims first under the token budget. Evidence your task names — a symbol or path, or the matching test file when the task asks about tests — is admitted while it fits; then the pack fills with the best chunk from each remaining path, then deeper coverage per path, then a small reserved tail for small, high-value chunks. Only explicit pins (`--explicit-path` or an authority rule) may push the pack past the requested budget; the harness never infers past it. Claims that cannot fit are counted in the output (`claims_dropped_budget`, `claims_capped`), never silently dropped.
+- Claims are admitted in task-aware order: when claims compete for the last fitting slot, the claim whose evidence the task text actually asks about wins — the shared rare terms it accounts for weigh more than common ones.
+
+Saying what you need:
+
+- `--stated-symbol` (repeatable) and `--stated-need` (free text) let you declare what the task needs. Each stated symbol or path is checked against the index at no model cost; resolved items join the pack under the same budget rules — no override. Unresolved items are never packed; the output reports them with the nearest indexed symbols to try.
+- Free-text needs must anchor to the index: a mined `--stated-need` term counts only when it matches an indexed symbol name, a plain symbol subtoken, or an indexed file path. Terms that do not anchor are dropped, and the drops are disclosed in the `stated_need_resolution_note` diagnostic.
+
+When evidence is missing:
+
+- The output carries a `recovery` block — up to five missed items with the path, the symbol, why each did not fit, and a ready-to-run search command (`rg -n` when ripgrep is on your PATH, a `grep -nE` equivalent without it, or an empty command with a `recovery_tool` note when neither exists). The harness prints these commands; it never runs them.
+- The output can ask you back: when the pack cut required evidence or a stated symbol was unresolved, a one-line `recovery_prompt` names what was missed and the flags to re-state the need, and the end-of-run note gains the clause `· ask: re-select with --stated-symbol if evidence misses`. When nothing is missing, the output is unchanged.
+- Aim accounting: when you use the stated-needs flags, the output carries a `stated_claim_summary` with per-origin counts of packed chunks that entered through the claims-first pass while citing a stated term. Counts are per cited origin, not disjoint, and their sum is not the pack size; a stated term that also appears verbatim in the task text is credited as stated.
+
+Docs:
+
+- The README and its translations document stated needs, recovery hints, and the claims-first packing contract in plain English; every localized README now notes that English is the canonical README and translations may lag.
 
 ## 0.2.0 — 2026-10-14
 

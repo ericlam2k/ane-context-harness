@@ -2,7 +2,7 @@
 
 Real calibration runs the discover->validate->benchmark sequence against
 candidate model/backends (Phase 3). Phase 1 ships a mock only so the profile
-derivation and degradation pipeline is testable without any Core ML model.
+derivation and degradation pipeline is testable without any model.
 """
 from __future__ import annotations
 

@@ -1,8 +1,8 @@
 """Deterministic reranker facade.
 
 The portable line ships one backend: cpu_deterministic reuses the
-deterministic initial_score (always available). Hardware-accelerated
-reranking lives in the private distribution, never here.
+deterministic initial_score (always available). No hardware-accelerated
+reranking is included in this repository.
 """
 from __future__ import annotations
 

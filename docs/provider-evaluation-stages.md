@@ -12,7 +12,8 @@ Provider adapters (`providers/anthropic.py`, `providers/openai.py`,
 rendered prompts from an `EvidencePackage` only. They import no network
 libraries; `tests/integration/test_provider_adapters.py` asserts deterministic,
 equivalent evidence across adapters, and `tests/test_provider_dryrun.py`
-AST-checks the package for network imports.
+parses the package's code (an AST — a tree of its structure) and checks it
+for network imports.
 
 ## Stage 1 — dry-run with derived cost and spend cap (implemented)
 
@@ -36,20 +37,23 @@ Preconditions, all required:
 1. Explicit human approval of the run and of the cap value; config sets
    `max_provider_spend_usd > 0` deliberately (default remains 0.0).
 2. Credentials come from environment variables only, never from repository
-   files or benchmark fixtures; the evidence bundle records that no key
-   material is stored.
+   files or benchmark fixtures; the evidence bundle (the run's recorded
+   evidence) notes that no key material is stored.
 3. Pre-flight: run stage 1 for every task, sum the derived estimates, and
    refuse the run when the sum exceeds the cap. Record the estimate next to
    the measured spend.
-4. The evaluation reuses the frozen eval split
-   (`benchmarks/splits.json`) and reports per-task results with the
-   `METRIC_DEFINITIONS` aggregation methods; baseline (arm A) remains
+4. The evaluation reuses the frozen eval split (a fixed, write-once task
+   assignment — `benchmarks/splits.json`) and reports per-task results with the
+   `METRIC_DEFINITIONS` aggregation methods (the metric definitions shipped
+   with the reports); baseline (arm A) remains
    "full context" as measured locally — provider inference quality numbers
    are reported separately and never merged with local latency/memory
    figures.
 5. Hard limits: fixed task list (no ad-hoc prompts), fixed model ids recorded
-   in provenance, max_tokens bounded, retries capped, and abort on first
+   in the run's provenance (the record of what produced it, with versions),
+   max_tokens bounded, retries capped, and abort on first
    spend-cap breach. Every call logs provider, model, tokens, derived cost.
 
 Out of scope for this milestone: executing stage 2, any provider performance
-claim, and any TTFT/provider-cost number presented as measured.
+claim, and any TTFT (time to first token) or provider-cost number presented as
+measured.

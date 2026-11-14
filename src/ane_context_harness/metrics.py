@@ -1,10 +1,11 @@
-"""Portable ranking-methodology helpers (no models, no ANE).
+"""Portable ranking-methodology helpers (no models, no accelerator).
 
 Canonical metric definitions plus pure label/score math over labelled
 BenchmarkTasks: relevance labels (required + helpful => relevant),
 Recall@K, nDCG, MRR, and package-emission-order ranking metrics.
-Moved here from the Arm-C evaluation apparatus so the portable line keeps
-one methodology home; the A/B/C run harness itself is private.
+Moved here so the portable line keeps
+one methodology home; the A/B/C run harness is not part of this
+repository.
 """
 from __future__ import annotations
 

@@ -2,6 +2,8 @@
 
 [English](README.md) · [Tiếng Việt](README.vi.md) · [中文](README.zh.md) · [Français](README.fr.md) · [Español](README.es.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
+*英語版が正式な README です。翻訳は遅れることがあります。*
+
 > **AIエージェントが読み込むコンテキストを 60% 以上削減。必要なコード行を1行も漏らさず、4ms 未満でコンテキストを抽出 — ローカル環境で完全オフライン動作。**
 
 [![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14-blue.svg)](https://python.org)
@@ -21,7 +23,7 @@ Cursor、Claude Code、OpenCode、Cline、Windsurf、Aider などの AI エー�
 
 **ane-context-harness** は、コードベースと AI エージェントの間に位置する軽量かつローカルファーストなコンテキストエンジンです。わずか **~3 ミリ秒** でリポジトリのインデックスを作成し、シンボル階層（関数、インターフェース、型定義）を抽出。ノイズの除去およびシークレットの伏字化（Redaction）を行い、エージェントがタスクを完了するために必要な「高価値なコード証拠」のみを抽出してパッキングします。
 
-> `ane` という名称は歴史的な経緯によるものであり、依存関係ではありません。提供されているエンジンは純粋な CPU 処理であり、macOS Apple Silicon、macOS Intel、Linux 上で動作します。ハードウェアアクセラレーション機能は別途プライベート版として管理されています。
+> `ane` という名称は歴史的な経緯によるものであり、依存関係ではありません。提供されているエンジンは純粋な CPU 処理であり、macOS Apple Silicon、macOS Intel、Linux 上で動作します。ハードウェアアクセラレーション機能はこのリポジトリには含まれていません。
 
 外部ネットワークへの通信はゼロ。100% プライベートかつオフラインで動作します。
 
@@ -216,7 +218,7 @@ print(f"Packed {package.metrics['selected_tokens']} tokens (cut {package.metrics
 
 ![概念イラスト: 重いベースラインと軽量ハーネス——トークンは少なく、精度はそのまま](docs/ane-concept-dashboard.jpg)
 
-*实測サマリー図——中央値は `benchmarks/reports/phase5-ab-evaluation.json` より（frozen eval split、18 タスク、Arm B deterministic）: 3,213 → 782 トークン（60.47% 削減）、min required recall 1.0。*
+*实測サマリー図——中央値は `ane-context-harness-evidence-v0.1/reports/phase5-ab-evaluation.json` より（frozen eval split、18 タスク、Arm B deterministic）: 3,213 → 782 トークン（60.47% 削減）、min required recall 1.0。*
 
 ## ライセンス
 

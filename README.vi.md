@@ -2,6 +2,8 @@
 
 [Tiếng Anh](README.md) · [Tiếng Việt](README.vi.md) · [Tiếng Trung](README.zh.md) · [Tiếng Pháp](README.fr.md) · [Tiếng Tây Ban Nha](README.es.md) · [Tiếng Nhật](README.ja.md) · [Tiếng Hàn](README.ko.md)
 
+*Tiếng Anh là README chuẩn; các bản dịch có thể chậm hơn.*
+
 > **Cắt giảm 60%+ ngữ cảnh mà agent của bạn phải đọc, giữ lại trọn vẹn từng dòng code cần thiết, chọn lọc ngữ cảnh dưới 4ms — vận hành hoàn toàn offline ngay trên máy cục bộ.**
 
 [![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14-blue.svg)](https://python.org)
@@ -21,7 +23,7 @@ Khi bạn vibe-code hoặc chạy AI agent (Cursor, Claude Code, OpenCode, Cline
 
 **ane-context-harness** là một context engine nhẹ, local-first, nằm giữa codebase và coding agent của bạn. Trong **~3 milliseconds**, nó index repo, trích xuất phân cấp symbol (hàm, interface, type), loại nhiễu, redact secret, và đóng gói chỉ evidence code giá trị cao mà agent thực sự cần để hoàn thành task.
 
-> Tên `ane` mang tính lịch sử; nó **không** phải một dependency. Đường đi được ship là thuần CPU và chạy trên macOS Apple Silicon, macOS Intel, và Linux. Tăng tốc phần cứng nằm trong một bản phân phối private tách riêng.
+> Tên `ane` mang tính lịch sử; nó **không** phải một dependency. Đường đi được ship là thuần CPU và chạy trên macOS Apple Silicon, macOS Intel, và Linux. Tăng tốc phần cứng không nằm trong repository này.
 
 Không có gọi mạng bên ngoài. 100% riêng tư và offline.
 
@@ -97,7 +99,7 @@ Bốn quy tắc đã được tài liệu hóa, không model tham gia, không ng
 
 ![Minh họa khái niệm: baseline nặng nề so với harness gọn nhẹ — ít token hơn, giữ trọn độ chính xác](docs/ane-concept-dashboard.jpg)
 
-*Hình tóm tắt đã đo — các trung vị từ `benchmarks/reports/phase5-ab-evaluation.json` (frozen eval split, 18 task, Arm B deterministic): 3,213 → 782 token (giảm 60.47%), min required recall 1.0.*
+*Hình tóm tắt đã đo — các trung vị từ `ane-context-harness-evidence-v0.1/reports/phase5-ab-evaluation.json` (frozen eval split, 18 task, Arm B deterministic): 3,213 → 782 token (giảm 60.47%), min required recall 1.0.*
 
 ---
 
@@ -386,7 +388,7 @@ User Prompt  ──────►   BM25 Lexical Search
 
 *Hình minh họa khái niệm cho pipeline trên — dashboard trong hình là minh họa đồ họa, không phải ảnh chụp công cụ thật.*
 
-### Tăng tốc phần cứng: bản phân phối private tách riêng
+### Tăng tốc phần cứng: không có trong repository này
 
 Tên có chứa `ane`, nhưng **không yêu cầu hay tuyên bố silicon chuyên dụng** để
 chạy harness. Engine được ship là CPU xác định thuần (Python +

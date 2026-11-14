@@ -2,6 +2,8 @@
 
 [English](README.md) · [Tiếng Việt](README.vi.md) · [中文](README.zh.md) · [Français](README.fr.md) · [Español](README.es.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
+*英文版是权威 README；翻译可能滞后。*
+
 > **为你的 AI Agent 精简 60%+ 的上下文，精准保留每一行关键代码，4 毫秒内完成上下文检索 — 完全离线运行在本地机器。**
 
 [![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14-blue.svg)](https://python.org)
@@ -21,7 +23,7 @@
 
 **ane-context-harness** 是一款轻量级、Local-First（本地优先）的上下文引擎，介于你的代码库与 Coding Agent 之间。仅需 **~3 毫秒**，它即可完成仓库索引、提取 Symbol 层级结构（Function、Interface、Type）、去除噪声、脱敏密钥，并仅打包 Agent 完成任务所需的“高价值代码证据”。
 
-> 名称中的 `ane` 仅为历史沿用名称，**并非**依赖项。公开版本为纯 CPU 实现，完美支持 macOS Apple Silicon、macOS Intel 及 Linux。硬件加速模块位于独立的私有发行版中。
+> 名称中的 `ane` 仅为历史沿用名称，**并非**依赖项。公开版本为纯 CPU 实现，完美支持 macOS Apple Silicon、macOS Intel 及 Linux。硬件加速不在本仓库中提供。
 
 零外部网络调用，100% 隐私安全与离线运行。
 
@@ -244,7 +246,7 @@ print(f"Packed {package.metrics['selected_tokens']} tokens (cut {package.metrics
 
 ![概念示意图：庞大的基线与轻量的 harness——更少 token，保持完整准确率](docs/ane-concept-dashboard.jpg)
 
-*实测汇总图——中位数来自 `benchmarks/reports/phase5-ab-evaluation.json`（frozen eval split，18 个任务，Arm B deterministic）：3,213 → 782 token（削减 60.47%），min required recall 1.0。*
+*实测汇总图——中位数来自 `ane-context-harness-evidence-v0.1/reports/phase5-ab-evaluation.json`（frozen eval split，18 个任务，Arm B deterministic）：3,213 → 782 token（削减 60.47%），min required recall 1.0。*
 
 ## 开源协议
 

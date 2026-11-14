@@ -2,6 +2,8 @@
 
 [English](README.md) · [Tiếng Việt](README.vi.md) · [中文](README.zh.md) · [Français](README.fr.md) · [Español](README.es.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
+*L'anglais est le README de référence ; les traductions peuvent prendre du retard.*
+
 > **Réduisez de plus de 60% le contexte lu par votre agent, conservez chaque ligne de code essentielle et sélectionnez le contexte en moins de 4 ms — le tout 100% hors ligne sur votre machine locale.**
 
 [![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14-blue.svg)](https://python.org)
@@ -21,7 +23,7 @@ Lorsque vous faites du vibe-coding ou utilisez des agents IA (Cursor, Claude Cod
 
 **ane-context-harness** est un moteur de contexte léger et *local-first* qui s'intercale entre votre codebase et votre agent de codage. En **~3 millisecondes**, il indexe votre dépôt, extrait les hiérarchies de symboles (fonctions, interfaces, types), élimine le bruit, masquez les secrets (redaction) et ne conserve que les preuves de code indispensables à l'accomplissement de la tâche.
 
-> Le nom `ane` est historique ; ce n'est **pas** une dépendance. Le moteur fourni fonctionne exclusivement sur CPU sous macOS (Apple Silicon & Intel) et Linux. L'accélération matérielle est réservée à une distribution privée distincte.
+> Le nom `ane` est historique ; ce n'est **pas** une dépendance. Le moteur fourni fonctionne exclusivement sur CPU sous macOS (Apple Silicon & Intel) et Linux. L'accélération matérielle ne fait pas partie de ce dépôt.
 
 Zéro appel réseau externe. 100% privé et exécuté hors ligne.
 
@@ -216,7 +218,7 @@ print(f"Packed {package.metrics['selected_tokens']} tokens (cut {package.metrics
 
 ![Illustration conceptuelle : baseline lourde contre harness léger — moins de tokens, précision intacte](docs/ane-concept-dashboard.jpg)
 
-*Figure récapitulative mesurée — médianes issues de `benchmarks/reports/phase5-ab-evaluation.json` (frozen eval split, 18 tâches, Arm B deterministic) : 3 213 → 782 tokens (réduction de 60,47 %), min required recall 1,0.*
+*Figure récapitulative mesurée — médianes issues de `ane-context-harness-evidence-v0.1/reports/phase5-ab-evaluation.json` (frozen eval split, 18 tâches, Arm B deterministic) : 3 213 → 782 tokens (réduction de 60,47 %), min required recall 1,0.*
 
 ## Licence
 

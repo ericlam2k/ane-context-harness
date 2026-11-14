@@ -76,7 +76,7 @@ class Pipeline:
         return {}
 
     def _profile(self) -> dict:
-        """Capability profile (cached). Drives backend selection; never claims ANE.
+        """Capability profile (cached). Drives backend selection; never claims an accelerator.
 
         Portable line: deterministic profile, no calibration inputs.
         """

@@ -2,7 +2,7 @@
 
 Verifies ``manifest.json`` checksums + required metadata fields of a frozen
 bundle such as ``ane-context-harness-evidence-v0.1/``. Bundle *construction*
-is ANE-release infrastructure and lives in the private distribution.
+is not part of this repository.
 
 Privacy: reads reports and fingerprints only. No source code, no fixture
 contents, no secrets, no credentials are ever read out of the bundle.
