@@ -11,6 +11,8 @@ import shlex
 import shutil
 import subprocess
 
+import pytest
+
 from ane_context_harness import schemas
 from ane_context_harness.config import build_config, merge
 from ane_context_harness.pipeline import Pipeline
@@ -33,6 +35,9 @@ def _starved_select(tmp_path, repo_name, budget=30, exclude_paths=None):
     return pipe, pipe.select_context(req)
 
 
+@pytest.mark.skipif(shutil.which("rg") is None,
+                    reason="ripgrep not installed; rg-form recovery hints "
+                           "cannot be exercised on this host")
 def test_recovery_hints_for_budget_cut_fixture(tmp_path, monkeypatch):
     """Failure caught: a recovery block full of commands the host cannot
     run (or pointing at paths outside the repo) leaves the agent's next
