@@ -198,6 +198,7 @@ def test_fresh_lock_run_install_exits_2(tmp_path, monkeypatch, capsys):
     monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
     monkeypatch.delenv("CLAUDE_CONFIG_DIR", raising=False)
     monkeypatch.setenv("ANE_HARNESS_STATE_DIR", str(tmp_path / "state"))
+    monkeypatch.setattr(install_mod, "_windows_refused", lambda *a, **k: False)
     args = SimpleNamespace(all=False, undo=False, dry_run=False, agent=None)
     assert install_mod.run_install(args) == 2
     err = capsys.readouterr().err.strip()

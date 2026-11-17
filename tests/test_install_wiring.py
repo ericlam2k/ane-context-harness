@@ -61,7 +61,8 @@ def test_install_creates_files_and_manifest(tmp_path):
         assert dest.read_bytes() == skill_src.read_bytes()
 
     mpath, manifest = _read_manifest(home, env)
-    assert stat.S_IMODE(mpath.stat().st_mode) == 0o600
+    if os.name == "posix":
+        assert stat.S_IMODE(mpath.stat().st_mode) == 0o600
     entries = manifest["entries"]
     assert len(entries) == 4
     for entry in entries:
@@ -245,6 +246,7 @@ def test_cli_install_then_undo_roundtrip(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("PATH", "")
     monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
     monkeypatch.setenv("ANE_HARNESS_STATE_DIR", str(tmp_path / "state"))
+    monkeypatch.setattr(install_mod, "_windows_refused", lambda *a, **k: False)
     assert main(["install"]) == 0
     out = capsys.readouterr().out
     assert "created:" in out

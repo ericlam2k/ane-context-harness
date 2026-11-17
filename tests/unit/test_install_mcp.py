@@ -310,6 +310,7 @@ def test_run_install_routes_mcp_before_skill_wiring(tmp_path, monkeypatch):
     env_copy["ANE_HARNESS_STATE_DIR"] = str(tmp_path / "state")
     env_copy["PATH"] = ""
     monkeypatch.setattr(os, "environ", env_copy)
+    monkeypatch.setattr(install_mod, "_windows_refused", lambda *a, **k: False)
 
     dry_args = SimpleNamespace(all=False, undo=False, dry_run=True, agent="mcp")
     assert install_mod.run_install(dry_args) == 0

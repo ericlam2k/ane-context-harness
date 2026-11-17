@@ -365,10 +365,22 @@ def _install_lock(mpath: Path, command: str):
                 f"install lock at {lock} (recorded at {recorded}); "
                 f"if no other ane-harness install/undo is running, "
                 f"remove {lock} and retry")
+    fh = None
     try:
-        with os.fdopen(fd, "wb") as fh:
-            fh.write(payload)
+        fh = os.fdopen(fd, "wb")
+        fh.write(payload)
+        fh.close()
     except BaseException:
+        if fh is not None:
+            try:
+                fh.close()
+            except Exception:
+                pass
+        else:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
         try:
             lock.unlink()
         except OSError:
