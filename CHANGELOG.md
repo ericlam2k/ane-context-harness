@@ -29,6 +29,11 @@ Agent wiring:
 - `ane-harness install` detects OpenCode, Claude Code, and agents-compatible hosts (~/.agents/skills) and wires the skill (and the OpenCode usage plugin) additively: nothing is overwritten silently — differing files are backed up next to the original and recorded in a 0600 manifest at ~/.ane_context_harness/install-manifest.json, and `--undo` restores byte-identically. `--dry-run` previews the exact plan; a concurrent run is refused via a short-lived lock; the manifest records every step before the file it describes is written, so a crash never leaves an installed file unrecorded. 100% offline; on Windows, real writes are refused with a clear message until the paths are verified (detection and --dry-run work everywhere).
 - `ane-harness install mcp` wires the ane-harness MCP server: for Claude Code it adds the entry under `mcpServers` in ~/.claude.json (or $CLAUDE_CONFIG_DIR/.claude.json) with the same backup/manifest/undo guarantees, never touching foreign keys; for OpenCode it prints the exact config block instead of writing, because opencode.json is JSONC-tolerant (comments allowed) and the installer never risks reformatting it.
 
+Packaging:
+
+- The package now ships everything the installer needs: the agent skill (`skills/ane-harness/SKILL.md`) and the OpenCode usage plugin (`integrations/opencode/ane-harness-usage.ts`) are included in both wheel and sdist, so `pip install ane-context-harness` gives a working `ane-harness install` / `install mcp` with no editable checkout. A LICENSE file now matches the MIT license the metadata already declared.
+- One test fixture is deliberately left out of the sdist only: `tests/fixtures/synthetic_hard_project/secret_link` is a symlink to `/etc/passwd`, and installers reject tarballs that contain absolute-path symlinks, so without this the sdist could not be installed at all. The fixture is unchanged in the repository. Tests run from an unpacked sdist will fail on the one symlink-escape case; every other test is unaffected.
+
 ## 0.2.0 — 2026-10-14
 
 - Select now refreshes the file index first, so picks never use out-of-date files.

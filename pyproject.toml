@@ -22,8 +22,12 @@ mcp = ["mcp[cli]>=1.0,<2"]
 [project.scripts]
 ane-harness = "ane_context_harness.cli:main"
 
+[tool.hatch.build.targets.sdist]
+exclude = ["tests/fixtures/synthetic_hard_project/secret_link"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/ane_context_harness"]
+force-include = { "skills" = "skills", "integrations/opencode/ane-harness-usage.ts" = "ane_context_harness/ane-harness-usage.ts" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
