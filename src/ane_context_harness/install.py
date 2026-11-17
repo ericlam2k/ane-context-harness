@@ -371,12 +371,14 @@ def _install_lock(mpath: Path, command: str):
         fh.write(payload)
         fh.close()
     except BaseException:
+        closed = False
         if fh is not None:
             try:
                 fh.close()
+                closed = True
             except Exception:
-                pass
-        else:
+                closed = False
+        if not closed:
             try:
                 os.close(fd)
             except OSError:
