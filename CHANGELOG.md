@@ -24,6 +24,11 @@ Docs:
 
 - The README and its translations document stated needs, recovery hints, and the claims-first packing contract in plain English; every localized README now notes that English is the canonical README and translations may lag.
 
+Agent wiring:
+
+- `ane-harness install` detects OpenCode, Claude Code, and agents-compatible hosts (~/.agents/skills) and wires the skill (and the OpenCode usage plugin) additively: nothing is overwritten silently — differing files are backed up next to the original and recorded in a 0600 manifest at ~/.ane_context_harness/install-manifest.json, and `--undo` restores byte-identically. `--dry-run` previews the exact plan; a concurrent run is refused via a short-lived lock; the manifest records every step before the file it describes is written, so a crash never leaves an installed file unrecorded. 100% offline; on Windows, real writes are refused with a clear message until the paths are verified (detection and --dry-run work everywhere).
+- `ane-harness install mcp` wires the ane-harness MCP server: for Claude Code it adds the entry under `mcpServers` in ~/.claude.json (or $CLAUDE_CONFIG_DIR/.claude.json) with the same backup/manifest/undo guarantees, never touching foreign keys; for OpenCode it prints the exact config block instead of writing, because opencode.json is JSONC-tolerant (comments allowed) and the installer never risks reformatting it.
+
 ## 0.2.0 — 2026-10-14
 
 - Select now refreshes the file index first, so picks never use out-of-date files.

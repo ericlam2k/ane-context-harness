@@ -155,6 +155,24 @@ def main(argv: list | None = None) -> int:
                          help="Skip copying the agent skill file")
     p_setup.add_argument("--with-mcp", action="store_true",
                          help="Check the optional mcp extra is installed")
+    p_install = sub.add_parser(
+        "install", help="Detect supported agent hosts (OpenCode, Claude Code, "
+                        "agents-compatible ~/.agents/skills) and wire them "
+                        "(skill/plugin files; MCP via 'install mcp'). "
+                        "--dry-run previews; --undo reverts what install recorded")
+    p_install.add_argument("agent", nargs="?", default=None,
+                           choices=["opencode", "claude", "agents", "all", "mcp"],
+                           help="Agent to wire (default: all detected set; 'mcp' wires "
+                                "the ane-harness MCP server entry); "
+                                "with --undo, limit the revert to one agent")
+    p_install.add_argument("--dry-run", action="store_true",
+                           help="Print exactly what a real install would write; "
+                                "writes nothing")
+    p_install.add_argument("--undo", action="store_true",
+                           help="Revert exactly what install recorded in the manifest "
+                                "(remove created files, restore backups byte for byte)")
+    p_install.add_argument("--all", action="store_true",
+                           help="Wire/report on all agents setup wires today")
     p_prove = sub.add_parser("prove", help="Prove-it one-liner: reduction/latency proof on any repo (unlabelled)")
     p_prove.add_argument("--repo", default=".")
     p_prove.add_argument("--repo-id", default=None)
@@ -236,6 +254,9 @@ def main(argv: list | None = None) -> int:
             usage_log.record("setup", sm["candidate_tokens"],
                              sm["selected_tokens"], tasks=1)
         return 0
+    if args.command == "install":
+        from . import install as install_mod
+        return install_mod.run_install(args)
     if args.command == "prove":
         from .prove import run_prove
         summary = run_prove(args.repo, args.repo_id, budget=args.budget,

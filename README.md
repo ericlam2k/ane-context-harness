@@ -222,6 +222,33 @@ printf '%s\n' '{"task": "Fix the discount bug"}' 'review inventory loader' \
 
 **Skill.** The bundled skill at `skills/ane-harness/SKILL.md` makes cut totals surface after each task in compatible hosts. Copy it into your agent's skills directory, or — for OpenCode/Claude-compatible hosts — use `~/.config/opencode/skills/`, `~/.claude/skills/`, or `~/.agents/skills/`; new sessions pick it up with no per-project setup. Disable the local ledger any time with `ANE_HARNESS_NO_USAGE_LOG=1`.
 
+## Agent integration (installer)
+
+`ane-harness install` wires the harness into the agent hosts it detects, instead of you copying files by hand:
+
+```bash
+# preview exactly what would change, write nothing
+ane-harness install --dry-run
+
+# wire OpenCode, Claude Code, and agents-compatible hosts (~/.agents/skills)
+ane-harness install
+```
+
+It detects OpenCode, Claude Code, and agents-compatible hosts (`~/.agents/skills`) via PATH lookup plus config-directory existence, then wires the skill file — and, for OpenCode, the bundled usage plugin — additively:
+
+- A file that already exists and differs is **backed up next to the original** before anything is written; nothing is overwritten silently.
+- Every step is recorded in a `0600` manifest at `~/.ane_context_harness/install-manifest.json` — before the file it describes is written, so a crash never leaves an installed file unrecorded. The manifest is what `--undo` reads.
+- `ane-harness install --undo` reverts exactly what the manifest records: created files are removed, overwritten files are restored byte-identically from their backups, and foreign files are left untouched.
+- `--dry-run` prints the exact plan first; run it before anything real. A concurrent install is refused via a short-lived lock next to the manifest.
+- 100% offline. On Windows, real writes are refused with a clear message until the paths are verified — detection and `--dry-run` work everywhere.
+
+`ane-harness install mcp` wires the ane-harness MCP server instead of the skill:
+
+- **Claude Code:** adds the entry under `mcpServers` in `~/.claude.json` (or `$CLAUDE_CONFIG_DIR/.claude.json`) with the same backup, manifest, and `--undo` guarantees — foreign keys are never touched.
+- **OpenCode:** prints the exact config block instead of writing, because `opencode.json` is JSONC-tolerant (comments allowed) and the installer never risks reformatting it. You paste it in yourself.
+
+Honest limits: the installer makes no shell-rc edits — `shell-init` stays opt-in (`eval "$(ane-harness shell-init)"`). The harness never executes anything, and the installer itself only writes files you can inspect.
+
 ## Reproduce the numbers
 
 Everything above comes from committed scripts and reports; nothing is hand-picked. The short list (full detail, first-use definitions of required-evidence recall, recall@k, nDCG, and MRR: [docs/reproducibility.md](docs/reproducibility.md)):
